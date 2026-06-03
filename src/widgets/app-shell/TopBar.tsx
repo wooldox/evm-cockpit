@@ -29,6 +29,8 @@ function ChainSelector() {
       <button
         type="button"
         onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-haspopup="listbox"
         className="flex h-[34px] items-center gap-2 rounded-sm border border-border-strong bg-elev-2 px-[11px] text-[13px] font-medium text-fg transition-colors hover:border-[var(--gray-500)]"
       >
         <ChainGlyph chain={chain} size={16} />
@@ -61,6 +63,7 @@ function ChainSelector() {
             </button>
           ))}
           <div className="my-[5px] h-px bg-border" />
+          {/* TODO(M2c): custom chain entry flow */}
           <button
             type="button"
             className="flex w-full items-center gap-[9px] rounded-sm border-0 bg-transparent px-2 py-[7px] text-left text-[13px] text-fg-2 cursor-pointer hover:bg-elev-3 hover:text-fg"
@@ -116,7 +119,7 @@ function WalletButton() {
         className="inline-flex h-9 items-center gap-2.5 rounded-[11px] border border-border-strong bg-elev-2 pl-3 pr-1.5 hover:bg-elev-3"
       >
         <span className="font-mono text-[13px] font-medium text-fg">
-          2.418 ETH
+          2.418 ETH{/* TODO(M2c): real balance */}
         </span>
         <span className="inline-flex h-[26px] items-center gap-1.5 rounded-[8px] bg-elev-4 pl-1 pr-[9px] text-[13px] font-medium">
           <Ident seed={wallet.address} size={18} />
