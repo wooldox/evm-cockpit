@@ -56,7 +56,7 @@ export function Sidebar({
   currentId?: string;
   onSelect?: (id: string) => void;
 }) {
-  const { currentChainId } = useAppShell();
+  const { currentChainId, openAdd } = useAppShell();
   const pathname = usePathname();
   const [q, setQ] = useState("");
   const [scope, setScope] = useState<"all" | "current">("all");
@@ -106,9 +106,7 @@ export function Sidebar({
           variant="subtle"
           icon={<Icon.plus size={15} />}
           title="Add contract"
-          onClick={() => {
-            // TODO(M2d): open add-contract modal
-          }}
+          onClick={openAdd}
         />
       </div>
 
