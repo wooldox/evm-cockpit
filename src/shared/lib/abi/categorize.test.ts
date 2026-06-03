@@ -6,7 +6,11 @@ describe("categorizeAbi", () => {
   const c = categorizeAbi(erc20Abi);
 
   it("puts zero-input view/pure functions in properties", () => {
-    expect(c.properties.map((f) => f.name).sort()).toEqual(["decimals", "name", "totalSupply"]);
+    expect(c.properties.map((f) => f.name).sort()).toEqual([
+      "decimals",
+      "name",
+      "totalSupply",
+    ]);
   });
 
   it("puts view/pure functions with inputs in getters", () => {
@@ -14,7 +18,9 @@ describe("categorizeAbi", () => {
   });
 
   it("puts state-changing functions in operations (including overloads and payable)", () => {
-    expect(c.operations.map((f) => f.name).sort()).toEqual(["deposit", "mint", "mint", "transfer"].sort());
+    expect(c.operations.map((f) => f.name).sort()).toEqual(
+      ["deposit", "mint", "mint", "transfer"].sort(),
+    );
   });
 
   it("collects events, errors, and the constructor", () => {
