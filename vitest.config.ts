@@ -9,8 +9,13 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     coverage: {
       provider: "v8",
-      include: ["src/shared/lib/**/*.ts"],
-      exclude: ["**/*.test.ts", "**/fixtures.ts"],
+      include: [
+        "src/shared/lib/**/*.ts",
+        "src/shared/adapters/**/*.ts",
+        "src/entities/**/model/*.ts",
+        "src/widgets/app-shell/lib/**/*.ts",
+      ],
+      exclude: ["**/*.test.ts", "**/*.test.tsx", "**/fixtures.ts", "**/types.ts"],
       thresholds: { lines: 95, functions: 95, branches: 90, statements: 95 },
     },
   },
