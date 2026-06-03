@@ -1,0 +1,458 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { renderHook, act } from "@testing-library/react";
+import { useAddContractForm } from "./useAddContractForm";
+import type { Deps } from "./useAddContractForm";
+import type { TContract } from "@/entities/contract/model/types";
+import { erc20Abi } from "@/shared/lib/abi/fixtures";
+import { categorizeAbi } from "@/shared/lib/abi/categorize";
+import type { AbiSource } from "@/shared/ports/abi-source";
+import type { RpcProvider } from "@/shared/ports/rpc";
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const VALID_ADDRESS = "0x1234567890123456789012345678901234567890" as const;
+const IMPL_ADDRESS = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd" as const;
+
+function makeAbiSource(
+  result: Awaited<ReturnType<AbiSource["fetchAbi"]>>,
+): AbiSource {
+  return { fetchAbi: vi.fn().mockResolvedValue(result) };
+}
+
+function makeRpc(): RpcProvider {
+  return { getClient: vi.fn() };
+}
+
+function makeDeps(overrides?: Partial<Deps>): Deps {
+  return {
+    abiResolver: makeAbiSource({ ok: true, abi: erc20Abi, source: "sourcify" }),
+    rpc: makeRpc(),
+    addContract: vi.fn(),
+    updateContract: vi.fn(),
+    detectProxy: vi.fn().mockResolvedValue(null),
+    ...overrides,
+  };
+}
+
+// ─── Test suite ──────────────────────────────────────────────────────────────
+
+describe("useAddContractForm", () => {
+  // ── 1. Manual mode ────────────────────────────────────────────────────────
+
+  describe("manual mode", () => {
+    it("invalid JSON in abiText → errors.abi set, submit() returns false, addContract NOT called", async () => {
+      const deps = makeDeps();
+      const { result } = renderHook(() => useAddContractForm({ deps }));
+
+      act(() => {
+        result.current.setMode("manual");
+        result.current.setName("MyToken");
+        result.current.setAddress(VALID_ADDRESS);
+        result.current.setAbiText("not valid json {{");
+      });
+
+      // errors.abi should be set because abiText is non-empty and invalid
+      expect(result.current.errors.abi).toBeDefined();
+
+      let submitResult: boolean = true;
+      act(() => {
+        submitResult = result.current.submit();
+      });
+
+      expect(submitResult).toBe(false);
+      expect(deps.addContract).not.toHaveBeenCalled();
+    });
+
+    it("non-array JSON in abiText → errors.abi set, submit() returns false", async () => {
+      const deps = makeDeps();
+      const { result } = renderHook(() => useAddContractForm({ deps }));
+
+      act(() => {
+        result.current.setMode("manual");
+        result.current.setName("MyToken");
+        result.current.setAddress(VALID_ADDRESS);
+        result.current.setAbiText('{"not": "an array"}');
+      });
+
+      expect(result.current.errors.abi).toBeDefined();
+
+      let submitResult: boolean = true;
+      act(() => {
+        submitResult = result.current.submit();
+      });
+
+      expect(submitResult).toBe(false);
+      expect(deps.addContract).not.toHaveBeenCalled();
+    });
+
+    it("valid JSON array + name + valid address → submit() true, addContract called with source:'manual'", async () => {
+      const deps = makeDeps();
+      const { result } = renderHook(() => useAddContractForm({ deps }));
+
+      act(() => {
+        result.current.setMode("manual");
+        result.current.setName("MyToken");
+        result.current.setAddress(VALID_ADDRESS);
+        result.current.setAbiText(JSON.stringify(erc20Abi));
+      });
+
+      expect(result.current.errors.abi).toBeUndefined();
+      expect(result.current.canSubmit).toBe(true);
+
+      let submitResult: boolean = false;
+      act(() => {
+        submitResult = result.current.submit();
+      });
+
+      expect(submitResult).toBe(true);
+      expect(deps.addContract).toHaveBeenCalledOnce();
+
+      const called = (
+        (deps.addContract as ReturnType<typeof vi.fn>).mock.calls[0] as [
+          TContract,
+        ]
+      )[0];
+      expect(called.source).toBe("manual");
+      expect(called.abi).toEqual(erc20Abi);
+      expect(called.name).toBe("MyToken");
+      expect(called.address).toBe(VALID_ADDRESS);
+      expect(called.proxy).toBeUndefined();
+    });
+  });
+
+  // ── 2. Fetch success (no proxy) ───────────────────────────────────────────
+
+  describe("fetch mode – success, no proxy", () => {
+    it("after fetchAbi(), status=done, categories match categorizeAbi(erc20Abi)", async () => {
+      const deps = makeDeps({
+        abiResolver: makeAbiSource({
+          ok: true,
+          abi: erc20Abi,
+          source: "sourcify",
+        }),
+        detectProxy: vi.fn().mockResolvedValue(null),
+      });
+
+      const { result } = renderHook(() => useAddContractForm({ deps }));
+
+      act(() => {
+        result.current.setName("ERC20");
+        result.current.setAddress(VALID_ADDRESS);
+      });
+
+      await act(async () => {
+        await result.current.fetchAbi();
+      });
+
+      expect(result.current.fetch.status).toBe("done");
+      expect(result.current.fetch.proxy).toBeUndefined();
+
+      const expected = categorizeAbi(erc20Abi);
+      expect(result.current.fetch.categories).toEqual({
+        properties: expected.properties.length,
+        getters: expected.getters.length,
+        operations: expected.operations.length,
+        events: expected.events.length,
+      });
+    });
+
+    it("submit adds contract with resolved source and no proxy", async () => {
+      const deps = makeDeps({
+        abiResolver: makeAbiSource({
+          ok: true,
+          abi: erc20Abi,
+          source: "sourcify",
+        }),
+        detectProxy: vi.fn().mockResolvedValue(null),
+      });
+
+      const { result } = renderHook(() => useAddContractForm({ deps }));
+
+      act(() => {
+        result.current.setName("ERC20");
+        result.current.setAddress(VALID_ADDRESS);
+      });
+
+      await act(async () => {
+        await result.current.fetchAbi();
+      });
+
+      let submitResult: boolean = false;
+      act(() => {
+        submitResult = result.current.submit();
+      });
+
+      expect(submitResult).toBe(true);
+      expect(deps.addContract).toHaveBeenCalledOnce();
+
+      const called = (
+        (deps.addContract as ReturnType<typeof vi.fn>).mock.calls[0] as [
+          TContract,
+        ]
+      )[0];
+      expect(called.source).toBe("sourcify");
+      expect(called.abi).toEqual(erc20Abi);
+      expect(called.proxy).toBeUndefined();
+    });
+  });
+
+  // ── 3. Fetch + proxy ─────────────────────────────────────────────────────
+
+  describe("fetch mode – proxy detected", () => {
+    it("detectProxy returns eip1967; resolver returns erc20Abi for both → proxy stored, implAbi set", async () => {
+      const abiResolver: AbiSource = {
+        fetchAbi: vi.fn().mockResolvedValue({
+          ok: true,
+          abi: erc20Abi,
+          source: "sourcify" as const,
+        }),
+      };
+
+      const deps = makeDeps({
+        abiResolver,
+        detectProxy: vi.fn().mockResolvedValue({
+          kind: "eip1967",
+          implAddress: IMPL_ADDRESS,
+        }),
+      });
+
+      const { result } = renderHook(() => useAddContractForm({ deps }));
+
+      act(() => {
+        result.current.setName("Proxy");
+        result.current.setAddress(VALID_ADDRESS);
+      });
+
+      await act(async () => {
+        await result.current.fetchAbi();
+      });
+
+      expect(result.current.fetch.status).toBe("done");
+      expect(result.current.fetch.proxy).toBeDefined();
+      expect(result.current.fetch.proxy?.kind).toBe("eip1967");
+      expect(result.current.fetch.proxy?.implAddress).toBe(IMPL_ADDRESS);
+      expect(result.current.fetch.proxy?.implAbi).toEqual(erc20Abi);
+    });
+
+    it("submit stores proxy on the contract", async () => {
+      const abiResolver: AbiSource = {
+        fetchAbi: vi.fn().mockResolvedValue({
+          ok: true,
+          abi: erc20Abi,
+          source: "sourcify" as const,
+        }),
+      };
+
+      const deps = makeDeps({
+        abiResolver,
+        detectProxy: vi.fn().mockResolvedValue({
+          kind: "eip1967",
+          implAddress: IMPL_ADDRESS,
+        }),
+      });
+
+      const { result } = renderHook(() => useAddContractForm({ deps }));
+
+      act(() => {
+        result.current.setName("Proxy");
+        result.current.setAddress(VALID_ADDRESS);
+      });
+
+      await act(async () => {
+        await result.current.fetchAbi();
+      });
+
+      let submitResult: boolean = false;
+      act(() => {
+        submitResult = result.current.submit();
+      });
+
+      expect(submitResult).toBe(true);
+      const called = (
+        (deps.addContract as ReturnType<typeof vi.fn>).mock.calls[0] as [
+          TContract,
+        ]
+      )[0];
+      expect(called.proxy).toBeDefined();
+      expect(called.proxy?.kind).toBe("eip1967");
+      expect(called.proxy?.implAddress).toBe(IMPL_ADDRESS);
+      expect(called.proxy?.implAbi).toEqual(erc20Abi);
+    });
+
+    it("categories reflect merged proxy + impl ABIs", async () => {
+      const abiResolver: AbiSource = {
+        fetchAbi: vi.fn().mockResolvedValue({
+          ok: true,
+          abi: erc20Abi,
+          source: "sourcify" as const,
+        }),
+      };
+
+      const deps = makeDeps({
+        abiResolver,
+        detectProxy: vi.fn().mockResolvedValue({
+          kind: "eip1967",
+          implAddress: IMPL_ADDRESS,
+        }),
+      });
+
+      const { result } = renderHook(() => useAddContractForm({ deps }));
+
+      act(() => {
+        result.current.setName("Proxy");
+        result.current.setAddress(VALID_ADDRESS);
+      });
+
+      await act(async () => {
+        await result.current.fetchAbi();
+      });
+
+      // Both proxy and impl have erc20Abi, merged = doubled counts
+      const merged = [...erc20Abi, ...erc20Abi];
+      const expected = categorizeAbi(merged);
+      expect(result.current.fetch.categories).toEqual({
+        properties: expected.properties.length,
+        getters: expected.getters.length,
+        operations: expected.operations.length,
+        events: expected.events.length,
+      });
+    });
+  });
+
+  // ── 4. Fetch error ────────────────────────────────────────────────────────
+
+  describe("fetch mode – resolver error", () => {
+    it("resolver returns {ok:false,error} → status='error'", async () => {
+      const deps = makeDeps({
+        abiResolver: makeAbiSource({
+          ok: false,
+          error: "ABI not found on Sourcify or Etherscan",
+        }),
+      });
+
+      const { result } = renderHook(() => useAddContractForm({ deps }));
+
+      act(() => {
+        result.current.setName("Unknown");
+        result.current.setAddress(VALID_ADDRESS);
+      });
+
+      await act(async () => {
+        await result.current.fetchAbi();
+      });
+
+      expect(result.current.fetch.status).toBe("error");
+      expect(result.current.fetch.error).toBe(
+        "ABI not found on Sourcify or Etherscan",
+      );
+    });
+  });
+
+  // ── 5. Address validation ─────────────────────────────────────────────────
+
+  describe("address validation", () => {
+    it("addrValid false when address is empty", () => {
+      const { result } = renderHook(() =>
+        useAddContractForm({ deps: makeDeps() }),
+      );
+      expect(result.current.addrValid).toBe(false);
+    });
+
+    it("addrValid true for valid hex address", () => {
+      const { result } = renderHook(() =>
+        useAddContractForm({ deps: makeDeps() }),
+      );
+      act(() => {
+        result.current.setAddress(VALID_ADDRESS);
+      });
+      expect(result.current.addrValid).toBe(true);
+    });
+
+    it("addrValid false for invalid address string", () => {
+      const { result } = renderHook(() =>
+        useAddContractForm({ deps: makeDeps() }),
+      );
+      act(() => {
+        result.current.setAddress("0xnothex");
+      });
+      expect(result.current.addrValid).toBe(false);
+      expect(result.current.errors.address).toBeDefined();
+    });
+  });
+
+  // ── 6. canSubmit ─────────────────────────────────────────────────────────
+
+  describe("canSubmit", () => {
+    it("false when no name", () => {
+      const { result } = renderHook(() =>
+        useAddContractForm({ deps: makeDeps() }),
+      );
+      act(() => {
+        result.current.setAddress(VALID_ADDRESS);
+        result.current.setMode("manual");
+        result.current.setAbiText(JSON.stringify(erc20Abi));
+      });
+      expect(result.current.canSubmit).toBe(false);
+    });
+
+    it("false when fetch mode and status is not done", () => {
+      const { result } = renderHook(() =>
+        useAddContractForm({ deps: makeDeps() }),
+      );
+      act(() => {
+        result.current.setName("Token");
+        result.current.setAddress(VALID_ADDRESS);
+        // mode is "fetch" by default, fetch.status is "idle"
+      });
+      expect(result.current.canSubmit).toBe(false);
+    });
+  });
+
+  // ── 7. Editing mode ───────────────────────────────────────────────────────
+
+  describe("editing mode", () => {
+    it("pre-populates from existing contract and calls updateContract on submit", async () => {
+      const existing: TContract = {
+        id: "existing-id",
+        name: "Old Name",
+        chainId: 137,
+        address: VALID_ADDRESS,
+        abi: erc20Abi,
+        source: "sourcify",
+        addedAt: 1000,
+      };
+
+      const deps = makeDeps();
+      const { result } = renderHook(() =>
+        useAddContractForm({ editing: existing, deps }),
+      );
+
+      expect(result.current.name).toBe("Old Name");
+      expect(result.current.chainId).toBe(137);
+      expect(result.current.address).toBe(VALID_ADDRESS);
+
+      act(() => {
+        result.current.setName("New Name");
+        result.current.setMode("manual");
+        result.current.setAbiText(JSON.stringify(erc20Abi));
+      });
+
+      let submitResult: boolean = false;
+      act(() => {
+        submitResult = result.current.submit();
+      });
+
+      expect(submitResult).toBe(true);
+      expect(deps.updateContract).toHaveBeenCalledOnce();
+      expect(deps.addContract).not.toHaveBeenCalled();
+
+      const callArgs = (deps.updateContract as ReturnType<typeof vi.fn>).mock
+        .calls[0] as [string, TContract];
+      expect(callArgs[0]).toBe("existing-id");
+      const patch = callArgs[1];
+      expect(patch.id).toBe("existing-id");
+      expect(patch.name).toBe("New Name");
+      expect(patch.addedAt).toBe(1000);
+    });
+  });
+});
