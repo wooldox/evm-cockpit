@@ -15,7 +15,12 @@ export default defineConfig({
         "src/entities/**/model/*.ts",
         "src/widgets/app-shell/lib/**/*.ts",
       ],
-      exclude: ["**/*.test.ts", "**/*.test.tsx", "**/fixtures.ts", "**/types.ts"],
+      exclude: [
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/fixtures.ts",
+        "**/types.ts",
+      ],
       thresholds: { lines: 95, functions: 95, branches: 90, statements: 95 },
     },
   },
