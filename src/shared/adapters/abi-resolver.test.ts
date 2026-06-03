@@ -4,13 +4,13 @@ import type { AbiSource, AbiFetchResult } from "@/shared/ports/abi-source";
 
 const MOCK_ABI = [
   {
-    type: "function",
+    type: "function" as const,
     name: "name",
     inputs: [],
     outputs: [{ name: "", type: "string" }],
-    stateMutability: "view",
+    stateMutability: "view" as const,
   },
-];
+] satisfies import("abitype").Abi;
 
 function makeSource(
   result: AbiFetchResult,
@@ -20,7 +20,11 @@ function makeSource(
 
 describe("createAbiResolver", () => {
   it("returns the sourcify result immediately when it succeeds (short-circuit)", async () => {
-    const sourcify = makeSource({ ok: true, abi: MOCK_ABI, source: "sourcify" });
+    const sourcify = makeSource({
+      ok: true,
+      abi: MOCK_ABI,
+      source: "sourcify",
+    });
     const etherscan = makeSource({
       ok: true,
       abi: MOCK_ABI,
@@ -79,7 +83,11 @@ describe("createAbiResolver", () => {
   });
 
   it("works with a single source", async () => {
-    const sourcify = makeSource({ ok: true, abi: MOCK_ABI, source: "sourcify" });
+    const sourcify = makeSource({
+      ok: true,
+      abi: MOCK_ABI,
+      source: "sourcify",
+    });
     const resolver = createAbiResolver([sourcify]);
     const result = await resolver.fetchAbi(1, "0xabc");
     expect(result.ok).toBe(true);
