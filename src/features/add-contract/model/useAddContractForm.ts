@@ -91,6 +91,12 @@ export type AddContractFormResult = {
   submit: () => boolean;
 };
 
+// ─── Internal fetch state (includes key for staleness detection) ─────────────
+
+/** Internal shape stored in state — extends the public FetchState with a key
+ *  that records which address+chainId the fetch was performed for. */
+type InternalFetchState = FetchState & { _fetchKey?: string };
+
 // ─── Resolved data ref ───────────────────────────────────────────────────────
 
 type ResolvedData = {
@@ -120,13 +126,19 @@ export function useAddContractForm(opts?: {
     editing?.abi ? JSON.stringify(editing.abi, null, 2) : "",
   );
   const [mode, setMode] = useState<"fetch" | "manual">("fetch");
-  const [fetchState, setFetchState] = useState<FetchState>({ status: "idle" });
+  const [fetchState, setFetchState] = useState<InternalFetchState>({
+    status: "idle",
+  });
   const [abiError, setAbiError] = useState<string | undefined>(undefined);
 
   // Store resolved fetch data across renders without triggering re-renders
   const resolvedRef = useRef<ResolvedData | null>(null);
 
   // ── Derived ─────────────────────────────────────────────────────────────
+  // A key uniquely identifying what the current fetch would be for.
+  // When address or chainId changes, the key drifts from what resolvedRef recorded,
+  // making the previous fetch result stale without needing a useEffect.
+  const currentFetchKey = `${chainId}:${address}`;
   const addrValid = address.length > 0 && isValidAddress(address);
 
   const errors: FormErrors = {};
@@ -146,11 +158,26 @@ export function useAddContractForm(opts?: {
     }
   }
 
+  // Effective fetch state exposed to consumers: if the fetch was done for a
+  // different address/chainId, the result is stale — expose "idle" so the UI
+  // correctly requires a fresh fetch for the current inputs.
+  // We compare purely against state (_fetchKey stored in the state object) to
+  // avoid reading refs during render, which the project's linting rules forbid.
+  const fetchResultIsStale =
+    fetchState.status === "done" && fetchState._fetchKey !== currentFetchKey;
+
+  // Strip the internal _fetchKey before exposing to consumers
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { _fetchKey: _stripped, ...publicFetchState } = fetchState;
+  const effectiveFetchState: FetchState = fetchResultIsStale
+    ? { status: "idle" }
+    : publicFetchState;
+
   const canSubmit: boolean = (() => {
     if (!name.trim()) return false;
     if (!addrValid) return false;
     if (mode === "fetch") {
-      return fetchState.status === "done";
+      return effectiveFetchState.status === "done";
     }
     // manual
     if (abiText.trim().length === 0) return false;
@@ -162,6 +189,8 @@ export function useAddContractForm(opts?: {
 
   async function fetchAbi(): Promise<void> {
     if (!addrValid) return;
+    // Snapshot the key at the moment of initiating the fetch
+    const fetchKey = currentFetchKey;
     setFetchState({ status: "loading" });
     resolvedRef.current = null;
 
@@ -191,6 +220,13 @@ export function useAddContractForm(opts?: {
           implAbi: ri.abi,
         };
         effective = [...abi, ...ri.abi];
+      } else {
+        // Proxy detected but impl ABI unavailable — record the proxy without implAbi
+        proxy = {
+          kind: p.kind,
+          implAddress: p.implAddress as TAddress,
+        };
+        // effective stays as proxy's own ABI
       }
     }
 
@@ -204,7 +240,7 @@ export function useAddContractForm(opts?: {
 
     resolvedRef.current = { abi, source, proxy };
 
-    setFetchState({ status: "done", categories, proxy });
+    setFetchState({ status: "done", categories, proxy, _fetchKey: fetchKey });
   }
 
   function submit(): boolean {
@@ -231,8 +267,9 @@ export function useAddContractForm(opts?: {
       source = "manual";
       proxy = undefined;
     } else {
-      // fetch mode
-      if (fetchState.status !== "done" || !resolvedRef.current) {
+      // fetch mode — effectiveFetchState is already "idle" when stale,
+      // so this guard also rejects stale results.
+      if (effectiveFetchState.status !== "done" || !resolvedRef.current) {
         return false;
       }
       abi = resolvedRef.current.abi;
@@ -272,7 +309,7 @@ export function useAddContractForm(opts?: {
     mode,
     setMode,
     addrValid,
-    fetch: fetchState,
+    fetch: effectiveFetchState,
     errors,
     canSubmit,
     fetchAbi,

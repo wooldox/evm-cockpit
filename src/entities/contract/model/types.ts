@@ -17,7 +17,7 @@ export type TProxyKind = "eip1967" | "beacon";
 export type TProxyInfo = {
   kind: TProxyKind;
   implAddress: TAddress;
-  implAbi: Abi;
+  implAbi?: Abi;
 };
 
 export type TContract = {

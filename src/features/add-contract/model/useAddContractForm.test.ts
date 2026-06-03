@@ -319,6 +319,101 @@ describe("useAddContractForm", () => {
     });
   });
 
+  // ── 3b. Proxy detected but impl ABI fetch fails ───────────────────────────
+
+  describe("fetch mode – proxy detected, impl ABI unavailable", () => {
+    it("proxy recorded without implAbi; status done; submit stores proxy", async () => {
+      const abiResolver: AbiSource = {
+        fetchAbi: vi
+          .fn()
+          .mockResolvedValueOnce({
+            ok: true,
+            abi: erc20Abi,
+            source: "sourcify" as const,
+          })
+          .mockResolvedValueOnce({ ok: false, error: "impl not verified" }),
+      };
+
+      const deps = makeDeps({
+        abiResolver,
+        detectProxy: vi.fn().mockResolvedValue({
+          kind: "eip1967",
+          implAddress: IMPL_ADDRESS,
+        }),
+      });
+
+      const { result } = renderHook(() => useAddContractForm({ deps }));
+
+      act(() => {
+        result.current.setName("ProxyNoImpl");
+        result.current.setAddress(VALID_ADDRESS);
+      });
+
+      await act(async () => {
+        await result.current.fetchAbi();
+      });
+
+      expect(result.current.fetch.status).toBe("done");
+      expect(result.current.fetch.proxy).toBeDefined();
+      expect(result.current.fetch.proxy?.kind).toBe("eip1967");
+      expect(result.current.fetch.proxy?.implAddress).toBe(IMPL_ADDRESS);
+      expect(result.current.fetch.proxy?.implAbi).toBeUndefined();
+
+      let submitResult: boolean = false;
+      act(() => {
+        submitResult = result.current.submit();
+      });
+
+      expect(submitResult).toBe(true);
+      const called = (
+        (deps.addContract as ReturnType<typeof vi.fn>).mock.calls[0] as [
+          TContract,
+        ]
+      )[0];
+      expect(called.proxy).toBeDefined();
+      expect(called.proxy?.kind).toBe("eip1967");
+      expect(called.proxy?.implAddress).toBe(IMPL_ADDRESS);
+      expect(called.proxy?.implAbi).toBeUndefined();
+    });
+  });
+
+  // ── 3c. Fetch state reset on address/chainId change ───────────────────────
+
+  describe("fetch state reset", () => {
+    it("changing address after successful fetch resets status to idle and canSubmit to false", async () => {
+      const deps = makeDeps({
+        abiResolver: makeAbiSource({
+          ok: true,
+          abi: erc20Abi,
+          source: "sourcify",
+        }),
+        detectProxy: vi.fn().mockResolvedValue(null),
+      });
+
+      const { result } = renderHook(() => useAddContractForm({ deps }));
+
+      act(() => {
+        result.current.setName("Token");
+        result.current.setAddress(VALID_ADDRESS);
+      });
+
+      await act(async () => {
+        await result.current.fetchAbi();
+      });
+
+      expect(result.current.fetch.status).toBe("done");
+      expect(result.current.canSubmit).toBe(true);
+
+      // Change to a different valid address
+      act(() => {
+        result.current.setAddress(("0x" + "9".repeat(40)) as `0x${string}`);
+      });
+
+      expect(result.current.fetch.status).toBe("idle");
+      expect(result.current.canSubmit).toBe(false);
+    });
+  });
+
   // ── 4. Fetch error ────────────────────────────────────────────────────────
 
   describe("fetch mode – resolver error", () => {

@@ -210,10 +210,16 @@ export function AddContractModal({ onClose, editing }: AddContractModalProps) {
                 <div className="flex items-center gap-[7px] rounded-xs border border-read-border bg-read-bg px-2.5 py-[7px] text-xs text-fg-2">
                   <Icon.layers size={13} className="text-read-fg" />
                   <strong className="font-semibold text-read-fg">
-                    EIP-1967 proxy detected
+                    {f.fetch.proxy.kind === "beacon"
+                      ? "Beacon proxy detected"
+                      : "EIP-1967 proxy detected"}
                   </strong>{" "}
                   — implementation{" "}
-                  <Mono>{trunc(f.fetch.proxy.implAddress)}</Mono> ABI merged.
+                  <Mono>{trunc(f.fetch.proxy.implAddress)}</Mono>{" "}
+                  {f.fetch.proxy.implAbi
+                    ? "ABI merged automatically"
+                    : "(implementation ABI unavailable)"}
+                  .
                 </div>
               )}
             </div>
