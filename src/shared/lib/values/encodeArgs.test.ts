@@ -31,4 +31,28 @@ describe("encodeCall", () => {
     if (result.ok) return;
     expect(result.errors[0]?.message).toContain("not found");
   });
+
+  it("dispatches the 1-arg mint overload", () => {
+    const result = encodeCall(erc20Abi, "mint", ["100"]);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const expected = encodeFunctionData({
+      abi: erc20Abi,
+      functionName: "mint",
+      args: [100n],
+    });
+    expect(result.data).toBe(expected);
+  });
+
+  it("dispatches the 2-arg mint overload", () => {
+    const result = encodeCall(erc20Abi, "mint", [to, "100"]);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const expected = encodeFunctionData({
+      abi: erc20Abi,
+      functionName: "mint",
+      args: [to, 100n],
+    });
+    expect(result.data).toBe(expected);
+  });
 });
