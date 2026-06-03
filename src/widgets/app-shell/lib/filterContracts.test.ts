@@ -12,12 +12,20 @@ describe("filterAndGroup", () => {
     expect(g[0]!.contracts.length).toBe(2);
   });
   it("restricts to current chain when scope=current", () => {
-    const g = filterAndGroup(C, { scope: "current", query: "", currentChainId: 8453 });
+    const g = filterAndGroup(C, {
+      scope: "current",
+      query: "",
+      currentChainId: 8453,
+    });
     expect(g).toHaveLength(1);
     expect(g[0]!.chainId).toBe(8453);
   });
   it("filters by name/address case-insensitive", () => {
-    const g = filterAndGroup(C, { scope: "all", query: "yield", currentChainId: 1 });
+    const g = filterAndGroup(C, {
+      scope: "all",
+      query: "yield",
+      currentChainId: 1,
+    });
     expect(g.flatMap((x) => x.contracts).map((c) => c.id)).toEqual(["3"]);
   });
 });
