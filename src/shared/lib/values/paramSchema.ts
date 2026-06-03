@@ -58,14 +58,20 @@ export function paramSchema(type: string): z.ZodType {
   if (type === "address") return addressSchema;
   if (type === "bool") return boolSchema;
   if (type === "string") return z.string();
-  if (type === "bytes") return z.string().refine(isHex, "expected hex");
+  if (type === "bytes")
+    return z
+      .string()
+      .refine(
+        (v) => isHex(v) && (v.length - 2) % 2 === 0,
+        "expected even-length hex",
+      );
 
-  const uint = /^uint(\d+)$/.exec(type);
-  if (uint) return uintSchema(Number(uint[1]));
-  const int = /^int(\d+)$/.exec(type);
-  if (int) return intSchema(Number(int[1]));
-  const bytes = /^bytes(\d+)$/.exec(type);
-  if (bytes) return fixedBytesSchema(Number(bytes[1]));
+  const uintMatch = /^uint(\d+)$/.exec(type);
+  if (uintMatch) return uintSchema(Number(uintMatch[1]));
+  const intMatch = /^int(\d+)$/.exec(type);
+  if (intMatch) return intSchema(Number(intMatch[1]));
+  const bytesMatch = /^bytes(\d+)$/.exec(type);
+  if (bytesMatch) return fixedBytesSchema(Number(bytesMatch[1]));
 
   return z.unknown();
 }
