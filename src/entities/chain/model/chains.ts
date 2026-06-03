@@ -31,6 +31,7 @@ const SUPPORTED: ViemChain[] = [
   polygon,
   sepolia,
 ];
+export const SUPPORTED_VIEM_CHAINS: ViemChain[] = SUPPORTED;
 function toDisplay(c: ViemChain): TChainDisplay {
   const m = META[c.id];
   return {
