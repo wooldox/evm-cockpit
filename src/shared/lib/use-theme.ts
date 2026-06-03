@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { startTransition, useCallback, useEffect, useState } from "react";
 
 export type Theme = "dark" | "light";
 
@@ -14,7 +14,8 @@ export function useTheme(): [Theme, (t: Theme) => void, () => void] {
 
   useEffect(() => {
     const current = document.documentElement.getAttribute("data-theme");
-    if (current === "light" || current === "dark") setThemeState(current);
+    if (current === "light" || current === "dark")
+      startTransition(() => setThemeState(current));
   }, []);
 
   const setTheme = useCallback((t: Theme) => {
