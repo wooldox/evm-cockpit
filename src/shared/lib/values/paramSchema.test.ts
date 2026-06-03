@@ -85,4 +85,30 @@ describe("paramSchema", () => {
     const s = paramSchema("tuple");
     expect(s.safeParse({ anything: true }).success).toBe(true);
   });
+
+  it("rejects unsafe-integer number inputs for uint256", () => {
+    const s = paramSchema("uint256");
+    expect(s.safeParse(9007199254740993).success).toBe(false); // > MAX_SAFE_INTEGER
+    expect(s.safeParse(100).success).toBe(true);
+  });
+
+  it("rejects non-numeric string for uint256", () => {
+    const s = paramSchema("uint256");
+    expect(s.safeParse("notanumber").success).toBe(false);
+  });
+
+  it("rejects unsafe-integer number and non-numeric string for int256", () => {
+    const s = paramSchema("int256");
+    expect(s.safeParse(9007199254740993).success).toBe(false); // > MAX_SAFE_INTEGER
+    expect(s.safeParse(100).success).toBe(true);
+    expect(s.safeParse("notanumber").success).toBe(false);
+  });
+
+  it("validates a fixed-size address[3] array", () => {
+    const s = paramSchema("address[3]");
+    const a = "0x4E639304D9229AF411020C45b6b4c0ac105225c4";
+    expect(s.safeParse([a, a, a]).success).toBe(true);
+    expect(s.safeParse([a, a]).success).toBe(false); // wrong length
+    expect(s.safeParse([a, a, "0xbad"]).success).toBe(false); // bad element
+  });
 });

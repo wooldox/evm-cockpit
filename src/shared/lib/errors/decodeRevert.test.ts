@@ -36,4 +36,10 @@ describe("decodeRevert", () => {
     });
     expect(decodeRevert(erc20Abi, data)).toBe("panic(17)");
   });
+
+  it("decodes a custom error with no args", () => {
+    const abi = [{ type: "error", name: "Unauthorized", inputs: [] }] as const;
+    const data = encodeErrorResult({ abi, errorName: "Unauthorized" });
+    expect(decodeRevert(abi, data)).toBe("Unauthorized");
+  });
 });

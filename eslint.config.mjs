@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Non-app files: design prototypes and generated output
     "docs/**",
+    // Test coverage output
+    "coverage/**",
   ]),
 ]);
 

@@ -55,4 +55,27 @@ describe("encodeCall", () => {
     });
     expect(result.data).toBe(expected);
   });
+
+  it("rejects a wrong argument count", () => {
+    const result = encodeCall(erc20Abi, "transfer", [to]); // transfer needs 2 args
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors[0]?.message).toContain("expected 2");
+  });
+
+  it("uses arg index as name when input has no name", () => {
+    const abi: import("viem").Abi = [
+      {
+        type: "function",
+        name: "unnamed",
+        stateMutability: "pure",
+        inputs: [{ type: "address" }],
+        outputs: [],
+      },
+    ];
+    const result = encodeCall(abi, "unnamed", ["0xbad"]);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors[0]?.name).toBe("arg0");
+  });
 });

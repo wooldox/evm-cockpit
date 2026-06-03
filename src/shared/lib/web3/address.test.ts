@@ -16,4 +16,8 @@ describe("address helpers", () => {
   it("truncates with default head/tail", () => {
     expect(truncateAddress(addr)).toBe("0x4E63…25c4");
   });
+
+  it("returns short input unchanged", () => {
+    expect(truncateAddress("0x123")).toBe("0x123");
+  });
 });

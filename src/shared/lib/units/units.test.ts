@@ -26,6 +26,10 @@ describe("units", () => {
     expect(() => toBaseUnits("1.5", "wei")).toThrow();
   });
 
+  it("formats base units with an eth unit string", () => {
+    expect(fromBaseUnits(1_000_000_000_000_000_000n, "ether")).toBe("1");
+  });
+
   const _typecheck: EthUnit = "ether";
   void _typecheck;
 });

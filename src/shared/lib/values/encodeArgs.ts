@@ -28,6 +28,19 @@ export function encodeCall(
       errors: [{ index: -1, name, message: "function not found" }],
     };
 
+  if (fn.inputs.length !== rawArgs.length) {
+    return {
+      ok: false,
+      errors: [
+        {
+          index: -1,
+          name,
+          message: `expected ${fn.inputs.length} args, got ${rawArgs.length}`,
+        },
+      ],
+    };
+  }
+
   const args: unknown[] = [];
   const errors: EncodeError[] = [];
 

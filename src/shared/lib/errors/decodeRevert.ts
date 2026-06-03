@@ -2,9 +2,9 @@ import { decodeErrorResult, type Abi } from "viem";
 
 /** Decode revert data into a human-readable string. Handles Error(string),
  *  Panic(uint256), and custom errors declared in the ABI. */
-export function decodeRevert(abi: Abi, data: `0x${string}` | string): string {
+export function decodeRevert(abi: Abi, data: `0x${string}`): string {
   try {
-    const decoded = decodeErrorResult({ abi, data: data as `0x${string}` });
+    const decoded = decodeErrorResult({ abi, data });
     if (decoded.errorName === "Error") {
       return `reverted: ${JSON.stringify(decoded.args?.[0])}`;
     }
