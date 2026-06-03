@@ -80,6 +80,7 @@ function ChainSelector() {
    ============================================================ */
 export function TopBar() {
   const [theme, , toggle] = useTheme();
+  const { openSettings } = useAppShell();
 
   return (
     <header className="z-20 flex h-[54px] flex-none items-center gap-2.5 border-b border-border bg-[color-mix(in_oklab,var(--bg-elev-1)_75%,transparent)] px-[18px] backdrop-blur-[10px]">
@@ -95,10 +96,8 @@ export function TopBar() {
       </button>
       <button
         type="button"
-        title="Settings (coming soon)"
-        onClick={() => {
-          // TODO(M2c): open Settings modal
-        }}
+        title="Settings"
+        onClick={openSettings}
         className="grid size-[34px] place-items-center rounded-sm border border-transparent bg-transparent text-fg-2 cursor-pointer transition-colors hover:bg-elev-3 hover:text-fg"
       >
         <Icon.settings size={16} />
