@@ -38,7 +38,10 @@ export function createEtherscanAbiSource(getApiKey: () => string): AbiSource {
           }
           return { ok: true, abi, source: "etherscan" };
         }
-        return { ok: false, error: data.message || data.result };
+        return {
+          ok: false,
+          error: data.result || data.message || "unknown Etherscan error",
+        };
       } catch (err) {
         return {
           ok: false,

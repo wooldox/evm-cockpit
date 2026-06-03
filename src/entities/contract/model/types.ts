@@ -12,7 +12,7 @@ export type TUid = string;
 
 export type TAbiSource = "manual" | "sourcify" | "etherscan";
 
-export type TProxyKind = "eip1967" | "uups" | "beacon";
+export type TProxyKind = "eip1967" | "beacon";
 
 export type TProxyInfo = {
   kind: TProxyKind;

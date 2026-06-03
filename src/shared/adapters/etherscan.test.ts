@@ -85,6 +85,28 @@ describe("createEtherscanAbiSource", () => {
     }
   });
 
+  it("returns ok:false with result text when rate-limited (result takes precedence over message)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          status: "0",
+          message: "NOTOK",
+          result: "Max rate limit reached",
+        }),
+      }),
+    );
+
+    const source = createEtherscanAbiSource(() => "MY_API_KEY");
+    const result = await source.fetchAbi(1, "0xdeadbeef");
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toBe("Max rate limit reached");
+    }
+  });
+
   it("returns ok:false when fetch throws a network error", async () => {
     vi.stubGlobal(
       "fetch",
