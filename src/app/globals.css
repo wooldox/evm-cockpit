@@ -1,26 +1,382 @@
+/* ============================================================
+   EVM Cockpit — Tailwind v4 entry (CSS-first)
+   ------------------------------------------------------------
+   Strategy
+   --------
+   The existing design is a theme-aware CSS-variable system: tokens
+   live under :root / [data-theme="dark"|"light"] and switch at runtime.
+   Tailwind v4 lets us keep that EXACTLY as-is and simply *project* the
+   tokens into Tailwind's theme namespaces via `@theme inline`, so a
+   utility like `bg-elev-2` compiles to `background-color: var(--bg-elev-2)`
+   — i.e. it follows the live [data-theme], runtime Tweaks, everything.
+
+   - Theme-aware values (colors, shadows) → plain vars in :root/[data-theme]
+   - `@theme inline { --color-*: var(--<token>) }` → generates utilities
+     that REFERENCE the token (not its build-time value), so theming works.
+   - Radius lives in `@theme` directly so the runtime "Corners" tweak can
+     override --radius-* on <html> and every `rounded-*` utility updates.
+   - Fonts reference next/font's --font-geist-sans / --font-geist-mono.
+   ============================================================ */
+
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* Tell Tailwind that dark mode is driven by the data-theme attribute,
+   so `dark:` variants (if you reach for them) match [data-theme="dark"]. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
+/* ------------------------------------------------------------
+   THEME PROJECTION — maps our tokens into Tailwind utilities.
+   `inline` = emit `var(--token)` into utilities (keeps theming live).
+   ------------------------------------------------------------ */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* fonts come from next/font (see layout.tsx) */
+  --font-sans:
+    var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --font-mono:
+    var(--font-geist-mono), ui-monospace, "SF Mono", "JetBrains Mono", monospace;
+
+  /* surfaces */
+  --color-surface: var(--bg);
+  --color-elev-1: var(--bg-elev-1);
+  --color-elev-2: var(--bg-elev-2);
+  --color-elev-3: var(--bg-elev-3);
+  --color-elev-4: var(--bg-elev-4);
+  --color-inset: var(--bg-inset);
+
+  /* borders */
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  /* foreground text ramp */
+  --color-fg: var(--text);
+  --color-fg-2: var(--text-2);
+  --color-fg-3: var(--text-3);
+  --color-fg-4: var(--text-4);
+
+  /* READ — blue (safe / free) */
+  --color-read: var(--read);
+  --color-read-fg: var(--read-fg);
+  --color-read-hover: var(--read-hover);
+  --color-read-bg: var(--read-bg);
+  --color-read-bg-strong: var(--read-bg-strong);
+  --color-read-border: var(--read-border);
+  --color-read-on: var(--read-on);
+
+  /* WRITE — amber (sends a transaction) */
+  --color-write: var(--write);
+  --color-write-fg: var(--write-fg);
+  --color-write-hover: var(--write-hover);
+  --color-write-bg: var(--write-bg);
+  --color-write-bg-strong: var(--write-bg-strong);
+  --color-write-border: var(--write-border);
+  --color-write-on: var(--write-on);
+
+  /* SUCCESS — green (will succeed) */
+  --color-success: var(--success);
+  --color-success-fg: var(--success-fg);
+  --color-success-bg: var(--success-bg);
+  --color-success-border: var(--success-border);
+
+  /* DANGER — red (will revert / error) */
+  --color-danger: var(--danger);
+  --color-danger-fg: var(--danger-fg);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-bg-strong: var(--danger-bg-strong);
+  --color-danger-border: var(--danger-border);
+  --color-danger-on: var(--danger-on);
+
+  /* neutral chip */
+  --color-neutral-bg: var(--neutral-bg);
+  --color-neutral-border: var(--neutral-border);
+
+  /* keyframe-backed animations */
+  --animate-shimmer: shimmer 1.4s ease infinite;
+  --animate-fade-in: fade 0.17s var(--ease);
+  --animate-pop-in: pop 0.17s var(--ease);
+  --animate-toast-in: toastIn 0.17s var(--ease);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ------------------------------------------------------------
+   RADIUS — in @theme (not inline) so `rounded-*` references
+   --radius-* and the runtime Corners tweak can override them.
+   ------------------------------------------------------------ */
+@theme {
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 999px;
+}
+
+/* ============================================================
+   DESIGN TOKENS — theme-aware (unchanged names; integrates with
+   your existing tokens.css 1:1). These are what `@theme inline`
+   points at, so switching [data-theme] re-themes every utility.
+   ============================================================ */
+:root {
+  /* neutral ramp (cool-gray) — used by scrollbars + a few accents */
+  --gray-950: #0a0c10;
+  --gray-925: #0c0e13;
+  --gray-900: #0f1217;
+  --gray-875: #12151b;
+  --gray-850: #15191f;
+  --gray-800: #1a1e25;
+  --gray-750: #20252d;
+  --gray-700: #272d36;
+  --gray-650: #323a44;
+  --gray-600: #3d4651;
+  --gray-500: #515b68;
+  --gray-400: #6b7682;
+  --gray-300: #8b96a3;
+  --gray-250: #a4afbd;
+  --gray-200: #c2ccd8;
+  --gray-100: #dde4ec;
+  --gray-50: #eef2f7;
+
+  /* motion */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 110ms;
+  --dur: 170ms;
+}
+
+/* DARK (default) */
+:root,
+[data-theme="dark"] {
+  --bg: var(--gray-950);
+  --bg-elev-1: #0d1014;
+  --bg-elev-2: #13161c;
+  --bg-elev-3: #1a1e25;
+  --bg-elev-4: #21262e;
+  --bg-inset: #090a0d;
+
+  --border: #20242c;
+  --border-strong: #2c333d;
+  --border-focus: rgba(96, 165, 250, 0.55);
+
+  --text: #e8edf3;
+  --text-2: #aeb8c4;
+  --text-3: #7d8896;
+  --text-4: #5a6573;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md:
+    0 6px 20px -4px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg:
+    0 20px 50px -12px rgba(0, 0, 0, 0.7), 0 4px 14px rgba(0, 0, 0, 0.45);
+  --shadow-pop: 0 12px 32px -8px rgba(0, 0, 0, 0.6);
+
+  --read: #3b82f6;
+  --read-fg: #6aa6ff;
+  --read-hover: #4f8ef7;
+  --read-bg: rgba(59, 130, 246, 0.12);
+  --read-bg-strong: rgba(59, 130, 246, 0.18);
+  --read-border: rgba(96, 165, 250, 0.32);
+  --read-on: #ffffff;
+
+  --write: #f59e0b;
+  --write-fg: #f7b53d;
+  --write-hover: #f3a924;
+  --write-bg: rgba(245, 158, 11, 0.13);
+  --write-bg-strong: rgba(245, 158, 11, 0.2);
+  --write-border: rgba(245, 158, 11, 0.36);
+  --write-on: #1a1206;
+
+  --success: #22c55e;
+  --success-fg: #4ade80;
+  --success-bg: rgba(34, 197, 94, 0.13);
+  --success-border: rgba(74, 222, 128, 0.32);
+
+  --danger: #ef4444;
+  --danger-fg: #f87171;
+  --danger-bg: rgba(239, 68, 68, 0.13);
+  --danger-bg-strong: rgba(239, 68, 68, 0.2);
+  --danger-border: rgba(248, 113, 113, 0.34);
+  --danger-on: #ffffff;
+
+  --neutral-bg: rgba(139, 150, 163, 0.13);
+  --neutral-border: rgba(139, 150, 163, 0.26);
+
+  --selection: rgba(59, 130, 246, 0.3);
+}
+
+/* LIGHT */
+[data-theme="light"] {
+  --bg: #fbfcfd;
+  --bg-elev-1: #f5f7fa;
+  --bg-elev-2: #ffffff;
+  --bg-elev-3: #f1f4f8;
+  --bg-elev-4: #e8edf3;
+  --bg-inset: #f3f5f8;
+
+  --border: #e5e9ef;
+  --border-strong: #d3dae3;
+  --border-focus: rgba(37, 99, 235, 0.5);
+
+  --text: #0d1117;
+  --text-2: #475467;
+  --text-3: #667085;
+  --text-4: #98a2b3;
+
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-md:
+    0 6px 20px -6px rgba(16, 24, 40, 0.12), 0 2px 6px rgba(16, 24, 40, 0.06);
+  --shadow-lg:
+    0 20px 48px -12px rgba(16, 24, 40, 0.2), 0 4px 12px rgba(16, 24, 40, 0.08);
+  --shadow-pop: 0 10px 30px -8px rgba(16, 24, 40, 0.16);
+
+  --read: #2563eb;
+  --read-fg: #1d4ed8;
+  --read-hover: #1d4ed8;
+  --read-bg: rgba(37, 99, 235, 0.08);
+  --read-bg-strong: rgba(37, 99, 235, 0.13);
+  --read-border: rgba(37, 99, 235, 0.28);
+  --read-on: #ffffff;
+
+  --write: #d97706;
+  --write-fg: #b45309;
+  --write-hover: #c2680a;
+  --write-bg: rgba(217, 119, 6, 0.1);
+  --write-bg-strong: rgba(217, 119, 6, 0.16);
+  --write-border: rgba(217, 119, 6, 0.34);
+  --write-on: #ffffff;
+
+  --success: #16a34a;
+  --success-fg: #15803d;
+  --success-bg: rgba(22, 163, 74, 0.1);
+  --success-border: rgba(22, 163, 74, 0.3);
+
+  --danger: #dc2626;
+  --danger-fg: #b91c1c;
+  --danger-bg: rgba(220, 38, 38, 0.08);
+  --danger-bg-strong: rgba(220, 38, 38, 0.14);
+  --danger-border: rgba(220, 38, 38, 0.3);
+  --danger-on: #ffffff;
+
+  --neutral-bg: rgba(71, 84, 103, 0.08);
+  --neutral-border: rgba(71, 84, 103, 0.2);
+
+  --selection: rgba(37, 99, 235, 0.18);
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  ::selection {
+    background: var(--selection);
+  }
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  /* custom scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--gray-500);
+    background-clip: padding-box;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ============================================================
+   UTILITIES — small helpers that read better as classes.
+   Everything else is plain Tailwind utilities in the components.
+   ============================================================ */
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+}
+@utility font-zero {
+  font-feature-settings: "zero" 1;
+  letter-spacing: -0.01em;
+}
+
+/* ============================================================
+   KEYFRAMES (referenced by --animate-* tokens above)
+   ============================================================ */
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================
+   DENSITY — compact mode tightens a few paddings/gaps, exactly
+   like the original `.density-compact` rules. Driven by
+   [data-density="compact"] on the app root; elements opt in with
+   data-cc="…" so the utilities stay otherwise untouched.
+   ============================================================ */
+[data-density="compact"] [data-cc="cb-body"] {
+  gap: 20px;
+}
+[data-density="compact"] [data-cc="fn-head"] {
+  padding: 8px 12px;
+}
+[data-density="compact"] [data-cc="fn-body"] {
+  padding: 0 12px 11px;
+}
+[data-density="compact"] [data-cc="kv-cell"] {
+  padding: 6px 12px;
+}
+[data-density="compact"] [data-cc="card-body"] {
+  padding: 11px;
+}
+[data-density="compact"] [data-cc="screen-pad"] {
+  padding-top: 18px;
+}
+[data-density="compact"] [data-cc="ch-head"] {
+  padding: 16px 24px 14px;
 }
