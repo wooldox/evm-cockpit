@@ -62,6 +62,7 @@ export function Modal({ title, onClose, children, footer, lg }: ModalProps) {
       <div
         role="dialog"
         aria-modal="true"
+        aria-labelledby="cc-modal-title"
         onMouseDown={(e) => e.stopPropagation()}
         className={cx(
           "flex max-h-[88vh] w-full flex-col rounded-lg border border-border-strong bg-elev-2",
@@ -70,7 +71,12 @@ export function Modal({ title, onClose, children, footer, lg }: ModalProps) {
         )}
       >
         <div className="flex items-center gap-3 border-b border-border px-[18px] py-4">
-          <div className="flex-1 text-base font-semibold text-fg">{title}</div>
+          <div
+            id="cc-modal-title"
+            className="flex-1 text-base font-semibold text-fg"
+          >
+            {title}
+          </div>
           <XBtn onClick={onClose} />
         </div>
         <div className="overflow-y-auto p-[18px]">{children}</div>

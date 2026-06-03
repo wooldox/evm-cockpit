@@ -43,7 +43,7 @@ export function Segment<T extends string>({
             key={o.value}
             type="button"
             role="tab"
-            aria-pressed={active}
+            aria-selected={active}
             title={o.title}
             onClick={() => onChange(o.value)}
             className={cx(

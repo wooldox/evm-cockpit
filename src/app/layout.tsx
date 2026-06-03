@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 
 // next/font exposes CSS variables that globals.css maps into Tailwind's
@@ -32,8 +31,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   // Dark-first. data-theme on <html> drives the whole token system; it's
-  // flipped at runtime by useTheme(). theme-init.js (in /public) re-applies
-  // the saved choice before paint, with no inline HTML.
+  // flipped at runtime by useTheme(). The inline <script> in <head> re-applies
+  // the saved choice before paint — synchronous so there is no flash.
   return (
     <html
       lang="en"
@@ -41,10 +40,15 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable}`}
       suppressHydrationWarning
     >
-      <body>
-        <Script src="/theme-init.js" strategy="beforeInteractive" />
-        {children}
-      </body>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var t=localStorage.getItem('cc-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}",
+          }}
+        />
+      </head>
+      <body>{children}</body>
     </html>
   );
 }
