@@ -1,4 +1,4 @@
-import type { Abi, AbiFunction, AbiEvent, AbiError, AbiConstructor } from "abitype";
+import type { Abi, AbiFunction } from "abitype";
 import type { TAbiCategories } from "@/entities/contract/model/types";
 
 const isReadable = (f: AbiFunction) =>
@@ -19,23 +19,22 @@ export function categorizeAbi(abi: Abi): TAbiCategories {
   for (const item of abi) {
     switch (item.type) {
       case "function": {
-        const fn = item as AbiFunction;
-        if (isReadable(fn)) {
-          if (fn.inputs.length === 0) result.properties.push(fn);
-          else result.getters.push(fn);
+        if (isReadable(item)) {
+          if (item.inputs.length === 0) result.properties.push(item);
+          else result.getters.push(item);
         } else {
-          result.operations.push(fn);
+          result.operations.push(item);
         }
         break;
       }
       case "event":
-        result.events.push(item as AbiEvent);
+        result.events.push(item);
         break;
       case "error":
-        result.errors.push(item as AbiError);
+        result.errors.push(item);
         break;
       case "constructor":
-        result.constructor = item as AbiConstructor;
+        result.constructor = item;
         break;
       case "fallback":
         result.hasFallback = true;

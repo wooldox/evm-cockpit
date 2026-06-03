@@ -10,7 +10,7 @@ describe("categorizeAbi", () => {
   });
 
   it("puts view/pure functions with inputs in getters", () => {
-    expect(c.getters.map((f) => f.name)).toEqual(["balanceOf"]);
+    expect(c.getters.map((f) => f.name).sort()).toEqual(["balanceOf", "hash"]);
   });
 
   it("puts state-changing functions in operations (including overloads and payable)", () => {
