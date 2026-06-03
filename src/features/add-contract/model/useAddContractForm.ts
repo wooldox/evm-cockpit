@@ -172,7 +172,7 @@ export function useAddContractForm(opts?: {
       return;
     }
 
-    let abi: Abi = r.abi;
+    const abi: Abi = r.abi;
     const source: TAbiSource = r.source;
     let proxy: TProxyInfo | undefined;
     let effective: Abi = abi;
