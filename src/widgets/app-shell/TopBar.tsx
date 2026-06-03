@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { CHAIN_LIST, getChainDisplay } from "@/entities/chain/model/chains";
-import { trunc } from "@/shared/lib/format";
 import { useTheme } from "@/shared/lib/use-theme";
 import { Icon } from "@/shared/icons";
 import { ChainGlyph } from "@/shared/ui";
-import { Ident } from "@/shared/ui/copyable";
 import { useAppShell } from "@/widgets/app-shell/AppShellProvider";
+import { WalletButton } from "@/app/web3/WalletButton";
 
 /* ============================================================
    ChainSelector
@@ -72,60 +71,6 @@ function ChainSelector() {
           </button>
         </div>
       )}
-    </div>
-  );
-}
-
-/* ============================================================
-   WalletButton
-   ============================================================ */
-function WalletButton() {
-  // TODO(M2c): replace mock wallet with RainbowKit ConnectButton
-  const { wallet, toggleWallet, currentChainId } = useAppShell();
-  const chain = getChainDisplay(currentChainId);
-
-  if (!wallet.connected) {
-    return (
-      <button
-        type="button"
-        onClick={toggleWallet}
-        className="inline-flex h-9 items-center gap-2 rounded-[11px] border-0 px-[15px] text-[13px] font-semibold text-white transition-[filter,box-shadow,transform] hover:brightness-110 active:translate-y-[0.5px]"
-        style={{
-          background:
-            "linear-gradient(135deg, var(--read) 0%, #7c5cff 55%, var(--write) 130%)",
-          boxShadow:
-            "0 2px 12px -2px color-mix(in oklab, var(--read) 50%, transparent)",
-        }}
-      >
-        <Icon.wallet size={15} /> Connect Wallet
-      </button>
-    );
-  }
-
-  return (
-    <div className="inline-flex items-stretch gap-1.5">
-      <button
-        type="button"
-        title={chain.name}
-        className="inline-flex h-9 items-center gap-[7px] rounded-[11px] border border-border-strong bg-elev-2 px-[11px] text-[13px] font-medium text-fg hover:bg-elev-3"
-      >
-        <ChainGlyph chain={chain} size={16} />
-        {chain.name}
-        <Icon.chevD size={13} className="opacity-60" />
-      </button>
-      <button
-        type="button"
-        onClick={toggleWallet}
-        className="inline-flex h-9 items-center gap-2.5 rounded-[11px] border border-border-strong bg-elev-2 pl-3 pr-1.5 hover:bg-elev-3"
-      >
-        <span className="font-mono text-[13px] font-medium text-fg">
-          2.418 ETH{/* TODO(M2c): real balance */}
-        </span>
-        <span className="inline-flex h-[26px] items-center gap-1.5 rounded-[8px] bg-elev-4 pl-1 pr-[9px] text-[13px] font-medium">
-          <Ident seed={wallet.address} size={18} />
-          <span className="font-mono">{trunc(wallet.address, 4)}</span>
-        </span>
-      </button>
     </div>
   );
 }
