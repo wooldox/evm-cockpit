@@ -15,6 +15,7 @@ import {
 } from "@/widgets/app-shell/lib/filterContracts";
 import { useAppShell } from "@/widgets/app-shell/AppShellProvider";
 import { Logo } from "@/widgets/app-shell/Logo";
+import { useContractsStore } from "@/entities/contract/model/store";
 
 /* ---------- ScopeBtn ---------- */
 function ScopeBtn({
@@ -49,11 +50,9 @@ function ScopeBtn({
 
 /* ---------- Sidebar ---------- */
 export function Sidebar({
-  contracts = [],
   currentId,
   onSelect,
 }: {
-  contracts?: SidebarContract[];
   currentId?: string;
   onSelect?: (id: string) => void;
 }) {
@@ -61,6 +60,15 @@ export function Sidebar({
   const pathname = usePathname();
   const [q, setQ] = useState("");
   const [scope, setScope] = useState<"all" | "current">("all");
+
+  const rawContracts = useContractsStore((s) => s.contracts);
+  const contracts: SidebarContract[] = rawContracts.map((c) => ({
+    id: c.id,
+    name: c.name,
+    address: c.address,
+    chainId: c.chainId,
+    proxy: !!c.proxy,
+  }));
 
   const currentChain = getChainDisplay(currentChainId);
   const groups = filterAndGroup(contracts, { scope, query: q, currentChainId });
@@ -99,7 +107,7 @@ export function Sidebar({
           icon={<Icon.plus size={15} />}
           title="Add contract"
           onClick={() => {
-            // TODO(M2c): open add-contract modal
+            // TODO(M2d): open add-contract modal
           }}
         />
       </div>
