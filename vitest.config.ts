@@ -7,6 +7,9 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
+    // Playwright specs live in e2e/ and use @playwright/test, not vitest. The
+    // default include glob (**/*.spec.ts) would otherwise pick up e2e/*.spec.ts.
+    exclude: ["**/node_modules/**", "**/dist/**", "e2e/**"],
     coverage: {
       provider: "v8",
       include: [

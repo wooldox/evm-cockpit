@@ -12,6 +12,8 @@ import {
 } from "@rainbow-me/rainbowkit";
 import { useTheme } from "@/shared/lib/use-theme";
 import { config } from "./config";
+import { IS_E2E } from "./e2e";
+import { E2EAutoConnect } from "./E2EAutoConnect";
 
 function RainbowKitThemed({ children }: { children: ReactNode }) {
   const [theme] = useTheme();
@@ -29,6 +31,7 @@ export function Web3Providers({ children }: { children: ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
+        {IS_E2E && <E2EAutoConnect />}
         <RainbowKitThemed>{children}</RainbowKitThemed>
       </QueryClientProvider>
     </WagmiProvider>

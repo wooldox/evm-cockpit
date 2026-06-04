@@ -11,6 +11,8 @@
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "test:integration": "vitest run -c vitest.integration.config.ts",
+    "build:e2e": "NEXT_PUBLIC_E2E=1 next build",
+    "test:e2e": "npm run build:e2e && playwright test -c e2e/playwright.config.ts",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
@@ -30,6 +32,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -41,6 +44,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
     "fake-indexeddb": "^6.2.5",
+    "http-server": "^14.1.1",
     "jsdom": "^29.1.1",
     "prettier": "^3.8.3",
     "tailwindcss": "^4",

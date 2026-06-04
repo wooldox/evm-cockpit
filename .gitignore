@@ -44,3 +44,9 @@ next-env.d.ts
 # foundry fixture build outputs (artifacts in src/test/artifacts are committed)
 /contracts/out/
 /contracts/cache/
+
+# playwright e2e outputs
+/test-results/
+/playwright-report/
+/e2e/test-results/
+/.playwright/

@@ -5,3 +5,5 @@ docs
 package-lock.json
 contracts
 src/test/artifacts
+test-results
+playwright-report

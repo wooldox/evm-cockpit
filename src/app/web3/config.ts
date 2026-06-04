@@ -1,6 +1,8 @@
 import { getDefaultConfig } from "@rainbow-me/rainbowkit";
 import type { Chain, Transport } from "viem";
 import { SUPPORTED_VIEM_CHAINS } from "@/entities/chain/model/chains";
+import { createE2EConfig } from "./configE2E";
+import { IS_E2E } from "./e2e";
 import { dynamicHttp } from "./dynamicHttp";
 
 // RainbowKit requires a non-empty tuple: readonly [Chain, ...Chain[]]
@@ -15,11 +17,24 @@ const transports = Object.fromEntries(
   chains.map((chain) => [chain.id, dynamicHttp(chain.id)]),
 ) as { [chainId: number]: Transport };
 
-export const config = getDefaultConfig({
-  appName: "EVM Cockpit",
-  projectId:
-    process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "cc-dev-placeholder",
-  chains,
-  transports,
-  ssr: false, // static export — client-only
-});
+// E2E build: swap the WalletConnect-backed getDefaultConfig for the mock-wallet
+// config (see configE2E.ts), selected by the build-time IS_E2E flag.
+//
+// IS_E2E reads NEXT_PUBLIC_E2E, which Next inlines at build time: the E2E build
+// (`build:e2e`) sets it to "1" so the mock branch is taken; a normal `next build`
+// leaves it unset so this expression resolves to getDefaultConfig at runtime and
+// the mock connector is never instantiated. (Turbopack does not fully prune the
+// unused E2E branch from the bundle when the var is unset, so the never-executed
+// mock config call + the public Anvil test address may still appear in the
+// production chunk — harmless dead code, no secrets.)
+export const config = IS_E2E
+  ? createE2EConfig(chains, transports)
+  : getDefaultConfig({
+      appName: "EVM Cockpit",
+      projectId:
+        process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ??
+        "cc-dev-placeholder",
+      chains,
+      transports,
+      ssr: false, // static export — client-only
+    });
