@@ -274,6 +274,78 @@ describe("OperationsSection", () => {
     );
   });
 
+  it("double-click Sign & Send → writeContractAsync once, one Sending toast", async () => {
+    // writeContractAsync parks on a deferred so the first send stays in-flight
+    // while the second click lands.
+    let resolveWrite: (h: `0x${string}`) => void = () => {};
+    writeContractAsync = vi.fn().mockReturnValue(
+      new Promise<`0x${string}`>((res) => {
+        resolveWrite = res;
+      }),
+    );
+    const user = userEvent.setup();
+    renderSection(makeFakeClient());
+
+    await expand(user, /^transfer/);
+    await user.type(
+      screen.getByPlaceholderText("0x0000000000000000000000000000000000000000"),
+      ACCOUNT,
+    );
+    await user.type(screen.getByPlaceholderText("0"), "1");
+    await user.click(screen.getByRole("button", { name: /^Simulate$/ }));
+    await screen.findByText("Will succeed");
+
+    const sign = screen.getByRole("button", { name: /Sign & Send/ });
+    // Two rapid clicks before the first send resolves.
+    await user.click(sign);
+    await user.click(sign);
+
+    expect(writeContractAsync).toHaveBeenCalledTimes(1);
+    expect(screen.getAllByText(/Sending transfer\(\)/)).toHaveLength(1);
+
+    // Let the in-flight send complete cleanly.
+    resolveWrite(HASH);
+    await screen.findByText(/Confirmed in block 99/);
+    expect(writeContractAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it("payable send → writeContractAsync gets value in wei (1 ether)", async () => {
+    const user = userEvent.setup();
+    renderSection(makeFakeClient());
+
+    await expand(user, /^deposit/);
+    // Default unit is ether; "1" ⇒ 1000000000000000000 wei.
+    await user.type(screen.getByPlaceholderText("0.0"), "1");
+    await user.click(screen.getByRole("button", { name: /^Simulate$/ }));
+    await screen.findByText("Will succeed");
+
+    await user.click(screen.getByRole("button", { name: /Sign & Send/ }));
+
+    await screen.findByText(/Confirmed in block 99/);
+    expect(writeContractAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        functionName: "deposit",
+        value: 1000000000000000000n,
+      }),
+    );
+  });
+
+  it("toggling the unit after a successful sim hides the verdict", async () => {
+    const user = userEvent.setup();
+    renderSection(makeFakeClient());
+
+    await expand(user, /^deposit/);
+    await user.type(screen.getByPlaceholderText("0.0"), "1");
+    await user.click(screen.getByRole("button", { name: /^Simulate$/ }));
+    await screen.findByText("Will succeed");
+
+    // Switching the unit invalidates the stale sim.
+    await user.click(screen.getByRole("button", { name: "wei" }));
+    await waitFor(() =>
+      expect(screen.queryByText("Will succeed")).not.toBeInTheDocument(),
+    );
+  });
+
   it("download click triggers a json download named <fn>-tx.json", async () => {
     const createObjectURL = vi.fn().mockReturnValue("blob:fake");
     const revokeObjectURL = vi.fn();

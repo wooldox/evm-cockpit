@@ -29,7 +29,11 @@ export function EthValueInput({
   onChange: (amount: string, unit: EthUnit) => void;
 }): JSX.Element {
   return (
-    <Field label="ETH value" type="payable" error={error}>
+    <Field
+      label="ETH value"
+      type={`payable · ${unit === "ether" ? "ETH" : unit}`}
+      error={error}
+    >
       <div className="relative flex items-center">
         <Input
           mono

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useAccount } from "wagmi";
 import type { AbiFunction } from "abitype";
 import type { TContract } from "@/entities/contract/model/types";
@@ -61,6 +61,8 @@ function OperationCard({
   const [ethUnit, setEthUnit] = useState<EthUnit>("ether");
 
   const toast = useToast();
+  /** Synchronous guard: blocks a second click before the disabled state commits. */
+  const sendBusyRef = useRef(false);
   const { address, isConnected, chainId: walletChainId } = useAccount();
 
   const sim = useSimulation(contract, fn, deps);
@@ -102,30 +104,43 @@ function OperationCard({
 
   async function handleSend(): Promise<void> {
     if (!done || !result || !result.ok) return;
-    toast({
-      kind: "write",
-      title: `Sending ${fn.name}()`,
-      msg: "Awaiting signature in wallet…",
-    });
-    const final = await sender.send({
-      args: done.parsedArgs,
-      value: done.parsedValue,
-      gas: result.gas,
-      rawArgs: args,
-    });
-    if (final.status === "confirmed") {
+    // Synchronous re-entrancy guard: a rapid second click lands before the
+    // button's disabled state commits (especially across switchChainAsync), so
+    // gate here to keep the "Sending" toast (and send) from firing twice.
+    if (sendBusyRef.current) return;
+    sendBusyRef.current = true;
+    try {
       toast({
-        kind: "success",
-        title: "Transaction confirmed",
-        msg: (
-          <>
-            <Mono>{trunc(final.hash, 6)}</Mono> · block{" "}
-            {final.blockNumber.toString()}
-          </>
-        ),
+        kind: "write",
+        title: `Sending ${fn.name}()`,
+        msg: "Awaiting signature in wallet…",
       });
-    } else if (final.status === "failed") {
-      toast({ kind: "error", title: `${fn.name}() failed`, msg: final.error });
+      const final = await sender.send({
+        args: done.parsedArgs,
+        value: done.parsedValue,
+        gas: result.gas,
+        rawArgs: args,
+      });
+      if (final.status === "confirmed") {
+        toast({
+          kind: "success",
+          title: "Transaction confirmed",
+          msg: (
+            <>
+              <Mono>{trunc(final.hash, 6)}</Mono> · block{" "}
+              {final.blockNumber.toString()}
+            </>
+          ),
+        });
+      } else if (final.status === "failed") {
+        toast({
+          kind: "error",
+          title: `${fn.name}() failed`,
+          msg: final.error,
+        });
+      }
+    } finally {
+      sendBusyRef.current = false;
     }
   }
 
@@ -171,6 +186,7 @@ function OperationCard({
   let signTitle: string | undefined;
   if (!result?.ok) signTitle = "Disabled — simulation predicts revert";
   else if (!isConnected) signTitle = "Connect a wallet to sign";
+  else if (!sendBusy) signTitle = "Sign and broadcast";
 
   const fromValue = address ? trunc(address, 6) : "— connect wallet —";
 
