@@ -1,13 +1,46 @@
 "use client";
 
+import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Icon } from "@/shared/icons";
 import { Button, Empty } from "@/shared/ui";
 import { useContractsStore } from "@/entities/contract/model/store";
 import { useAppShell } from "@/widgets/app-shell/AppShellProvider";
+import { ContractBrowser } from "@/features/contract-browser/ui/ContractBrowser";
 
-export default function BrowserPage() {
+function BrowserRoute() {
+  const router = useRouter();
+  const id = useSearchParams().get("c");
   const contracts = useContractsStore((s) => s.contracts);
+  const contract = useContractsStore((s) =>
+    s.contracts.find((c) => c.id === id),
+  );
   const { openAdd } = useAppShell();
+
+  if (id && contract) {
+    return (
+      <ContractBrowser contract={contract} onRemoved={() => router.push("/")} />
+    );
+  }
+
+  if (id && !contract) {
+    return (
+      <div className="mx-auto w-full max-w-[1080px] px-7 py-16">
+        <Empty
+          className="min-h-[70vh]"
+          icon={<Icon.book size={26} />}
+          title="Contract not found"
+          actions={
+            <Button variant="subtle" onClick={() => router.push("/")}>
+              Back to contracts
+            </Button>
+          }
+        >
+          This contract may have been removed.
+        </Empty>
+      </div>
+    );
+  }
 
   if (contracts.length === 0) {
     return (
@@ -39,7 +72,6 @@ export default function BrowserPage() {
     );
   }
 
-  // contracts exist but none selected — M2e will handle contract browsing
   return (
     <div className="mx-auto w-full max-w-[1080px] px-7 py-16">
       <Empty title="Select a contract">
@@ -47,5 +79,13 @@ export default function BrowserPage() {
         transactions.
       </Empty>
     </div>
+  );
+}
+
+export default function BrowserPage() {
+  return (
+    <Suspense fallback={null}>
+      <BrowserRoute />
+    </Suspense>
   );
 }

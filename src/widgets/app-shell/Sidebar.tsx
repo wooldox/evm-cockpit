@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { cx } from "@/shared/lib/cx";
 import { trunc } from "@/shared/lib/format";
 import { Icon } from "@/shared/icons";
@@ -58,6 +58,9 @@ export function Sidebar({
 }) {
   const { currentChainId, openAdd } = useAppShell();
   const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const selectedId = currentId ?? searchParams.get("c") ?? undefined;
   const [q, setQ] = useState("");
   const [scope, setScope] = useState<"all" | "current">("all");
 
@@ -165,12 +168,15 @@ export function Sidebar({
                 </span>
               </div>
               {list.map((c) => {
-                const active = currentId === c.id && pathname === "/";
+                const active = selectedId === c.id && pathname === "/";
                 return (
                   <button
                     key={c.id}
                     type="button"
-                    onClick={() => onSelect?.(c.id)}
+                    onClick={() => {
+                      router.push(`/?c=${c.id}`);
+                      onSelect?.(c.id);
+                    }}
                     className={cx(
                       "flex w-full items-center gap-2.5 rounded-sm border px-[9px] py-2 text-left transition-colors",
                       active

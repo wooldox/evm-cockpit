@@ -3,7 +3,11 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 // Mock next/navigation — usePathname must be set before component imports
-vi.mock("next/navigation", () => ({ usePathname: () => "/deploy" }));
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/deploy",
+  useRouter: () => ({ push: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 // next/link renders fine under jsdom as-is (renders an <a> tag),
 // but mock it explicitly to avoid any SSR/RSC edge-cases in jsdom

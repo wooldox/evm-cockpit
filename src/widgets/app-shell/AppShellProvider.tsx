@@ -1,8 +1,10 @@
 "use client";
 import {
   createContext,
+  startTransition,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -25,10 +27,33 @@ type AppShellState = {
 const Ctx = createContext<AppShellState | null>(null);
 
 export function AppShellProvider({ children }: { children: ReactNode }) {
-  const [currentChainId, setCurrentChainId] = useState(1);
+  const [currentChainId, setCurrentChainIdState] = useState(1);
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<TContract | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Hydration-safe: init as 1, then read localStorage on the client (matches useTheme pattern).
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("cc-chain");
+      if (saved !== null) {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed))
+          startTransition(() => setCurrentChainIdState(parsed));
+      }
+    } catch {
+      /* ignore — localStorage unavailable */
+    }
+  }, []);
+
+  const setCurrentChainId = useCallback((id: number) => {
+    setCurrentChainIdState(id);
+    try {
+      localStorage.setItem("cc-chain", String(id));
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const openAdd = useCallback(() => {
     setEditing(null);
@@ -68,6 +93,7 @@ export function AppShellProvider({ children }: { children: ReactNode }) {
     }),
     [
       currentChainId,
+      setCurrentChainId,
       addOpen,
       editing,
       openAdd,

@@ -1,5 +1,5 @@
 "use client";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { ToastProvider } from "@/shared/ui";
 import { useSettingsStore } from "@/entities/settings/model/store";
 import { Web3Providers } from "@/app/web3/Web3Providers";
@@ -32,7 +32,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             data-density={density === "compact" ? "compact" : undefined}
             className="grid h-screen grid-cols-[264px_1fr] overflow-hidden bg-surface max-[860px]:grid-cols-1"
           >
-            <Sidebar />
+            <Suspense fallback={null}>
+              <Sidebar />
+            </Suspense>
             <div className="flex h-screen min-w-0 flex-col">
               <TopBar />
               <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
