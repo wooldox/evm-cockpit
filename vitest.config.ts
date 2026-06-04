@@ -18,6 +18,7 @@ export default defineConfig({
       exclude: [
         "**/*.test.ts",
         "**/*.test.tsx",
+        "**/*.itest.ts",
         "**/fixtures.ts",
         "**/types.ts",
       ],

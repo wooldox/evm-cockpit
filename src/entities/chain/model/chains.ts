@@ -5,6 +5,7 @@ import {
   optimism,
   polygon,
   sepolia,
+  foundry,
 } from "viem/chains";
 import type { Chain as ViemChain } from "viem";
 
@@ -24,6 +25,7 @@ export const DEFAULT_RPC_URLS: Record<number, string> = {
   10: "https://optimism.drpc.org",
   137: "https://polygon.drpc.org",
   11155111: "https://sepolia.drpc.org",
+  31337: "http://127.0.0.1:8545",
 };
 
 const META: Record<number, { short: string; color: string }> = {
@@ -33,6 +35,7 @@ const META: Record<number, { short: string; color: string }> = {
   10: { short: "OP", color: "#ff0420" },
   137: { short: "POL", color: "#8247e5" },
   11155111: { short: "SEP", color: "#9b6dff" },
+  31337: { short: "LOC", color: "#6b7682" },
 };
 const SUPPORTED: ViemChain[] = [
   mainnet,
@@ -41,6 +44,21 @@ const SUPPORTED: ViemChain[] = [
   optimism,
   polygon,
   sepolia,
+  // viem's `foundry` chain omits a Multicall3 address, so `client.multicall`
+  // (used by the Properties section) would throw on chain 31337. Multicall3
+  // lives at the same canonical address everywhere; declare it here so batched
+  // reads work on a local Anvil node once the contract is present (it is on
+  // mainnet-fork nodes, and the integration harness injects it via setCode).
+  {
+    ...foundry,
+    name: "Localhost · Anvil",
+    contracts: {
+      ...foundry.contracts,
+      multicall3: {
+        address: "0xca11bde05977b3631167028862be2a173976ca11",
+      },
+    },
+  },
 ];
 export const SUPPORTED_VIEM_CHAINS: ViemChain[] = SUPPORTED;
 function toDisplay(c: ViemChain): TChainDisplay {
