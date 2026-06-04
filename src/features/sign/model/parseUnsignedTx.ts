@@ -11,12 +11,21 @@ export type TParsedTx = {
   chainId?: number;
 };
 
-/** Decimal-string-or-number → non-negative bigint. Rejects negatives and
- * non-integer numbers. */
+/** Decimal-string-or-number → non-negative bigint. Rejects negatives,
+ * non-integer numbers, and numeric values outside the safe-integer range
+ * (magnitudes > 2^53-1 lose precision in JSON.parse before zod sees them). */
 const bigintLike = z.union([z.string(), z.number()]).transform((v, ctx) => {
   if (typeof v === "number") {
     if (!Number.isInteger(v)) {
       ctx.addIssue({ code: "custom", message: "must be an integer" });
+      return z.NEVER;
+    }
+    if (!Number.isSafeInteger(v)) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "use a decimal string for large values (numeric precision lost above 2^53-1)",
+      });
       return z.NEVER;
     }
   }

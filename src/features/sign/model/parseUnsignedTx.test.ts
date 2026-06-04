@@ -95,4 +95,33 @@ describe("parseUnsignedTx", () => {
     const result = parseUnsignedTx("{not json");
     expect(result).toEqual({ ok: false, error: "invalid JSON" });
   });
+
+  it("rejects a numeric value above MAX_SAFE_INTEGER (e.g. 1e30) with a string-remedy hint", () => {
+    // JSON.parse turns 1e30 into a float outside the safe-integer range.
+    const result = parseUnsignedTx(JSON.stringify({ to: TO, value: 1e30 }));
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toMatch(/^value: /);
+    expect(result.error).toMatch(/string/);
+  });
+
+  it("rejects 2^53 (9007199254740992) which is outside MAX_SAFE_INTEGER", () => {
+    // 2^53 === MAX_SAFE_INTEGER + 1; Number.isSafeInteger(2**53) is false.
+    const result = parseUnsignedTx(
+      JSON.stringify({ to: TO, value: 9007199254740992 }),
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toMatch(/^value: /);
+    expect(result.error).toMatch(/string/);
+  });
+
+  it("accepts a large decimal string and parses it to the exact bigint", () => {
+    const result = parseUnsignedTx(
+      JSON.stringify({ to: TO, value: "1000000000000000000000000000000" }),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.tx.valueWei).toBe(10n ** 30n);
+  });
 });
