@@ -28,6 +28,7 @@ export interface ShareModalProps {
 export function ShareModal({ contract, onClose }: ShareModalProps) {
   const toast = useToast();
   const [payload, setPayload] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
 
   // Encode on mount. Setting state from an async continuation (not a
   // synchronous setState inside the effect body) is permitted by the project's
@@ -37,10 +38,14 @@ export function ShareModal({ contract, onClose }: ShareModalProps) {
     let cancelled = false;
     encodeContractShare(contract)
       .then((token) => {
-        if (!cancelled) setPayload(token);
+        if (cancelled) return;
+        setFailed(false);
+        setPayload(token);
       })
       .catch(() => {
-        if (!cancelled) setPayload("");
+        if (cancelled) return;
+        setPayload(null);
+        setFailed(true);
       });
     return () => {
       cancelled = true;
@@ -66,7 +71,14 @@ export function ShareModal({ contract, onClose }: ShareModalProps) {
     <Modal title="Share contract" onClose={onClose}>
       <div className="flex flex-col gap-4">
         {/* ── Share link ─────────────────────────────────────────── */}
-        {payload === null ? (
+        {failed ? (
+          <Field label="Share link">
+            <div className="flex items-center gap-2 rounded-sm border border-danger-border bg-danger-bg px-3 py-2.5 text-xs text-danger-fg">
+              <Icon.alertCircle size={14} />
+              Couldn&apos;t generate a link — use file export below.
+            </div>
+          </Field>
+        ) : payload === null ? (
           <div className="flex items-center gap-2.5 text-[13px]">
             <Spinner />
             <Muted>Encoding share link…</Muted>

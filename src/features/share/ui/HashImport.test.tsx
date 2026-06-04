@@ -87,4 +87,47 @@ describe("HashImport", () => {
     expect(pushMock).not.toHaveBeenCalled();
     expect(useContractsStore.getState().contracts).toHaveLength(0);
   });
+
+  it("waits for store hydration before importing → no duplicate when contract is in storage", async () => {
+    const token = await encodeContractShare(fixture);
+    setHash(`#import=${token}`);
+
+    // Simulate a cold load: persist has NOT finished rehydrating yet, so the
+    // in-memory snapshot is empty even though `fixture` lives in storage.
+    const hasHydratedSpy = vi
+      .spyOn(useContractsStore.persist, "hasHydrated")
+      .mockReturnValue(false);
+    let finishHydration: (() => void) | undefined;
+    const onFinishSpy = vi
+      .spyOn(useContractsStore.persist, "onFinishHydration")
+      .mockImplementation((cb) => {
+        finishHydration = cb as () => void;
+        return () => {};
+      });
+
+    renderImport();
+
+    // Nothing imported yet — the effect registered an onFinishHydration cb.
+    await new Promise((r) => setTimeout(r, 0));
+    expect(onFinishSpy).toHaveBeenCalledTimes(1);
+    expect(useContractsStore.getState().contracts).toHaveLength(0);
+    expect(pushMock).not.toHaveBeenCalled();
+
+    // Hydration completes: the existing contract is now present in the store,
+    // then the captured callback fires.
+    useContractsStore.setState({ contracts: [fixture] });
+    finishHydration!();
+
+    // Dedupe hits: no new contract added, "Already saved" toast, navigates to
+    // the existing contract.
+    expect(await screen.findByText(/already saved/i)).toBeInTheDocument();
+    expect(useContractsStore.getState().contracts).toHaveLength(1);
+    expect(useContractsStore.getState().contracts[0]!.id).toBe("seed-id");
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith("/?c=seed-id");
+    });
+
+    hasHydratedSpy.mockRestore();
+    onFinishSpy.mockRestore();
+  });
 });

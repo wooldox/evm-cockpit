@@ -3,9 +3,18 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ToastProvider } from "@/shared/ui";
 import { erc20Abi } from "@/shared/lib/abi/fixtures";
+import * as codec from "@/shared/lib/share/codec";
 import { decodeContractShare, toSharePayload } from "@/shared/lib/share/codec";
 import type { TContract } from "@/entities/contract/model/types";
 import { ShareModal } from "./ShareModal";
+
+// Mock the codec module so we can override `encodeContractShare` per-test while
+// keeping the real implementations for everything else.
+vi.mock("@/shared/lib/share/codec", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/shared/lib/share/codec")>();
+  return { ...actual };
+});
 
 const ADDR = "0x1234567890123456789012345678901234567890" as const;
 
@@ -58,6 +67,17 @@ describe("ShareModal", () => {
 
     // CopyBtn present
     expect(screen.getByRole("button", { name: /copy/i })).toBeInTheDocument();
+  });
+
+  it("encode failure: shows a fallback hint, no link input", async () => {
+    vi.spyOn(codec, "encodeContractShare").mockRejectedValue(new Error("boom"));
+
+    renderModal(smallContract);
+
+    expect(
+      await screen.findByText(/couldn't generate a link — use file export/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByDisplayValue(/#import=/)).not.toBeInTheDocument();
   });
 
   it("oversized contract: replaces the link with a fallback hint", async () => {
