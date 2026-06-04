@@ -39,7 +39,15 @@ async function assertPortFree(port: number): Promise<void> {
 export default async function globalSetup(): Promise<() => Promise<void>> {
   await assertPortFree(ANVIL_PORT);
   handle = await startAnvil({ port: ANVIL_PORT });
-  await ensureMulticall3(ANVIL_URL);
+  // If Multicall3 install fails, stop the node we just started so it doesn't
+  // orphan (the teardown closure below is only returned on full success).
+  try {
+    await ensureMulticall3(ANVIL_URL);
+  } catch (e) {
+    await handle.stop();
+    handle = null;
+    throw e;
+  }
 
   return async () => {
     if (handle) {

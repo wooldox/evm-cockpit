@@ -86,11 +86,11 @@ test.describe("simulate-gated write flow", () => {
     await expect(card.getByText("Will succeed")).toBeVisible();
     await expect(card.getByText("Est. gas")).toBeVisible();
 
-    // The mock wallet reports a non-Anvil chainId, so the Sign action is labelled
-    // "Switch to … & Send" (it auto-switches before broadcasting). Either label is
-    // the same gated Sign button — match both.
+    // The e2e config deterministically starts on mainnet, so the Sign action is
+    // labelled "Switch to Localhost · Anvil & Send" — this journey exercises the
+    // auto chain-switch-before-broadcast path. The specific label self-documents that.
     const sendBtn = card.getByRole("button", {
-      name: /Sign & Send|Switch to .* & Send/,
+      name: /Switch to Localhost · Anvil & Send/,
     });
     await expect(sendBtn).toBeEnabled();
 

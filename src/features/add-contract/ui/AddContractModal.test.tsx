@@ -149,6 +149,93 @@ describe("AddContractModal", () => {
     expect((textarea as HTMLTextAreaElement).value).toContain('"type"');
   });
 
+  it("import file: a proxy contract export is preserved on save", async () => {
+    renderModal();
+    await screen.findByRole("dialog");
+
+    const implAddress =
+      "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd" as `0x${string}`;
+    const exportContract: TContract = {
+      id: "x",
+      name: "Proxy Token",
+      chainId: 1,
+      address: VALID_ADDRESS as `0x${string}`,
+      abi: erc20Abi,
+      source: "manual",
+      proxy: {
+        kind: "eip1967",
+        implAddress,
+        implAbi: erc20Abi,
+      },
+      addedAt: 0,
+    };
+    const json = JSON.stringify(toSharePayload(exportContract), null, 2);
+    const file = new File([json], "export.contract.json", {
+      type: "application/json",
+    });
+
+    const input = screen.getByLabelText(/import contract export file/i);
+    await userEvent.upload(input, file);
+
+    // Wait for prefill to land, then save.
+    await waitFor(() =>
+      expect(screen.getByDisplayValue("Proxy Token")).toBeInTheDocument(),
+    );
+    const submitBtn = screen.getByRole("button", { name: /add contract/i });
+    await userEvent.click(submitBtn);
+
+    const added = useContractsStore.getState().contracts[0]!;
+    expect(added.proxy).toEqual({
+      kind: "eip1967",
+      implAddress,
+      implAbi: erc20Abi,
+    });
+  });
+
+  it("import file: editing the address after import drops the proxy", async () => {
+    renderModal();
+    await screen.findByRole("dialog");
+
+    const exportContract: TContract = {
+      id: "x",
+      name: "Proxy Token",
+      chainId: 1,
+      address: VALID_ADDRESS as `0x${string}`,
+      abi: erc20Abi,
+      source: "manual",
+      proxy: {
+        kind: "eip1967",
+        implAddress:
+          "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd" as `0x${string}`,
+        implAbi: erc20Abi,
+      },
+      addedAt: 0,
+    };
+    const json = JSON.stringify(toSharePayload(exportContract), null, 2);
+    const file = new File([json], "export.contract.json", {
+      type: "application/json",
+    });
+
+    const input = screen.getByLabelText(/import contract export file/i);
+    await userEvent.upload(input, file);
+    await waitFor(() =>
+      expect(screen.getByDisplayValue("Proxy Token")).toBeInTheDocument(),
+    );
+
+    // Edit the address → the imported proxy becomes stale and is dropped.
+    const otherAddress = "0x9999999999999999999999999999999999999999";
+    const addrInput = screen.getByDisplayValue(VALID_ADDRESS);
+    await userEvent.clear(addrInput);
+    await userEvent.paste(otherAddress);
+
+    const submitBtn = screen.getByRole("button", { name: /add contract/i });
+    await userEvent.click(submitBtn);
+
+    const added = useContractsStore.getState().contracts[0]!;
+    expect(added.address).toBe(otherAddress);
+    expect(added.proxy).toBeUndefined();
+  });
+
   it("import file: invalid file shows error and leaves fields untouched", async () => {
     renderModal();
     await screen.findByRole("dialog");

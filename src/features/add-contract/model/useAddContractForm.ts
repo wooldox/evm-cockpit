@@ -81,6 +81,8 @@ export type AddContractFormResult = {
   setAbiText: (v: string) => void;
   mode: "fetch" | "manual";
   setMode: (v: "fetch" | "manual") => void;
+  importedProxy: TProxyInfo | undefined;
+  setImportedProxy: (v: TProxyInfo | undefined) => void;
   // Derived
   addrValid: boolean;
   fetch: FetchState;
@@ -120,12 +122,28 @@ export function useAddContractForm(opts?: {
 
   // ── Field state ─────────────────────────────────────────────────────────
   const [name, setName] = useState<string>(editing?.name ?? "");
-  const [chainId, setChainId] = useState<number>(editing?.chainId ?? 1);
-  const [address, setAddress] = useState<string>(editing?.address ?? "");
+  const [chainId, setChainIdState] = useState<number>(editing?.chainId ?? 1);
+  const [address, setAddressState] = useState<string>(editing?.address ?? "");
   const [abiText, setAbiText] = useState<string>(
     editing?.abi ? JSON.stringify(editing.abi, null, 2) : "",
   );
   const [mode, setMode] = useState<"fetch" | "manual">("fetch");
+  // Proxy info carried in from a file import (manual mode). Belongs to one exact
+  // address+chainId, so it is cleared whenever either of those is edited below.
+  const [importedProxy, setImportedProxy] = useState<TProxyInfo | undefined>(
+    undefined,
+  );
+
+  // Editing the address or chain invalidates a file-imported proxy (it was
+  // detected for that specific address on that specific chain).
+  function setAddress(v: string): void {
+    setAddressState(v);
+    setImportedProxy(undefined);
+  }
+  function setChainId(v: number): void {
+    setChainIdState(v);
+    setImportedProxy(undefined);
+  }
   const [fetchState, setFetchState] = useState<InternalFetchState>({
     status: "idle",
   });
@@ -265,7 +283,10 @@ export function useAddContractForm(opts?: {
       }
       abi = parsed as Abi;
       source = "manual";
-      proxy = undefined;
+      // Preserve proxy info carried in from a file import. setImportedProxy is
+      // cleared when the user edits the address/chain, so a stale proxy can't
+      // attach to a different target.
+      proxy = importedProxy;
     } else {
       // fetch mode — effectiveFetchState is already "idle" when stale,
       // so this guard also rejects stale results.
@@ -308,6 +329,8 @@ export function useAddContractForm(opts?: {
     setAbiText,
     mode,
     setMode,
+    importedProxy,
+    setImportedProxy,
     addrValid,
     fetch: effectiveFetchState,
     errors,

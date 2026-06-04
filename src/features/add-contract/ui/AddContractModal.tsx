@@ -3,7 +3,8 @@
 import { useRef, useState } from "react";
 import { Icon } from "@/shared/icons";
 import { CHAIN_LIST } from "@/entities/chain/model/chains";
-import type { TContract } from "@/entities/contract/model/types";
+import type { TAddress, TContract } from "@/entities/contract/model/types";
+import type { Abi } from "abitype";
 import { trunc } from "@/shared/lib/format";
 import { sharePayloadSchema } from "@/shared/lib/share/codec";
 import {
@@ -40,11 +41,22 @@ export function AddContractModal({ onClose, editing }: AddContractModalProps) {
       const text = await file.text();
       const payload = sharePayloadSchema.parse(JSON.parse(text));
       // Prefill the form; the user reviews and saves through the normal flow.
+      // Set address/chain BEFORE the proxy: those setters clear importedProxy
+      // (staleness guard), so the proxy must be applied last.
       f.setName(payload.name);
       f.setChainId(payload.chainId);
       f.setAddress(payload.address);
       f.setAbiText(JSON.stringify(payload.abi, null, 2));
       f.setMode("manual");
+      f.setImportedProxy(
+        payload.proxy
+          ? {
+              kind: payload.proxy.kind,
+              implAddress: payload.proxy.implAddress as TAddress,
+              implAbi: payload.proxy.implAbi as Abi | undefined,
+            }
+          : undefined,
+      );
     } catch {
       setImportError("not a valid contract export");
     }

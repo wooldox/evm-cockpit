@@ -23,10 +23,11 @@ const transports = Object.fromEntries(
 // IS_E2E reads NEXT_PUBLIC_E2E, which Next inlines at build time: the E2E build
 // (`build:e2e`) sets it to "1" so the mock branch is taken; a normal `next build`
 // leaves it unset so this expression resolves to getDefaultConfig at runtime and
-// the mock connector is never instantiated. (Turbopack does not fully prune the
-// unused E2E branch from the bundle when the var is unset, so the never-executed
-// mock config call + the public Anvil test address may still appear in the
-// production chunk — harmless dead code, no secrets.)
+// the mock connector is never instantiated. (Turbopack does not prune the unused
+// E2E branch from the bundle when the var is unset: the never-executed mock
+// config call + the public Anvil test address DO appear in the production chunk
+// — verified. This is acceptable: it is inert dead code referencing only public
+// test constants, no secrets.)
 export const config = IS_E2E
   ? createE2EConfig(chains, transports)
   : getDefaultConfig({
