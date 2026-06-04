@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { TContract } from "@/entities/contract/model/types";
 import type { RpcProvider } from "@/shared/ports/rpc";
 import type { THistoryEntry } from "@/entities/history/model/types";
+import { useRerunStore, type TRerunIntent } from "@/entities/rerun/model/store";
 import { getBrowserSections } from "@/features/contract-browser/model/effectiveAbi";
 import { Icon } from "@/shared/icons";
 import { Badge, Empty, Input } from "@/shared/ui";
@@ -45,6 +46,20 @@ export function ContractBrowser({
 }) {
   const [q, setQ] = useState("");
   const ql = q.toLowerCase();
+
+  // Consume a re-run intent once per mount (lazy initializer — no effect).
+  // Peek first: only consume when the intent targets THIS contract, so a
+  // non-matching intent stays in the store and still fires when the user
+  // navigates to the right contract. Relies on `key={contract.id}` in the route
+  // so a second re-run to a different contract remounts and consumes.
+  const [rerun] = useState<TRerunIntent | null>(() => {
+    const i = useRerunStore.getState().intent;
+    if (i && i.contractId === contract.id) {
+      useRerunStore.getState().consume();
+      return i;
+    }
+    return null;
+  });
 
   const sections = getBrowserSections(contract);
 
@@ -89,9 +104,14 @@ export function ContractBrowser({
         className="mx-auto flex w-full max-w-[1080px] flex-col gap-7 px-7 pb-16 pt-5"
       >
         <PropertiesSection contract={contract} q={ql} />
-        <GettersSection contract={contract} q={ql} />
+        <GettersSection contract={contract} q={ql} rerun={rerun} />
 
-        <OperationsSection contract={contract} q={ql} deps={deps} />
+        <OperationsSection
+          contract={contract}
+          q={ql}
+          deps={deps}
+          rerun={rerun}
+        />
 
         <EventsSection
           contract={contract}

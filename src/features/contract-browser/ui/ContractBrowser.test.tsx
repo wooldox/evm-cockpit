@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastProvider } from "@/shared/ui";
 import { AppShellProvider } from "@/widgets/app-shell/AppShellProvider";
 import { useContractsStore } from "@/entities/contract/model/store";
+import { useRerunStore } from "@/entities/rerun/model/store";
 import { erc20Abi } from "@/shared/lib/abi/fixtures";
 import type { TContract } from "@/entities/contract/model/types";
 import type { RpcProvider } from "@/shared/ports/rpc";
@@ -140,6 +141,7 @@ describe("ContractBrowser", () => {
     mockClient.multicall.mockResolvedValue(MULTICALL_RESULTS);
     mockClient.readContract.mockResolvedValue(1000n);
     useContractsStore.setState({ contracts: [baseContract] });
+    useRerunStore.setState({ intent: null });
   });
 
   /* 1. Header ──────────────────────────────────────────── */
@@ -299,5 +301,72 @@ describe("ContractBrowser", () => {
     // Success verdict + Sign & Send enabled.
     await screen.findByText("Will succeed");
     expect(screen.getByRole("button", { name: /Sign & Send/ })).toBeEnabled();
+  });
+
+  /* 7. Re-run: getter prefill ──────────────────────────── */
+  it("opens and prefills the matching getter card from a re-run intent, then consumes it", async () => {
+    const OWNER = "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef";
+    useRerunStore.setState({
+      intent: {
+        contractId: "test1",
+        fnName: "balanceOf",
+        argCount: 1,
+        args: { owner: OWNER },
+        type: "read",
+      },
+    });
+    renderBrowser(baseContract);
+
+    // The balanceOf card is open with the owner arg prefilled.
+    const ownerInput = await screen.findByDisplayValue(OWNER);
+    expect(ownerInput).toBeInTheDocument();
+
+    // Intent was consumed (matched this contract).
+    expect(useRerunStore.getState().intent).toBeNull();
+  });
+
+  /* 8. Re-run: non-matching contract is left intact ────── */
+  it("ignores a re-run intent for a different contract and leaves it in the store", async () => {
+    const OWNER = "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef";
+    const otherIntent = {
+      contractId: "other",
+      fnName: "balanceOf",
+      argCount: 1,
+      args: { owner: OWNER },
+      type: "read" as const,
+    };
+    useRerunStore.setState({ intent: otherIntent });
+    renderBrowser(baseContract);
+
+    await screen.findByText("24,891,003,472"); // wait for render to settle
+
+    // No card was prefilled/opened.
+    expect(screen.queryByDisplayValue(OWNER)).not.toBeInTheDocument();
+
+    // Intent stays in the store so navigating to the right contract still works.
+    expect(useRerunStore.getState().intent).toEqual(otherIntent);
+  });
+
+  /* 9. Re-run: write/simulate prefill (no verdict) ─────── */
+  it("opens and prefills a write operation card from a re-run intent without a simulation verdict", async () => {
+    const TO = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd";
+    useRerunStore.setState({
+      intent: {
+        contractId: "test1",
+        fnName: "transfer",
+        argCount: 2,
+        args: { to: TO, amount: "100" },
+        type: "write",
+      },
+    });
+    renderBrowser(baseContract);
+
+    // The transfer card is open with both args prefilled.
+    expect(await screen.findByDisplayValue(TO)).toBeInTheDocument();
+    expect(screen.getByDisplayValue("100")).toBeInTheDocument();
+
+    // Sign still requires a fresh simulation — no verdict is shown.
+    expect(screen.queryByText("Will succeed")).not.toBeInTheDocument();
+    expect(screen.queryByText("Will revert")).not.toBeInTheDocument();
   });
 });

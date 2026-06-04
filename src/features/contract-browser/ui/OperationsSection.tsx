@@ -6,6 +6,7 @@ import type { AbiFunction } from "abitype";
 import type { TContract } from "@/entities/contract/model/types";
 import type { RpcProvider } from "@/shared/ports/rpc";
 import type { THistoryEntry } from "@/entities/history/model/types";
+import type { TRerunIntent } from "@/entities/rerun/model/store";
 import { getBrowserSections } from "@/features/contract-browser/model/effectiveAbi";
 import { useSimulation } from "@/features/contract-browser/model/useSimulation";
 import { useSendOperation } from "@/features/contract-browser/model/useSendOperation";
@@ -50,13 +51,20 @@ function OperationCard({
   contract,
   fn,
   deps,
+  initialArgs,
+  defaultOpen,
 }: {
   contract: TContract;
   fn: AbiFunction;
   deps?: OpDeps;
+  initialArgs?: Record<string, string>;
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
-  const [args, setArgs] = useState<Record<string, string>>({});
+  // initialArgs/defaultOpen are useState initializers only — no effects, no
+  // syncing. Re-run prefills + opens the card; Sign still requires a fresh
+  // simulation (no verdict is carried over), so writes are never auto-executed.
+  const [open, setOpen] = useState(defaultOpen ?? false);
+  const [args, setArgs] = useState<Record<string, string>>(initialArgs ?? {});
   const [ethAmount, setEthAmount] = useState("");
   const [ethUnit, setEthUnit] = useState<EthUnit>("ether");
 
@@ -393,10 +401,12 @@ export function OperationsSection({
   contract,
   q,
   deps,
+  rerun,
 }: {
   contract: TContract;
   q: string;
   deps?: OpDeps;
+  rerun?: TRerunIntent | null;
 }) {
   const sections = getBrowserSections(contract);
   if (sections.operations.length === 0) return null;
@@ -404,6 +414,16 @@ export function OperationsSection({
   const fns = sections.operations.filter(
     (f) => !q || f.name.toLowerCase().includes(q),
   );
+
+  // Re-run targets this (write) section only when type is "simulate" | "write".
+  // Overload limitation: we match on name + argCount (inputs.length), so two
+  // overloads with the same arity are indistinguishable — the FIRST match wins.
+  const matchTarget =
+    rerun && (rerun.type === "write" || rerun.type === "simulate")
+      ? fns.find(
+          (f) => f.name === rerun.fnName && f.inputs.length === rerun.argCount,
+        )
+      : undefined;
 
   return (
     <section>
@@ -417,8 +437,16 @@ export function OperationsSection({
         {fns.map((f) => {
           // Full signature as key so overloads stay distinct.
           const key = `${f.name}(${f.inputs.map((i) => i.type).join(",")})`;
+          const isTarget = f === matchTarget;
           return (
-            <OperationCard key={key} contract={contract} fn={f} deps={deps} />
+            <OperationCard
+              key={key}
+              contract={contract}
+              fn={f}
+              deps={deps}
+              initialArgs={isTarget ? rerun?.args : undefined}
+              defaultOpen={isTarget}
+            />
           );
         })}
       </div>

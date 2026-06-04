@@ -1,18 +1,37 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useHistoryStore } from "@/entities/history/model/store";
 import type {
   THistoryEntry,
   THistoryType,
 } from "@/entities/history/model/types";
 import { useContractsStore } from "@/entities/contract/model/store";
+import { useRerunStore } from "@/entities/rerun/model/store";
 import { getChainDisplay } from "@/entities/chain/model/chains";
 import { txUrl } from "@/entities/chain/model/explorer";
 import { trunc } from "@/shared/lib/format";
-import { Badge, Button, Empty, Muted, Panel, Select } from "@/shared/ui";
+import {
+  Badge,
+  Button,
+  Empty,
+  Muted,
+  Panel,
+  Segment,
+  Select,
+} from "@/shared/ui";
 import { ExtLink } from "@/shared/ui/copyable";
 import { Icon } from "@/shared/icons";
+
+type TypeFilter = "all" | THistoryType;
+
+const TYPE_FILTER_OPTIONS: { value: TypeFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "read", label: "Reads" },
+  { value: "write", label: "Writes" },
+  { value: "simulate", label: "Sims" },
+];
 
 const TYPE_BADGE: Record<
   THistoryType,
@@ -27,9 +46,13 @@ const TYPE_BADGE: Record<
 function HistoryRow({
   entry,
   contractName,
+  contractExists,
+  onRerun,
 }: {
   entry: THistoryEntry;
   contractName: string;
+  contractExists: boolean;
+  onRerun: (entry: THistoryEntry) => void;
 }) {
   const badge = TYPE_BADGE[entry.type];
   const chainName = getChainDisplay(entry.chainId).name;
@@ -78,27 +101,60 @@ function HistoryRow({
           {new Date(entry.timestamp).toLocaleString()}
         </Muted>
       </td>
+      <td className="border-b border-border px-3 py-[9px] align-top">
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={<Icon.refresh size={13} />}
+          onClick={() => onRerun(entry)}
+          disabled={!contractExists}
+          title={contractExists ? undefined : "contract no longer saved"}
+        >
+          Re-run
+        </Button>
+      </td>
     </tr>
   );
 }
 
 /* ── HistoryView ────────────────────────────────────────── */
 export function HistoryView() {
-  // TODO(M4): re-run entries through the originating feature hook
+  const router = useRouter();
   const entries = useHistoryStore((s) => s.entries);
   const clear = useHistoryStore((s) => s.clear);
   const contracts = useContractsStore((s) => s.contracts);
 
   const [sel, setSel] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
 
-  const filtered =
-    sel === "all" ? entries : entries.filter((e) => e.contractId === sel);
+  const filtered = entries.filter(
+    (e) =>
+      (sel === "all" || e.contractId === sel) &&
+      (typeFilter === "all" || e.type === typeFilter),
+  );
 
   const nameById = new Map(contracts.map((c) => [c.id, c.name]));
   const contractName = (id: string) => nameById.get(id) ?? trunc(id, 6);
+  const contractIds = new Set(contracts.map((c) => c.id));
 
   function handleClear(): void {
     if (window.confirm("Clear all history?")) clear();
+  }
+
+  /**
+   * Re-run NEVER auto-executes: it only stores the intent and navigates to the
+   * browser, which re-opens the originating card prefilled. The user must
+   * re-simulate and (for writes) sign manually.
+   */
+  function handleRerun(e: THistoryEntry): void {
+    useRerunStore.getState().request({
+      contractId: e.contractId,
+      fnName: e.fnName,
+      argCount: Object.keys(e.args).length,
+      args: e.args,
+      type: e.type,
+    });
+    router.push(`/?c=${e.contractId}`);
   }
 
   return (
@@ -113,6 +169,11 @@ export function HistoryView() {
           </Muted>
         </div>
         <div className="flex items-center gap-2">
+          <Segment
+            value={typeFilter}
+            onChange={setTypeFilter}
+            options={TYPE_FILTER_OPTIONS}
+          />
           <Select
             className="w-[200px]"
             value={sel}
@@ -157,9 +218,10 @@ export function HistoryView() {
                     "Status",
                     "Result",
                     "Time",
-                  ].map((h) => (
+                    "",
+                  ].map((h, i) => (
                     <th
-                      key={h}
+                      key={h || `col-${i}`}
                       className="sticky top-0 whitespace-nowrap border-b border-border bg-elev-1 px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-fg-3"
                     >
                       {h}
@@ -173,6 +235,8 @@ export function HistoryView() {
                     key={entry.id}
                     entry={entry}
                     contractName={contractName(entry.contractId)}
+                    contractExists={contractIds.has(entry.contractId)}
+                    onRerun={handleRerun}
                   />
                 ))}
               </tbody>

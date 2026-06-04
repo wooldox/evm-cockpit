@@ -5,11 +5,18 @@ import userEvent from "@testing-library/user-event";
 import React from "react";
 import { useHistoryStore } from "@/entities/history/model/store";
 import { useContractsStore } from "@/entities/contract/model/store";
+import { useRerunStore } from "@/entities/rerun/model/store";
 import { txUrl } from "@/entities/chain/model/explorer";
 import { erc20Abi } from "@/shared/lib/abi/fixtures";
 import type { TContract } from "@/entities/contract/model/types";
 import type { THistoryEntry } from "@/entities/history/model/types";
 import { HistoryView } from "./HistoryView";
+
+/* ── next/navigation mock ───────────────────────────────── */
+const pushMock = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: pushMock }),
+}));
 
 const ADDR_A = "0x1234567890123456789012345678901234567890" as const;
 const ADDR_B = "0xabcabcabcabcabcabcabcabcabcabcabcabcabca" as const;
@@ -60,6 +67,8 @@ function seed(entries: THistoryEntry[], contracts: TContract[] = [contractA]) {
 beforeEach(() => {
   useHistoryStore.setState({ entries: [] });
   useContractsStore.setState({ contracts: [] });
+  useRerunStore.setState({ intent: null });
+  pushMock.mockClear();
   vi.restoreAllMocks();
 });
 
@@ -154,5 +163,55 @@ describe("HistoryView", () => {
     render(<HistoryView />);
 
     expect(screen.getByText("No history yet")).toBeInTheDocument();
+  });
+
+  it("type filter narrows rows to the selected type", async () => {
+    const user = userEvent.setup();
+    seed([
+      entry({ type: "read", fnName: "balanceOf" }),
+      entry({ type: "write", fnName: "transfer" }),
+    ]);
+    render(<HistoryView />);
+
+    expect(screen.getByText("balanceOf()")).toBeInTheDocument();
+    expect(screen.getByText("transfer()")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "Writes" }));
+
+    expect(screen.queryByText("balanceOf()")).not.toBeInTheDocument();
+    expect(screen.getByText("transfer()")).toBeInTheDocument();
+  });
+
+  it("Re-run sets the intent and navigates to the contract browser", async () => {
+    const user = userEvent.setup();
+    seed([
+      entry({
+        contractId: "a",
+        type: "read",
+        fnName: "balanceOf",
+        args: { owner: "0xdead" },
+      }),
+    ]);
+    render(<HistoryView />);
+
+    await user.click(screen.getByRole("button", { name: /Re-run/ }));
+
+    expect(useRerunStore.getState().intent).toEqual({
+      contractId: "a",
+      fnName: "balanceOf",
+      argCount: 1,
+      args: { owner: "0xdead" },
+      type: "read",
+    });
+    expect(pushMock).toHaveBeenCalledWith("/?c=a");
+  });
+
+  it("Re-run is disabled with a title when the contract was deleted", () => {
+    seed([entry({ contractId: DELETED_ID })], []);
+    render(<HistoryView />);
+
+    const btn = screen.getByRole("button", { name: /Re-run/ });
+    expect(btn).toBeDisabled();
+    expect(btn).toHaveAttribute("title", "contract no longer saved");
   });
 });

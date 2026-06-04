@@ -19,7 +19,11 @@ function BrowserRoute() {
 
   if (id && contract) {
     return (
-      <ContractBrowser contract={contract} onRemoved={() => router.push("/")} />
+      <ContractBrowser
+        key={contract.id}
+        contract={contract}
+        onRemoved={() => router.push("/")}
+      />
     );
   }
 

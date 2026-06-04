@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { AbiFunction } from "abitype";
 import type { TContract } from "@/entities/contract/model/types";
+import type { TRerunIntent } from "@/entities/rerun/model/store";
 import { useGetterCall } from "@/features/contract-browser/model/useGetterCall";
 import { getBrowserSections } from "@/features/contract-browser/model/effectiveAbi";
 import { Icon } from "@/shared/icons";
@@ -76,12 +77,18 @@ export function FnCard({
 function GetterCard({
   contract,
   fn,
+  initialArgs,
+  defaultOpen,
 }: {
   contract: TContract;
   fn: AbiFunction;
+  initialArgs?: Record<string, string>;
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
-  const [args, setArgs] = useState<Record<string, string>>({});
+  // initialArgs/defaultOpen are useState initializers only — no effects, no
+  // syncing. Re-run prefills the card once on mount; the user edits freely after.
+  const [open, setOpen] = useState(defaultOpen ?? false);
+  const [args, setArgs] = useState<Record<string, string>>(initialArgs ?? {});
   const { status, result, error, argErrors, call } = useGetterCall(
     contract,
     fn,
@@ -158,9 +165,11 @@ function GetterCard({
 export function GettersSection({
   contract,
   q,
+  rerun,
 }: {
   contract: TContract;
   q: string;
+  rerun?: TRerunIntent | null;
 }) {
   const sections = getBrowserSections(contract);
   const fns = sections.getters.filter(
@@ -168,6 +177,16 @@ export function GettersSection({
   );
 
   if (sections.getters.length === 0) return null;
+
+  // Re-run targets this (read) section only when type === "read". Overload
+  // limitation: we match on name + argCount (inputs.length), so two overloads
+  // with the same arity are indistinguishable — the FIRST such match wins.
+  const matchTarget =
+    rerun && rerun.type === "read"
+      ? fns.find(
+          (f) => f.name === rerun.fnName && f.inputs.length === rerun.argCount,
+        )
+      : undefined;
 
   return (
     <section>
@@ -180,7 +199,16 @@ export function GettersSection({
         {fns.map((f) => {
           // Use full signature as key to handle overloads
           const key = `${f.name}(${f.inputs.map((i) => i.type).join(",")})`;
-          return <GetterCard key={key} contract={contract} fn={f} />;
+          const isTarget = f === matchTarget;
+          return (
+            <GetterCard
+              key={key}
+              contract={contract}
+              fn={f}
+              initialArgs={isTarget ? rerun?.args : undefined}
+              defaultOpen={isTarget}
+            />
+          );
         })}
       </div>
     </section>
