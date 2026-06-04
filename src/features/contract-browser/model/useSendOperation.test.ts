@@ -26,7 +26,7 @@ vi.mock("wagmi", () => ({
   useWriteContract: () => ({ writeContractAsync }),
 }));
 
-import { useSendOperation } from "./useSendOperation";
+import { useSendOperation, type SendState } from "./useSendOperation";
 
 function makeContract(overrides?: Partial<TContract>): TContract {
   return {
@@ -82,10 +82,17 @@ describe("useSendOperation", () => {
       useSendOperation(makeContract(), transferFn, { rpc, addHistory }),
     );
 
+    let resolved: SendState = { status: "idle" };
     await act(async () => {
-      await result.current.send({ ...SEND_ARGS, value: 5n, gas: 30000n });
+      resolved = await result.current.send({
+        ...SEND_ARGS,
+        value: 5n,
+        gas: 30000n,
+      });
     });
 
+    // send() resolves with the terminal state so callers can toast on outcome.
+    expect(resolved.status).toBe("confirmed");
     expect(result.current.state.status).toBe("confirmed");
     if (result.current.state.status !== "confirmed")
       throw new Error("not confirmed");
@@ -244,7 +251,7 @@ describe("useSendOperation", () => {
       useSendOperation(makeContract(), transferFn, { rpc, addHistory }),
     );
 
-    let firstSend: Promise<void> = Promise.resolve();
+    let firstSend: Promise<SendState> = Promise.resolve({ status: "idle" });
     act(() => {
       firstSend = result.current.send(SEND_ARGS);
     });

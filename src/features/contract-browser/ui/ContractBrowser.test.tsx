@@ -18,6 +18,17 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams("c=test1"),
 }));
 
+/* ── wagmi mock (OperationsSection cards call useAccount) ── */
+vi.mock("wagmi", () => ({
+  useAccount: () => ({
+    address: undefined,
+    chainId: undefined,
+    isConnected: false,
+  }),
+  useSwitchChain: () => ({ switchChainAsync: vi.fn() }),
+  useWriteContract: () => ({ writeContractAsync: vi.fn() }),
+}));
+
 /* ── hoist-safe mock clients ────────────────────────────── */
 const { mockClient } = vi.hoisted(() => {
   const mockClient = {

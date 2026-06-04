@@ -8,6 +8,7 @@ import { Badge, Empty, Input, Muted, Panel } from "@/shared/ui";
 import { ContractHeader } from "./ContractHeader";
 import { PropertiesSection, SectionHead } from "./PropertiesSection";
 import { GettersSection } from "./GettersSection";
+import { OperationsSection } from "./OperationsSection";
 
 /* ── NoFunctionMatch ─────────────────────────────────────── */
 function NoFunctionMatch({ q }: { q: string }) {
@@ -75,22 +76,7 @@ export function ContractBrowser({
         <PropertiesSection contract={contract} q={ql} />
         <GettersSection contract={contract} q={ql} />
 
-        {/* Operations placeholder */}
-        {sections.operations.length > 0 && (
-          <section>
-            <SectionHead
-              tone="write"
-              title="Operations"
-              count={sections.operations.length}
-            />
-            <Panel className="p-3.5">
-              <Muted className="text-sm">
-                Write operations — simulate &amp; send — arrive in the next
-                milestone (M3).
-              </Muted>
-            </Panel>
-          </section>
-        )}
+        <OperationsSection contract={contract} q={ql} />
 
         {/* Events placeholder */}
         {sections.events.length > 0 && (

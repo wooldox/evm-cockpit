@@ -14,7 +14,7 @@ import { ParamInput, TypedValue } from "./values";
 import { SectionHead } from "./PropertiesSection";
 
 /* ── FnCard ─────────────────────────────────────────────── */
-function FnCard({
+export function FnCard({
   tone,
   open,
   onToggle,
