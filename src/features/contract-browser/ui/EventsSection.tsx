@@ -27,6 +27,11 @@ function eventSig(e: AbiEvent): string {
   return `${e.name}(${e.inputs.map((i) => i.type).join(",")})`;
 }
 
+/** Column label for an input; empty-string names fall back to `argN`. */
+function colLabel(inp: AbiEvent["inputs"][number], i: number): string {
+  return inp.name || `arg${i}`;
+}
+
 /* ── EventsTable ────────────────────────────────────────── */
 function EventsTable({
   event,
@@ -41,6 +46,10 @@ function EventsTable({
     "sticky top-0 whitespace-nowrap border-b border-border bg-elev-1 px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-fg-3";
   const td = "border-b border-border px-3 py-[9px] align-top text-fg-2";
 
+  // viem decides positional-vs-named for the WHOLE event: if ANY input is
+  // unnamed, every arg comes back positional ("0","1",… via normalizeLog).
+  const positional = event.inputs.some((inp) => !inp.name);
+
   return (
     <div className="mt-3 overflow-auto rounded-sm border border-border">
       <table className="w-full border-collapse text-[13px]">
@@ -48,8 +57,8 @@ function EventsTable({
           <tr>
             <th className={th}>Block</th>
             {event.inputs.map((input, i) => (
-              <th key={input.name ?? `arg${i}`} className={th}>
-                {input.name || `arg${i}`}
+              <th key={colLabel(input, i)} className={th}>
+                {colLabel(input, i)}
               </th>
             ))}
             <th className={th}>Tx</th>
@@ -67,12 +76,12 @@ function EventsTable({
                   {log.blockNumber.toLocaleString()}
                 </td>
                 {event.inputs.map((input, i) => {
-                  const key = input.name ?? String(i);
+                  const key = positional ? String(i) : input.name;
                   return (
-                    <td key={input.name ?? `arg${i}`} className={td}>
+                    <td key={colLabel(input, i)} className={td}>
                       <TypedValue
                         type={input.type}
-                        value={log.args[key]}
+                        value={key === undefined ? undefined : log.args[key]}
                         chainId={chainId}
                       />
                     </td>
