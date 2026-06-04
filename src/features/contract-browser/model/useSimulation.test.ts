@@ -78,7 +78,6 @@ describe("useSimulation", () => {
     expect(result.current.state.status).toBe("idle");
     expect(client.simulateContract).not.toHaveBeenCalled();
     expect(addHistory).not.toHaveBeenCalled();
-    expect(result.current.parsedArgs).toBeNull();
   });
 
   it("sets valueError for a bad value string; no rpc, no history", async () => {
@@ -125,8 +124,8 @@ describe("useSimulation", () => {
     expect(result.current.state.status).toBe("done");
     if (result.current.state.status !== "done") throw new Error("not done");
     expect(result.current.state.result.ok).toBe(true);
-    expect(result.current.parsedArgs).toEqual([ACCOUNT, 100n]);
-    expect(result.current.parsedValue).toBeUndefined();
+    expect(result.current.state.parsedArgs).toEqual([ACCOUNT, 100n]);
+    expect(result.current.state.parsedValue).toBeUndefined();
     expect(result.current.argErrors).toEqual({});
     expect(result.current.valueError).toBeUndefined();
     expect(addHistory).toHaveBeenCalledWith({
@@ -156,7 +155,8 @@ describe("useSimulation", () => {
     });
 
     expect(result.current.state.status).toBe("done");
-    expect(result.current.parsedValue).toBe(1000000000000000000n);
+    if (result.current.state.status !== "done") throw new Error("not done");
+    expect(result.current.state.parsedValue).toBe(1000000000000000000n);
     expect(client.simulateContract).toHaveBeenCalledWith(
       expect.objectContaining({ value: 1000000000000000000n }),
     );
@@ -176,7 +176,9 @@ describe("useSimulation", () => {
       await result.current.simulate({}, { amount: "0", unit: "ether" });
     });
 
-    expect(result.current.parsedValue).toBeUndefined();
+    expect(result.current.state.status).toBe("done");
+    if (result.current.state.status !== "done") throw new Error("not done");
+    expect(result.current.state.parsedValue).toBeUndefined();
     expect(client.simulateContract).toHaveBeenCalledWith(
       expect.objectContaining({ value: undefined }),
     );
@@ -214,7 +216,7 @@ describe("useSimulation", () => {
     expect(entry.error).toBeDefined();
   });
 
-  it("reset() clears state, errors, parsedArgs and parsedValue", async () => {
+  it("reset() clears state and errors (parsed values gone with done state)", async () => {
     const client = makeFakeClient();
     const addHistory = vi.fn();
     const { result } = renderHook(() =>
@@ -236,7 +238,104 @@ describe("useSimulation", () => {
     expect(result.current.state.status).toBe("idle");
     expect(result.current.argErrors).toEqual({});
     expect(result.current.valueError).toBeUndefined();
-    expect(result.current.parsedArgs).toBeNull();
-    expect(result.current.parsedValue).toBeUndefined();
+  });
+
+  it("stale simulate resolving after reset is ignored", async () => {
+    let resolveSim: (v: { request: object }) => void = () => {};
+    const deferred = new Promise<{ request: object }>((res) => {
+      resolveSim = res;
+    });
+    const client = makeFakeClient({
+      simulateContract: vi.fn().mockReturnValue(deferred),
+    });
+    const addHistory = vi.fn();
+    const { result } = renderHook(() =>
+      useSimulation(makeContract(), transferFn, {
+        rpc: makeRpc(client),
+        addHistory,
+      }),
+    );
+
+    // Kick off simulate but don't await; it parks on the deferred promise.
+    let simPromise: Promise<void> = Promise.resolve();
+    act(() => {
+      simPromise = result.current.simulate({ to: ACCOUNT, amount: "100" });
+    });
+    expect(result.current.state.status).toBe("loading");
+
+    // Reset before the simulate resolves — invalidates the in-flight call.
+    act(() => {
+      result.current.reset();
+    });
+    expect(result.current.state.status).toBe("idle");
+
+    // Now resolve the stale simulate; it must not touch state or record history.
+    await act(async () => {
+      resolveSim({ request: {} });
+      await simPromise;
+    });
+
+    expect(result.current.state.status).toBe("idle");
+    expect(addHistory).not.toHaveBeenCalled();
+  });
+
+  it("second simulate supersedes first; only the second records history", async () => {
+    let resolveFirst: (v: { request: object }) => void = () => {};
+    let resolveSecond: (v: { request: object }) => void = () => {};
+    const first = new Promise<{ request: object }>((res) => {
+      resolveFirst = res;
+    });
+    const second = new Promise<{ request: object }>((res) => {
+      resolveSecond = res;
+    });
+    const simulateContract = vi
+      .fn()
+      .mockReturnValueOnce(first)
+      .mockReturnValueOnce(second);
+    // estimateContractGas distinguishes the two results by their args
+    // (amount 1n → gas 11111n, amount 2n → gas 22222n), independent of the
+    // order in which the two simulate calls resolve.
+    const estimateContractGas = vi
+      .fn()
+      .mockImplementation((p: { args: readonly unknown[] }) =>
+        Promise.resolve(p.args[1] === 1n ? 11111n : 22222n),
+      );
+    const client = makeFakeClient({ simulateContract, estimateContractGas });
+    const addHistory = vi.fn();
+    const { result } = renderHook(() =>
+      useSimulation(makeContract(), transferFn, {
+        rpc: makeRpc(client),
+        addHistory,
+      }),
+    );
+
+    let firstPromise: Promise<void> = Promise.resolve();
+    let secondPromise: Promise<void> = Promise.resolve();
+    act(() => {
+      firstPromise = result.current.simulate({ to: ACCOUNT, amount: "1" });
+    });
+    act(() => {
+      secondPromise = result.current.simulate({ to: ACCOUNT, amount: "2" });
+    });
+
+    // Resolve the SECOND call first, then the (stale) first one.
+    await act(async () => {
+      resolveSecond({ request: {} });
+      await secondPromise;
+    });
+    await act(async () => {
+      resolveFirst({ request: {} });
+      await firstPromise;
+    });
+
+    expect(result.current.state.status).toBe("done");
+    if (result.current.state.status !== "done") throw new Error("not done");
+    expect(result.current.state.parsedArgs).toEqual([ACCOUNT, 2n]);
+    if (!result.current.state.result.ok) throw new Error("expected ok");
+    expect(result.current.state.result.gas).toBe(22222n);
+    expect(addHistory).toHaveBeenCalledTimes(1);
+    expect(addHistory).toHaveBeenCalledWith(
+      expect.objectContaining({ args: { to: ACCOUNT, amount: "2" } }),
+    );
   });
 });

@@ -230,6 +230,41 @@ describe("useSendOperation", () => {
     );
   });
 
+  it("re-entrant send while first is in-flight is ignored (write called once)", async () => {
+    // writeContractAsync parks on a deferred so the first send stays in-flight.
+    let resolveWrite: (h: `0x${string}`) => void = () => {};
+    writeContractAsync = vi.fn().mockReturnValue(
+      new Promise<`0x${string}`>((res) => {
+        resolveWrite = res;
+      }),
+    );
+    const { rpc } = makeRpc();
+    const addHistory = vi.fn();
+    const { result } = renderHook(() =>
+      useSendOperation(makeContract(), transferFn, { rpc, addHistory }),
+    );
+
+    let firstSend: Promise<void> = Promise.resolve();
+    act(() => {
+      firstSend = result.current.send(SEND_ARGS);
+    });
+    expect(result.current.state.status).toBe("wallet");
+
+    // Second send while the first awaits the wallet — must be a no-op.
+    await act(async () => {
+      await result.current.send(SEND_ARGS);
+    });
+    expect(writeContractAsync).toHaveBeenCalledTimes(1);
+
+    // Let the first send complete cleanly.
+    await act(async () => {
+      resolveWrite(HASH);
+      await firstSend;
+    });
+    expect(writeContractAsync).toHaveBeenCalledTimes(1);
+    expect(result.current.state.status).toBe("confirmed");
+  });
+
   it("not connected → failed 'connect a wallet to sign', nothing called", async () => {
     accountStub = {
       address: undefined,

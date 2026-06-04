@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useAccount, useSwitchChain, useWriteContract } from "wagmi";
 import type { AbiFunction } from "abitype";
 import type { TContract } from "@/entities/contract/model/types";
@@ -40,6 +40,9 @@ export function useSendOperation(
   deps: Deps = defaultDeps,
 ): UseSendOperationResult {
   const [state, setState] = useState<SendState>({ status: "idle" });
+  // Re-entrancy guard. A ref, not `state`, because the state value captured in
+  // this closure can be stale across overlapping send() calls.
+  const inFlight = useRef(false);
   const { address, chainId, isConnected } = useAccount();
   const { switchChainAsync } = useSwitchChain();
   const { writeContractAsync } = useWriteContract();
@@ -50,11 +53,16 @@ export function useSendOperation(
     gas?: bigint;
     rawArgs: Record<string, string>;
   }): Promise<void> {
+    // Ignore overlapping sends while one is awaiting the wallet or pending.
+    if (inFlight.current) return;
+
     // Defensive: UI should prevent sending without a wallet (no history recorded).
     if (!isConnected || !address) {
       setState({ status: "failed", error: "connect a wallet to sign" });
       return;
     }
+
+    inFlight.current = true;
 
     function recordError(error: string, txHash?: `0x${string}`): void {
       deps.addHistory({
@@ -70,74 +78,83 @@ export function useSendOperation(
       });
     }
 
-    // Ensure the wallet is on the contract's chain before signing.
-    if (chainId !== contract.chainId) {
+    try {
+      // Ensure the wallet is on the contract's chain before signing.
+      if (chainId !== contract.chainId) {
+        try {
+          await switchChainAsync({ chainId: contract.chainId });
+        } catch {
+          const msg = "network switch rejected";
+          setState({ status: "failed", error: msg });
+          recordError(msg);
+          return;
+        }
+      }
+
+      setState({ status: "wallet" });
+
+      let hash: `0x${string}`;
       try {
-        await switchChainAsync({ chainId: contract.chainId });
-      } catch {
-        const msg = "network switch rejected";
+        hash = await writeContractAsync({
+          address: contract.address,
+          abi: getEffectiveAbi(contract),
+          functionName: fn.name,
+          args: p.args,
+          value: p.value,
+          gas: p.gas,
+          chainId: contract.chainId,
+        });
+      } catch (e) {
+        const err = e as { shortMessage?: string; message?: string };
+        const msg = err.shortMessage ?? err.message ?? "transaction failed";
         setState({ status: "failed", error: msg });
         recordError(msg);
         return;
       }
-    }
 
-    setState({ status: "wallet" });
+      setState({ status: "pending", hash });
 
-    let hash: `0x${string}`;
-    try {
-      hash = await writeContractAsync({
-        address: contract.address,
-        abi: getEffectiveAbi(contract),
-        functionName: fn.name,
-        args: p.args,
-        value: p.value,
-        gas: p.gas,
-        chainId: contract.chainId,
-      });
-    } catch (e) {
-      const err = e as { shortMessage?: string; message?: string };
-      const msg = err.shortMessage ?? err.message ?? "transaction failed";
-      setState({ status: "failed", error: msg });
-      recordError(msg);
-      return;
-    }
+      let receipt: { status: "success" | "reverted"; blockNumber: bigint };
+      try {
+        receipt = (await deps.rpc
+          .getClient(contract.chainId)
+          .waitForTransactionReceipt({ hash })) as {
+          status: "success" | "reverted";
+          blockNumber: bigint;
+        };
+      } catch (e) {
+        const err = e as { shortMessage?: string; message?: string };
+        const msg = err.shortMessage ?? err.message ?? "transaction failed";
+        setState({ status: "failed", error: msg, hash });
+        recordError(msg, hash);
+        return;
+      }
 
-    setState({ status: "pending", hash });
-
-    let receipt: { status: string; blockNumber: bigint };
-    try {
-      receipt = (await deps.rpc
-        .getClient(contract.chainId)
-        .waitForTransactionReceipt({ hash })) as {
-        status: string;
-        blockNumber: bigint;
-      };
-    } catch (e) {
-      const err = e as { shortMessage?: string; message?: string };
-      const msg = err.shortMessage ?? err.message ?? "transaction failed";
-      setState({ status: "failed", error: msg, hash });
-      recordError(msg, hash);
-      return;
-    }
-
-    if (receipt.status === "success") {
-      setState({ status: "confirmed", hash, blockNumber: receipt.blockNumber });
-      deps.addHistory({
-        contractId: contract.id,
-        chainId: contract.chainId,
-        type: "write",
-        fnName: fn.name,
-        args: p.rawArgs,
-        status: "ok",
-        txHash: hash,
-        result: `block ${receipt.blockNumber}`,
-        from: address,
-      });
-    } else {
-      const msg = "transaction reverted on-chain";
-      setState({ status: "failed", error: msg, hash });
-      recordError(msg, hash);
+      if (receipt.status === "success") {
+        setState({
+          status: "confirmed",
+          hash,
+          blockNumber: receipt.blockNumber,
+        });
+        deps.addHistory({
+          contractId: contract.id,
+          chainId: contract.chainId,
+          type: "write",
+          fnName: fn.name,
+          args: p.rawArgs,
+          status: "ok",
+          txHash: hash,
+          result: `block ${receipt.blockNumber}`,
+          from: address,
+        });
+      } else {
+        const msg = "transaction reverted on-chain";
+        setState({ status: "failed", error: msg, hash });
+        recordError(msg, hash);
+      }
+    } finally {
+      // Released at every terminal state so a subsequent send() can proceed.
+      inFlight.current = false;
     }
   }
 

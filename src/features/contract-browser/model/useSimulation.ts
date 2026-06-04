@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { AbiFunction } from "abitype";
 import type { TContract } from "@/entities/contract/model/types";
 import type { RpcProvider } from "@/shared/ports/rpc";
@@ -14,7 +14,15 @@ import { simulateOperation, type TSimResult } from "./simulateOperation";
 export type SimulationState =
   | { status: "idle" }
   | { status: "loading" }
-  | { status: "done"; result: TSimResult };
+  | {
+      status: "done";
+      result: TSimResult;
+      // Parsed values are co-located with the result so consumers can only
+      // read args that match the sim they are currently seeing. This prevents
+      // a stale parsedArgs/parsedValue from desyncing from the displayed sim.
+      parsedArgs: readonly unknown[];
+      parsedValue: bigint | undefined;
+    };
 
 export type UseSimulationResult = {
   state: SimulationState;
@@ -27,8 +35,6 @@ export type UseSimulationResult = {
     account?: `0x${string}`,
   ) => Promise<void>;
   reset: () => void; // component calls on any input change — invalidates stale sim
-  parsedArgs: readonly unknown[] | null; // from last successful simulate-validation (for send)
-  parsedValue: bigint | undefined;
 };
 
 type Deps = {
@@ -46,15 +52,15 @@ export function useSimulation(
   const [state, setState] = useState<SimulationState>({ status: "idle" });
   const [argErrors, setArgErrors] = useState<Record<string, string>>({});
   const [valueError, setValueError] = useState<string | undefined>(undefined);
-  const [parsedArgs, setParsedArgs] = useState<readonly unknown[] | null>(null);
-  const [parsedValue, setParsedValue] = useState<bigint | undefined>(undefined);
+  // Monotonic call-id: incremented on every simulate() and reset() so an
+  // in-flight simulate that resolves after a newer simulate()/reset() bails.
+  const callId = useRef(0);
 
   function reset(): void {
+    callId.current += 1;
     setState({ status: "idle" });
     setArgErrors({});
     setValueError(undefined);
-    setParsedArgs(null);
-    setParsedValue(undefined);
   }
 
   async function simulate(
@@ -62,6 +68,10 @@ export function useSimulation(
     rawValue?: { amount: string; unit: EthUnit },
     account?: `0x${string}`,
   ): Promise<void> {
+    // Claim a fresh call-id; any earlier in-flight simulate is now stale.
+    callId.current += 1;
+    const myCallId = callId.current;
+
     // Validate each input
     const nextArgErrors: Record<string, string> = {};
     const args: unknown[] = [];
@@ -100,15 +110,18 @@ export function useSimulation(
 
     setArgErrors({});
     setValueError(undefined);
-    setParsedArgs(args);
-    setParsedValue(value);
     setState({ status: "loading" });
 
     const result = await simulateOperation(
       { rpc: deps.rpc },
       { contract, fn, args, value, account },
     );
-    setState({ status: "done", result });
+
+    // Staleness guard: if a newer simulate() or reset() happened during the
+    // await, this resolution is stale — do not touch state or record history.
+    if (callId.current !== myCallId) return;
+
+    setState({ status: "done", result, parsedArgs: args, parsedValue: value });
 
     deps.addHistory({
       contractId: contract.id,
@@ -129,7 +142,5 @@ export function useSimulation(
     valueError,
     simulate,
     reset,
-    parsedArgs,
-    parsedValue,
   };
 }
