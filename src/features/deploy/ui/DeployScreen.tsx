@@ -65,6 +65,9 @@ export function DeployScreen({ deps }: { deps?: Deps }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Synchronous guard: blocks a second click before the disabled state commits.
   const deployBusyRef = useRef(false);
+  // Once saved, always saved — a double-click must not add the contract twice.
+  const savedRef = useRef(false);
+  const [saved, setSaved] = useState(false);
 
   function onAbiChange(next: string): void {
     setAbiRaw(next);
@@ -136,6 +139,9 @@ export function DeployScreen({ deps }: { deps?: Deps }) {
 
   function handleSave(): void {
     if (!confirmed || !ready) return;
+    if (savedRef.current) return;
+    savedRef.current = true;
+    setSaved(true);
     const id = crypto.randomUUID();
     const contract: TContract = {
       id,
@@ -341,6 +347,8 @@ export function DeployScreen({ deps }: { deps?: Deps }) {
                     variant="primary"
                     icon={<Icon.plus size={15} />}
                     onClick={handleSave}
+                    disabled={saved}
+                    title={saved ? "saved" : undefined}
                   >
                     Save to contracts
                   </Button>

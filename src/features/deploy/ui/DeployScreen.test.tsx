@@ -185,6 +185,30 @@ describe("DeployScreen", () => {
     expect(pushMock).toHaveBeenCalledWith(`/?c=${added.id}`);
   });
 
+  it("double-click Save → store gains exactly one contract", async () => {
+    const user = userEvent.setup();
+    renderScreen(makeRpc().rpc);
+
+    fillArtifact(JSON.stringify(nonPayableAbi), BYTECODE);
+    await user.type(screen.getByPlaceholderText("0"), "1000");
+    await user.type(
+      screen.getByPlaceholderText("0x0000000000000000000000000000000000000000"),
+      ACCOUNT,
+    );
+    await user.click(screen.getByRole("button", { name: /^Deploy$/ }));
+    await screen.findByText("Deployment");
+
+    const saveBtn = screen.getByRole("button", { name: /Save to contracts/ });
+    // Fire two synchronous clicks before React commits the disabled state.
+    fireEvent.click(saveBtn);
+    fireEvent.click(saveBtn);
+
+    expect(useContractsStore.getState().contracts).toHaveLength(1);
+    // Button is disabled and titled "saved" once the contract is stored.
+    expect(saveBtn).toBeDisabled();
+    expect(saveBtn).toHaveAttribute("title", "saved");
+  });
+
   it("failed deploy → inline danger error, no result block", async () => {
     deployContractAsync = vi
       .fn()
