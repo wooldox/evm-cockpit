@@ -131,6 +131,45 @@ describe("useEventLogs", () => {
     expect(client.getLogs).not.toHaveBeenCalled();
   });
 
+  it.each(["-5", "0x10"])(
+    "from block %s (hex/negative): error, no rpc",
+    async (fromRaw) => {
+      const client = makeFakeClient();
+      const { result } = renderHook(() =>
+        useEventLogs(makeContract(), { rpc: makeRpc(client) }),
+      );
+
+      await act(async () => {
+        await result.current.fetchLogs(transferEvent, fromRaw, "100");
+      });
+
+      expect(result.current.state.status).toBe("error");
+      if (result.current.state.status !== "error") throw new Error("not error");
+      expect(result.current.state.error).toBe("invalid from block");
+      expect(client.getLogs).not.toHaveBeenCalled();
+      expect(client.getBlockNumber).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["-5", "0x10"])(
+    "to block %s (hex/negative): error, no getLogs",
+    async (toRaw) => {
+      const client = makeFakeClient();
+      const { result } = renderHook(() =>
+        useEventLogs(makeContract(), { rpc: makeRpc(client) }),
+      );
+
+      await act(async () => {
+        await result.current.fetchLogs(transferEvent, "0", toRaw);
+      });
+
+      expect(result.current.state.status).toBe("error");
+      if (result.current.state.status !== "error") throw new Error("not error");
+      expect(result.current.state.error).toBe("invalid to block");
+      expect(client.getLogs).not.toHaveBeenCalled();
+    },
+  );
+
   it("empty/whitespace from block: error, getLogs and getBlockNumber NOT called", async () => {
     const client = makeFakeClient();
     const { result } = renderHook(() =>
@@ -249,6 +288,38 @@ describe("useEventLogs", () => {
     });
 
     expect(result.current.defaultRange).toEqual({ from: "0", to: "latest" });
+  });
+
+  it("loadDefaultRange late failure after reset() does not clobber state", async () => {
+    let rejectBlock: (e: unknown) => void = () => {};
+    const deferred = new Promise<bigint>((_, rej) => {
+      rejectBlock = rej;
+    });
+    const client = makeFakeClient({
+      getBlockNumber: vi.fn().mockReturnValue(deferred),
+    });
+    const { result } = renderHook(() =>
+      useEventLogs(makeContract(), { rpc: makeRpc(client) }),
+    );
+
+    let rangePromise: Promise<void> = Promise.resolve();
+    act(() => {
+      rangePromise = result.current.loadDefaultRange();
+    });
+
+    // reset() bumps callId, invalidating the in-flight loadDefaultRange snapshot.
+    act(() => {
+      result.current.reset();
+    });
+    expect(result.current.state.status).toBe("idle");
+
+    await act(async () => {
+      rejectBlock(new Error("rpc boom"));
+      await rangePromise;
+    });
+
+    // Stale failure must not flip state to error.
+    expect(result.current.state.status).toBe("idle");
   });
 
   it("loadDefaultRange failure sets error state", async () => {

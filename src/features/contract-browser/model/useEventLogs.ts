@@ -48,12 +48,20 @@ export function useEventLogs(
   }
 
   async function loadDefaultRange(): Promise<void> {
+    // Snapshot (don't bump): loading a range shouldn't invalidate an in-flight
+    // fetch, but a late resolution must not clobber a concurrent fetch's state.
+    const mySnapshot = callId.current;
     try {
       const client = deps.rpc.getClient(contract.chainId);
       const latest = await client.getBlockNumber();
+      // A newer fetchLogs()/reset() ran during the await — bail without setState.
+      if (callId.current !== mySnapshot) return;
       const from = latest > DEFAULT_LOOKBACK ? latest - DEFAULT_LOOKBACK : 0n;
       setDefaultRange({ from: from.toString(), to: "latest" });
     } catch (e) {
+      // Late failure must not clobber a concurrent fetch's state; if still fresh
+      // keep current behavior and surface the error.
+      if (callId.current !== mySnapshot) return;
       const err = e as { shortMessage?: string; message?: string };
       const message =
         err.shortMessage ?? err.message ?? "failed to load block range";
@@ -73,7 +81,9 @@ export function useEventLogs(
     const fromTrimmed = fromRaw.trim();
     const toTrimmed = toRaw.trim();
 
-    if (fromTrimmed === "") {
+    // Only plain decimal block numbers — reject hex/negative/exotic forms that
+    // BigInt() would otherwise accept (e.g. "0x1f", "-5").
+    if (!/^\d+$/.test(fromTrimmed)) {
       setState({ status: "error", error: "invalid from block" });
       return;
     }
@@ -94,6 +104,10 @@ export function useEventLogs(
       let toBlock: bigint;
       if (toTrimmed === "" || toTrimmed.toLowerCase() === "latest") {
         toBlock = await client.getBlockNumber();
+      } else if (!/^\d+$/.test(toTrimmed)) {
+        if (callId.current !== myCallId) return;
+        setState({ status: "error", error: "invalid to block" });
+        return;
       } else {
         try {
           toBlock = BigInt(toTrimmed);

@@ -1,7 +1,12 @@
 import { describe, it, expect, vi } from "vitest";
 import type { PublicClient } from "viem";
 import type { Abi, AbiEvent } from "abitype";
-import { fetchEventLogs, MAX_LOGS, CHUNK_SIZE } from "./fetchEventLogs";
+import {
+  fetchEventLogs,
+  MAX_LOGS,
+  CHUNK_SIZE,
+  MAX_WINDOWS,
+} from "./fetchEventLogs";
 import { erc20Abi } from "@/shared/lib/abi/fixtures";
 import type { TContract } from "@/entities/contract/model/types";
 import type { RpcProvider } from "@/shared/ports/rpc";
@@ -216,6 +221,45 @@ describe("fetchEventLogs", () => {
       ),
     ).rejects.toThrow("invalid block range");
     expect(getLogs).not.toHaveBeenCalled();
+  });
+
+  it("rejects a range exceeding MAX_WINDOWS up-front; getLogs never called", async () => {
+    const getLogs = vi.fn();
+    // MAX_WINDOWS+1 windows: from 0, span = (MAX_WINDOWS+1)*CHUNK_SIZE blocks.
+    const toBlock = (MAX_WINDOWS + 1n) * CHUNK_SIZE - 1n;
+    await expect(
+      fetchEventLogs(
+        { rpc: makeRpc(getLogs) },
+        {
+          contract: makeContract(),
+          event: transferEvent,
+          fromBlock: 0n,
+          toBlock,
+        },
+      ),
+    ).rejects.toThrow(
+      "block range too large — narrow the range (max 2,000,000 blocks)",
+    );
+    expect(getLogs).not.toHaveBeenCalled();
+  });
+
+  it("accepts a range of exactly MAX_WINDOWS windows", async () => {
+    const getLogs = vi.fn().mockResolvedValue([]);
+    // Exactly MAX_WINDOWS windows: span = MAX_WINDOWS*CHUNK_SIZE blocks.
+    const toBlock = MAX_WINDOWS * CHUNK_SIZE - 1n;
+    const res = await fetchEventLogs(
+      { rpc: makeRpc(getLogs) },
+      {
+        contract: makeContract(),
+        event: transferEvent,
+        fromBlock: 0n,
+        toBlock,
+      },
+    );
+
+    expect(res.truncated).toBe(false);
+    expect(res.logs).toEqual([]);
+    expect(getLogs).toHaveBeenCalledTimes(Number(MAX_WINDOWS));
   });
 
   it("normalizes positional args (unnamed inputs) to keys '0','1',…", async () => {

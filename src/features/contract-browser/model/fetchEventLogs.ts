@@ -18,6 +18,8 @@ export type TEventLogsResult = {
 
 export const MAX_LOGS = 1000;
 export const CHUNK_SIZE = 10_000n; // blocks per getLogs call
+/** Max number of CHUNK_SIZE windows we'll plan (200 × 10k = 2,000,000 blocks). */
+export const MAX_WINDOWS = 200n;
 /** Below this window size we stop bisecting and surface the original error. */
 const BISECT_FLOOR = 256n;
 
@@ -69,6 +71,15 @@ export async function fetchEventLogs(
 ): Promise<TEventLogsResult> {
   const { contract, event, fromBlock, toBlock } = params;
   if (fromBlock > toBlock) throw new Error("invalid block range");
+
+  // Up-front bound on planned windows: a wide+sparse range would otherwise issue
+  // thousands of sequential getLogs calls without ever tripping MAX_LOGS.
+  const plannedWindows = (toBlock - fromBlock + CHUNK_SIZE) / CHUNK_SIZE;
+  if (plannedWindows > MAX_WINDOWS) {
+    throw new Error(
+      "block range too large — narrow the range (max 2,000,000 blocks)",
+    );
+  }
 
   const client = deps.rpc.getClient(contract.chainId);
   const collected: TDecodedLog[] = [];
