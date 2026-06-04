@@ -3,3 +3,5 @@ node_modules
 out
 docs
 package-lock.json
+contracts
+src/test/artifacts

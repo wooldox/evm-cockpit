@@ -16,6 +16,9 @@ const eslintConfig = defineConfig([
     "docs/**",
     // Test coverage output
     "coverage/**",
+    // Solidity fixtures + their generated artifacts (not linted as JS/TS)
+    "contracts/**",
+    "src/test/artifacts/**",
   ]),
 ]);
 

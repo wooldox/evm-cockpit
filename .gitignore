@@ -40,3 +40,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# foundry fixture build outputs (artifacts in src/test/artifacts are committed)
+/contracts/out/
+/contracts/cache/
