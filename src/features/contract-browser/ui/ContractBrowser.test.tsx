@@ -9,6 +9,9 @@ import { AppShellProvider } from "@/widgets/app-shell/AppShellProvider";
 import { useContractsStore } from "@/entities/contract/model/store";
 import { erc20Abi } from "@/shared/lib/abi/fixtures";
 import type { TContract } from "@/entities/contract/model/types";
+import type { RpcProvider } from "@/shared/ports/rpc";
+import type { THistoryEntry } from "@/entities/history/model/types";
+import type { PublicClient } from "viem";
 import { ContractBrowser } from "./ContractBrowser";
 
 /* ── next/navigation mock ───────────────────────────────── */
@@ -18,13 +21,15 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams("c=test1"),
 }));
 
-/* ── wagmi mock (OperationsSection cards call useAccount) ── */
+/* ── controllable wagmi mock (OperationsSection cards call useAccount) ── */
+let accountStub: {
+  address: `0x${string}` | undefined;
+  chainId: number | undefined;
+  isConnected: boolean;
+} = { address: undefined, chainId: undefined, isConnected: false };
+
 vi.mock("wagmi", () => ({
-  useAccount: () => ({
-    address: undefined,
-    chainId: undefined,
-    isConnected: false,
-  }),
+  useAccount: () => accountStub,
   useSwitchChain: () => ({ switchChainAsync: vi.fn() }),
   useWriteContract: () => ({ writeContractAsync: vi.fn() }),
 }));
@@ -73,7 +78,16 @@ const MULTICALL_RESULTS = [
 ];
 
 /* ── render helper ───────────────────────────────────────── */
-function renderBrowser(contract: TContract, onRemoved = vi.fn()) {
+type OpDeps = {
+  rpc: RpcProvider;
+  addHistory: (e: Omit<THistoryEntry, "id" | "timestamp">) => void;
+};
+
+function renderBrowser(
+  contract: TContract,
+  onRemoved = vi.fn(),
+  deps?: OpDeps,
+) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -81,17 +95,48 @@ function renderBrowser(contract: TContract, onRemoved = vi.fn()) {
     <QueryClientProvider client={client}>
       <ToastProvider>
         <AppShellProvider>
-          <ContractBrowser contract={contract} onRemoved={onRemoved} />
+          <ContractBrowser
+            contract={contract}
+            onRemoved={onRemoved}
+            deps={deps}
+          />
         </AppShellProvider>
       </ToastProvider>
     </QueryClientProvider>,
   );
 }
 
+/* ── fake write-flow rpc client (simulate path) ──────────── */
+function makeOpDeps(): OpDeps {
+  const client = {
+    simulateContract: vi.fn().mockResolvedValue({ request: {} }),
+    estimateContractGas: vi.fn().mockResolvedValue(21000n),
+    estimateFeesPerGas: vi.fn().mockResolvedValue({
+      maxFeePerGas: 2000000000n,
+      maxPriorityFeePerGas: 1000000000n,
+    }),
+    getTransactionCount: vi.fn().mockResolvedValue(7),
+    waitForTransactionReceipt: vi
+      .fn()
+      .mockResolvedValue({ status: "success", blockNumber: 99n }),
+  };
+  return {
+    rpc: {
+      getClient: vi.fn().mockReturnValue(client as unknown as PublicClient),
+    },
+    addHistory: vi.fn(),
+  };
+}
+
 /* ── tests ───────────────────────────────────────────────── */
 describe("ContractBrowser", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    accountStub = {
+      address: undefined,
+      chainId: undefined,
+      isConnected: false,
+    };
     mockClient.multicall.mockResolvedValue(MULTICALL_RESULTS);
     mockClient.readContract.mockResolvedValue(1000n);
     useContractsStore.setState({ contracts: [baseContract] });
@@ -225,5 +270,34 @@ describe("ContractBrowser", () => {
 
     // onRemoved callback should be called
     expect(onRemoved).toHaveBeenCalledOnce();
+  });
+
+  /* 6. Write-flow integration ──────────────────────────── */
+  it("simulates a write op inside the full browser and enables Sign & Send", async () => {
+    const user = userEvent.setup();
+    const ACCOUNT = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd" as const;
+    accountStub = { address: ACCOUNT, chainId: 1, isConnected: true };
+    renderBrowser(baseContract, vi.fn(), makeOpDeps());
+
+    // Operations section header renders inside the browser.
+    await screen.findByText(/state-changing · sends transactions/i);
+
+    // Open the transfer operation card.
+    const transferBtn = await screen.findByRole("button", {
+      name: /^transfer/,
+    });
+    await user.click(transferBtn);
+
+    // Fill args and simulate.
+    await user.type(
+      screen.getByPlaceholderText("0x0000000000000000000000000000000000000000"),
+      ACCOUNT,
+    );
+    await user.type(screen.getByPlaceholderText("0"), "100");
+    await user.click(screen.getByRole("button", { name: /^Simulate$/ }));
+
+    // Success verdict + Sign & Send enabled.
+    await screen.findByText("Will succeed");
+    expect(screen.getByRole("button", { name: /Sign & Send/ })).toBeEnabled();
   });
 });

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import type { TContract } from "@/entities/contract/model/types";
+import type { RpcProvider } from "@/shared/ports/rpc";
+import type { THistoryEntry } from "@/entities/history/model/types";
 import { getBrowserSections } from "@/features/contract-browser/model/effectiveAbi";
 import { Icon } from "@/shared/icons";
 import { Badge, Empty, Input, Muted, Panel } from "@/shared/ui";
@@ -9,6 +11,12 @@ import { ContractHeader } from "./ContractHeader";
 import { PropertiesSection, SectionHead } from "./PropertiesSection";
 import { GettersSection } from "./GettersSection";
 import { OperationsSection } from "./OperationsSection";
+
+/** Test seam: forwarded to OperationsSection (defaults to singletons). */
+type BrowserDeps = {
+  rpc: RpcProvider;
+  addHistory: (e: Omit<THistoryEntry, "id" | "timestamp">) => void;
+};
 
 /* ── NoFunctionMatch ─────────────────────────────────────── */
 function NoFunctionMatch({ q }: { q: string }) {
@@ -24,9 +32,11 @@ function NoFunctionMatch({ q }: { q: string }) {
 export function ContractBrowser({
   contract,
   onRemoved,
+  deps,
 }: {
   contract: TContract;
   onRemoved: () => void;
+  deps?: BrowserDeps;
 }) {
   const [q, setQ] = useState("");
   const ql = q.toLowerCase();
@@ -76,7 +86,7 @@ export function ContractBrowser({
         <PropertiesSection contract={contract} q={ql} />
         <GettersSection contract={contract} q={ql} />
 
-        <OperationsSection contract={contract} q={ql} />
+        <OperationsSection contract={contract} q={ql} deps={deps} />
 
         {/* Events placeholder */}
         {sections.events.length > 0 && (

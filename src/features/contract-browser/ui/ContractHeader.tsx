@@ -1,7 +1,7 @@
 "use client";
 
-import { SUPPORTED_VIEM_CHAINS } from "@/entities/chain/model/chains";
 import { getChainDisplay } from "@/entities/chain/model/chains";
+import { addressUrl } from "@/entities/chain/model/explorer";
 import type { TContract } from "@/entities/contract/model/types";
 import { useContractsStore } from "@/entities/contract/model/store";
 import { Icon } from "@/shared/icons";
@@ -9,18 +9,6 @@ import { trunc } from "@/shared/lib/format";
 import { Badge, Button, ChainBadge, useToast } from "@/shared/ui";
 import { Address, Copyable } from "@/shared/ui/copyable";
 import { useAppShell } from "@/widgets/app-shell/AppShellProvider";
-
-/* ── explorer URL helper ────────────────────────────────── */
-function explorerUrl(
-  chainId: number,
-  section: "address" | "tx",
-  value: string,
-): string | undefined {
-  const chain = SUPPORTED_VIEM_CHAINS.find((c) => c.id === chainId);
-  const base = chain?.blockExplorers?.default?.url;
-  if (!base) return undefined;
-  return `${base}/${section}/${value}`;
-}
 
 /* ── ContractHeader ─────────────────────────────────────── */
 export function ContractHeader({
@@ -33,7 +21,7 @@ export function ContractHeader({
   const toast = useToast();
   const { openEdit } = useAppShell();
   const chain = getChainDisplay(contract.chainId);
-  const addrLink = explorerUrl(contract.chainId, "address", contract.address);
+  const addrLink = addressUrl(contract.chainId, contract.address);
 
   const handleShare = () => {
     toast({ kind: "info", title: "Share links arrive in a later milestone" });
@@ -87,11 +75,7 @@ export function ContractHeader({
             <Copyable
               value={contract.proxy.implAddress}
               display={trunc(contract.proxy.implAddress, 6)}
-              link={explorerUrl(
-                contract.chainId,
-                "address",
-                contract.proxy.implAddress,
-              )}
+              link={addressUrl(contract.chainId, contract.proxy.implAddress)}
             />
             {contract.proxy.implAbi ? (
               <span className="text-xs text-fg-3">
