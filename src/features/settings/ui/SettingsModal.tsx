@@ -4,7 +4,7 @@ import { useSettingsStore } from "@/entities/settings/model/store";
 import { getChainDisplay } from "@/entities/chain/model/chains";
 import { useTheme } from "@/shared/lib/use-theme";
 import { Icon } from "@/shared/icons";
-import { Modal, Field, Input, Segment, Button } from "@/shared/ui";
+import { Modal, Field, Input, Segment, Button, Muted } from "@/shared/ui";
 import { useAppShell } from "@/widgets/app-shell/AppShellProvider";
 
 export function SettingsModal({ onClose }: { onClose: () => void }) {
@@ -69,7 +69,14 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
 
         <Field
           label={`Custom RPC — ${currentChain.name}`}
-          hint="Overrides the default public RPC for this chain."
+          hint={
+            <>
+              Overrides the default public RPC for this chain.
+              <Muted className="mt-0.5 block text-xs">
+                Applies to reads immediately; wallet actions may need a reload.
+              </Muted>
+            </>
+          }
         >
           <Input
             mono

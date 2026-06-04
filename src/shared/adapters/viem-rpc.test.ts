@@ -13,6 +13,13 @@ describe("viem rpc adapter", () => {
     const rpc = createViemRpc(() => ({ 1: "https://my.rpc" }));
     expect(rpc.getClient(1).transport.url).toBe("https://my.rpc");
   });
+  it("ignores an empty/whitespace override and uses the curated default", () => {
+    // Behavior fix: the old inline `?? DEFAULT_RPC_URLS` would keep an empty
+    // string (not nullish) and feed http("") a broken URL. resolveRpcUrl now
+    // treats empty/whitespace overrides as absent.
+    const rpc = createViemRpc(() => ({ 1: "   " }));
+    expect(rpc.getClient(1).transport.url).toBe("https://eth.drpc.org");
+  });
   it("memoizes the client for the same chain+url", () => {
     const rpc = createViemRpc(() => ({}));
     expect(rpc.getClient(1)).toBe(rpc.getClient(1));
