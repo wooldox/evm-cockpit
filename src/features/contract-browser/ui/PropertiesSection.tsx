@@ -1,6 +1,7 @@
 "use client";
 
 import type { TContract } from "@/entities/contract/model/types";
+import { getBrowserSections } from "@/features/contract-browser/model/effectiveAbi";
 import { useProperties } from "@/features/contract-browser/model/useProperties";
 import { Icon } from "@/shared/icons";
 import { cx } from "@/shared/lib/cx";
@@ -119,23 +120,26 @@ export function PropertiesSection({
   const { rows, isLoading, isError, error, refetch, isFetching } =
     useProperties(contract);
 
-  // Return null when no properties at all
+  // sections is also computed inside useProperties; reuse it here for skeleton source
+  const sections = getBrowserSections(contract);
+
+  // Return null when no properties at all (post-load only)
   if (!isLoading && rows.length === 0) return null;
 
   const filtered = rows.filter(
     (r) => !q || r.fn.name.toLowerCase().includes(q),
   );
 
-  // Also return null when there are truly no properties (post-load, filtered or not)
-  // But keep section visible while loading so we show skeletons
-  if (!isLoading && rows.length === 0) return null;
+  // During initial load render one skeleton row per property derived from the ABI
+  // so the layout is populated even before multicall resolves.
+  const skeletonFns = sections.properties;
 
   return (
     <section>
       <SectionHead
         tone="read"
         title="Properties"
-        count={rows.length}
+        count={isLoading ? skeletonFns.length : rows.length}
         note="auto-read · multicall batched"
         action={
           <Button
@@ -167,23 +171,39 @@ export function PropertiesSection({
       {!isError && (
         <Panel>
           <div className="grid grid-cols-[minmax(160px,280px)_1fr]">
-            {(isLoading ? rows : filtered).map((row, i) => {
-              const outType = row.fn.outputs[0]?.type ?? "";
-              const isLast = i === (isLoading ? rows : filtered).length - 1;
-              return (
-                <PropRow
-                  key={row.fn.name}
-                  name={row.fn.name}
-                  outType={outType}
-                  value={row.status === "ok" ? row.value : undefined}
-                  status={row.status}
-                  error={row.status === "error" ? row.error : undefined}
-                  isLoading={isLoading}
-                  last={isLast}
-                  chainId={contract.chainId}
-                />
-              );
-            })}
+            {isLoading
+              ? skeletonFns.map((fn, i) => {
+                  const outType = fn.outputs[0]?.type ?? "";
+                  return (
+                    <PropRow
+                      key={`${fn.name}()`}
+                      name={fn.name}
+                      outType={outType}
+                      value={undefined}
+                      status={undefined}
+                      error={undefined}
+                      isLoading={true}
+                      last={i === skeletonFns.length - 1}
+                      chainId={contract.chainId}
+                    />
+                  );
+                })
+              : filtered.map((row, i) => {
+                  const outType = row.fn.outputs[0]?.type ?? "";
+                  return (
+                    <PropRow
+                      key={`${row.fn.name}()`}
+                      name={row.fn.name}
+                      outType={outType}
+                      value={row.status === "ok" ? row.value : undefined}
+                      status={row.status}
+                      error={row.status === "error" ? row.error : undefined}
+                      isLoading={false}
+                      last={i === filtered.length - 1}
+                      chainId={contract.chainId}
+                    />
+                  );
+                })}
           </div>
         </Panel>
       )}

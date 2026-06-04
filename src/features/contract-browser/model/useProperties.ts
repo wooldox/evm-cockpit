@@ -33,7 +33,12 @@ export function useProperties(
   const sections = getBrowserSections(contract);
 
   const query = useQuery({
-    queryKey: ["properties", contract.id, contract.chainId],
+    queryKey: [
+      "properties",
+      contract.id,
+      contract.chainId,
+      contract.proxy?.implAddress ?? null,
+    ],
     queryFn: async () => {
       const client = deps.rpc.getClient(contract.chainId);
       const abi = getEffectiveAbi(contract);
