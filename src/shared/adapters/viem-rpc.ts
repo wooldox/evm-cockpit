@@ -1,6 +1,9 @@
 import { createPublicClient, http } from "viem";
 import type { PublicClient } from "viem";
-import { SUPPORTED_VIEM_CHAINS } from "@/entities/chain/model/chains";
+import {
+  SUPPORTED_VIEM_CHAINS,
+  DEFAULT_RPC_URLS,
+} from "@/entities/chain/model/chains";
 import type { RpcProvider } from "@/shared/ports/rpc";
 
 const CHAIN_MAP = new Map(SUPPORTED_VIEM_CHAINS.map((c) => [c.id, c]));
@@ -17,7 +20,9 @@ export function createViemRpc(
         throw new Error(`Unsupported chain: ${chainId}`);
       }
 
-      const url: string | undefined = getOverrides()[chainId];
+      // Resolution order: settings override → curated default → viem chain default
+      const url: string | undefined =
+        getOverrides()[chainId] ?? DEFAULT_RPC_URLS[chainId];
       const cacheKey = `${chainId}:${url ?? "default"}`;
 
       const cached = cache.get(cacheKey);

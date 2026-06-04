@@ -15,6 +15,17 @@ export type TChainDisplay = {
   color: string;
 };
 
+/** Curated default public RPC per supported chain (viem's built-in defaults can rot —
+ *  e.g. mainnet's eth.merkle.io went dead). Settings rpcOverrides always win over these. */
+export const DEFAULT_RPC_URLS: Record<number, string> = {
+  1: "https://eth.drpc.org",
+  8453: "https://base.drpc.org",
+  42161: "https://arbitrum.drpc.org",
+  10: "https://optimism.drpc.org",
+  137: "https://polygon.drpc.org",
+  11155111: "https://sepolia.drpc.org",
+};
+
 const META: Record<number, { short: string; color: string }> = {
   1: { short: "ETH", color: "#627eea" },
   8453: { short: "BASE", color: "#0052ff" },

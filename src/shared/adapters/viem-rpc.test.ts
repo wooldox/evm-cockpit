@@ -4,7 +4,10 @@ import { createViemRpc } from "./viem-rpc";
 describe("viem rpc adapter", () => {
   it("returns a public client for a known chain", () => {
     const rpc = createViemRpc(() => ({}));
-    expect(rpc.getClient(1).chain?.id).toBe(1);
+    const client = rpc.getClient(1);
+    expect(client.chain?.id).toBe(1);
+    // Curated default should be used when no override is present
+    expect(client.transport.url).toBe("https://eth.drpc.org");
   });
   it("uses the override URL when present", () => {
     const rpc = createViemRpc(() => ({ 1: "https://my.rpc" }));
@@ -20,4 +23,8 @@ describe("viem rpc adapter", () => {
       /unsupported|unknown|not.*support/i,
     );
   });
+  // Note: simulating a chain in SUPPORTED_VIEM_CHAINS but absent from DEFAULT_RPC_URLS
+  // would require patching the module-level CHAIN_MAP, which is not straightforward without
+  // mocking. The fallback to viem's chain default (http(undefined)) is covered by the
+  // implementation path but not exercised here.
 });
