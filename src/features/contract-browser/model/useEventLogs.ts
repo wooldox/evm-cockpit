@@ -73,6 +73,11 @@ export function useEventLogs(
     const fromTrimmed = fromRaw.trim();
     const toTrimmed = toRaw.trim();
 
+    if (fromTrimmed === "") {
+      setState({ status: "error", error: "invalid from block" });
+      return;
+    }
+
     let fromBlock: bigint;
     try {
       fromBlock = BigInt(fromTrimmed);

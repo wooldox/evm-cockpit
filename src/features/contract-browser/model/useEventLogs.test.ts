@@ -131,6 +131,23 @@ describe("useEventLogs", () => {
     expect(client.getLogs).not.toHaveBeenCalled();
   });
 
+  it("empty/whitespace from block: error, getLogs and getBlockNumber NOT called", async () => {
+    const client = makeFakeClient();
+    const { result } = renderHook(() =>
+      useEventLogs(makeContract(), { rpc: makeRpc(client) }),
+    );
+
+    await act(async () => {
+      await result.current.fetchLogs(transferEvent, "   ", "100");
+    });
+
+    expect(result.current.state.status).toBe("error");
+    if (result.current.state.status !== "error") throw new Error("not error");
+    expect(result.current.state.error).toBe("invalid from block");
+    expect(client.getLogs).not.toHaveBeenCalled();
+    expect(client.getBlockNumber).not.toHaveBeenCalled();
+  });
+
   it("invalid to block: error, getLogs NOT called", async () => {
     const client = makeFakeClient();
     const { result } = renderHook(() =>
