@@ -214,4 +214,34 @@ describe("HistoryView", () => {
     expect(btn).toBeDisabled();
     expect(btn).toHaveAttribute("title", "contract no longer saved");
   });
+
+  it("initialContractId preselects the contract filter on first render", () => {
+    seed(
+      [
+        entry({ contractId: "a", fnName: "balanceOf" }),
+        entry({ contractId: "b", fnName: "allowance" }),
+      ],
+      [contractA, contractB],
+    );
+    // The /history?c=b page passes the searchParam through as the prop.
+    render(<HistoryView initialContractId="b" />);
+
+    // Rows filtered to contract B from the first render — no effects.
+    expect(screen.queryByText("balanceOf()")).not.toBeInTheDocument();
+    expect(screen.getByText("allowance()")).toBeInTheDocument();
+    // Select reflects the preselected contract.
+    expect(
+      (screen.getByLabelText("Filter by contract") as HTMLSelectElement).value,
+    ).toBe("b");
+  });
+
+  it("initialContractId falls back to 'all' when the contract is unknown", () => {
+    seed([entry({ contractId: "a", fnName: "balanceOf" })], [contractA]);
+    render(<HistoryView initialContractId="does-not-exist" />);
+
+    expect(screen.getByText("balanceOf()")).toBeInTheDocument();
+    expect(
+      (screen.getByLabelText("Filter by contract") as HTMLSelectElement).value,
+    ).toBe("all");
+  });
 });

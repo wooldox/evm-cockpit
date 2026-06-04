@@ -350,7 +350,8 @@ describe("OperationsSection", () => {
     const OTHER = "0x9999999999999999999999999999999999999999" as `0x${string}`;
     const user = userEvent.setup();
     // Sim runs with account A (ACCOUNT, set in beforeEach).
-    const { rerender, deps } = renderSection(makeFakeClient());
+    const client = makeFakeClient();
+    const { rerender, deps } = renderSection(client);
 
     await expand(user, /^transfer/);
     await user.type(
@@ -360,6 +361,11 @@ describe("OperationsSection", () => {
     await user.type(screen.getByPlaceholderText("0"), "100");
     await user.click(screen.getByRole("button", { name: /^Simulate$/ }));
     await screen.findByText("Will succeed");
+
+    // First sim ran with account A.
+    expect(client.simulateContract).toHaveBeenLastCalledWith(
+      expect.objectContaining({ account: ACCOUNT }),
+    );
 
     // Flip the connected account to B and rerender (pure derivation).
     accountStub = { address: OTHER, chainId: 1, isConnected: true };
@@ -387,6 +393,11 @@ describe("OperationsSection", () => {
     expect(
       screen.getByRole("button", { name: /Sign & Send/ }),
     ).toBeInTheDocument();
+
+    // The re-sim used the NEW signer (B), not just recovering the UI.
+    expect(client.simulateContract).toHaveBeenLastCalledWith(
+      expect.objectContaining({ account: OTHER }),
+    );
   });
 
   it("disconnecting the wallet after a sim hides the verdict (stale)", async () => {

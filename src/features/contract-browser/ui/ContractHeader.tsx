@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { getChainDisplay } from "@/entities/chain/model/chains";
 import { addressUrl } from "@/entities/chain/model/explorer";
 import type { TContract } from "@/entities/contract/model/types";
@@ -19,13 +20,18 @@ export function ContractHeader({
   onRemoved: () => void;
 }) {
   const toast = useToast();
+  const router = useRouter();
   const { openEdit } = useAppShell();
   const chain = getChainDisplay(contract.chainId);
   const addrLink = addressUrl(contract.chainId, contract.address);
 
   const handleShare = () => {
     toast({ kind: "info", title: "Share links arrive in a later milestone" });
-    // TODO(M4)
+    // TODO(M4b): share/export-import flow
+  };
+
+  const handleHistory = () => {
+    router.push(`/history?c=${contract.id}`);
   };
 
   const handleEdit = () => {
@@ -90,6 +96,14 @@ export function ContractHeader({
         )}
       </div>
       <div className="flex flex-none gap-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={<Icon.history size={15} />}
+          onClick={handleHistory}
+        >
+          History
+        </Button>
         <Button
           variant="ghost"
           size="sm"

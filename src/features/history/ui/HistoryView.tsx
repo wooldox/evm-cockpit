@@ -118,13 +118,26 @@ function HistoryRow({
 }
 
 /* ── HistoryView ────────────────────────────────────────── */
-export function HistoryView() {
+export function HistoryView({
+  initialContractId,
+}: {
+  initialContractId?: string;
+} = {}) {
   const router = useRouter();
   const entries = useHistoryStore((s) => s.entries);
   const clear = useHistoryStore((s) => s.clear);
   const contracts = useContractsStore((s) => s.contracts);
 
-  const [sel, setSel] = useState<string>("all");
+  // Preselect the deep-linked contract when it still exists in the store;
+  // otherwise fall back to "all". Initializer-only — no effects.
+  const [sel, setSel] = useState<string>(() =>
+    initialContractId &&
+    useContractsStore
+      .getState()
+      .contracts.some((c) => c.id === initialContractId)
+      ? initialContractId
+      : "all",
+  );
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
 
   const filtered = entries.filter(
