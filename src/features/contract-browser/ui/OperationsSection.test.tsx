@@ -346,6 +346,83 @@ describe("OperationsSection", () => {
     );
   });
 
+  it("changing the wallet account after a sim hides the verdict; re-sim restores it", async () => {
+    const OTHER = "0x9999999999999999999999999999999999999999" as `0x${string}`;
+    const user = userEvent.setup();
+    // Sim runs with account A (ACCOUNT, set in beforeEach).
+    const { rerender, deps } = renderSection(makeFakeClient());
+
+    await expand(user, /^transfer/);
+    await user.type(
+      screen.getByPlaceholderText("0x0000000000000000000000000000000000000000"),
+      ACCOUNT,
+    );
+    await user.type(screen.getByPlaceholderText("0"), "100");
+    await user.click(screen.getByRole("button", { name: /^Simulate$/ }));
+    await screen.findByText("Will succeed");
+
+    // Flip the connected account to B and rerender (pure derivation).
+    accountStub = { address: OTHER, chainId: 1, isConnected: true };
+    rerender(
+      <ToastProvider>
+        <OperationsSection contract={baseContract} q="" deps={deps} />
+      </ToastProvider>,
+    );
+
+    // Verdict gone, staleness notice shown, Sign & Send absent.
+    expect(screen.queryByText("Will succeed")).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/wallet changed — re-simulate/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Sign & Send/ }),
+    ).not.toBeInTheDocument();
+
+    // Re-simulate: the sim now runs with B, so the verdict is valid again.
+    await user.click(screen.getByRole("button", { name: /^Simulate$/ }));
+    await screen.findByText("Will succeed");
+    expect(
+      screen.queryByText(/wallet changed — re-simulate/),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Sign & Send/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("disconnecting the wallet after a sim hides the verdict (stale)", async () => {
+    const user = userEvent.setup();
+    const { rerender, deps } = renderSection(makeFakeClient());
+
+    await expand(user, /^transfer/);
+    await user.type(
+      screen.getByPlaceholderText("0x0000000000000000000000000000000000000000"),
+      ACCOUNT,
+    );
+    await user.type(screen.getByPlaceholderText("0"), "100");
+    await user.click(screen.getByRole("button", { name: /^Simulate$/ }));
+    await screen.findByText("Will succeed");
+
+    // Disconnect → address undefined, which differs from the sim's account.
+    accountStub = {
+      address: undefined,
+      chainId: undefined,
+      isConnected: false,
+    };
+    rerender(
+      <ToastProvider>
+        <OperationsSection contract={baseContract} q="" deps={deps} />
+      </ToastProvider>,
+    );
+
+    expect(screen.queryByText("Will succeed")).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/wallet changed — re-simulate/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Sign & Send/ }),
+    ).not.toBeInTheDocument();
+  });
+
   it("download click triggers a json download named <fn>-tx.json", async () => {
     const createObjectURL = vi.fn().mockReturnValue("blob:fake");
     const revokeObjectURL = vi.fn();

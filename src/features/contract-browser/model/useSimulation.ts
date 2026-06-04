@@ -22,6 +22,10 @@ export type SimulationState =
       // a stale parsedArgs/parsedValue from desyncing from the displayed sim.
       parsedArgs: readonly unknown[];
       parsedValue: bigint | undefined;
+      // The connected account the sim ran with. The consumer compares this to
+      // the live wallet address to invalidate the verdict if the account
+      // changed after the sim — the prediction is signer-specific.
+      account: `0x${string}` | undefined;
     };
 
 export type UseSimulationResult = {
@@ -121,7 +125,13 @@ export function useSimulation(
     // await, this resolution is stale — do not touch state or record history.
     if (callId.current !== myCallId) return;
 
-    setState({ status: "done", result, parsedArgs: args, parsedValue: value });
+    setState({
+      status: "done",
+      result,
+      parsedArgs: args,
+      parsedValue: value,
+      account,
+    });
 
     deps.addHistory({
       contractId: contract.id,

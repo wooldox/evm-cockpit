@@ -104,7 +104,13 @@ function OperationCard({
 
   const loading = sim.state.status === "loading";
   const done = sim.state.status === "done" ? sim.state : null;
-  const result = done?.result;
+  // The verdict is signer-specific (gas/revert depend on the from-account). If
+  // the connected account changed since the sim ran, the verdict is stale and
+  // must not stay actionable — hide it and prompt a re-simulate. Strict equality
+  // on both possibly-undefined values (undefined === undefined holds for the
+  // disconnect-after-sim case). Pure derivation — no effect.
+  const accountStale = done !== null && done.account !== address;
+  const result = accountStale ? undefined : done?.result;
 
   const sendState = sender.state;
   const sendBusy =
@@ -247,6 +253,18 @@ function OperationCard({
         </Button>
         <Muted className="text-xs">dry-run before you sign — recommended</Muted>
       </div>
+
+      {/* Wallet account changed since the sim ran — the verdict is signer-
+          specific and no longer reflects the connected account. Hide it and
+          prompt a re-simulate (Sign is gone with the verdict shell). */}
+      {accountStale && (
+        <div className="flex items-center gap-1.5">
+          <Icon.refresh size={13} className="text-fg-3" />
+          <Muted className="text-xs">
+            wallet changed — re-simulate to verify with the connected account
+          </Muted>
+        </div>
+      )}
 
       {/* RPC-kind failure: not a revert verdict — inline danger + retry hint. */}
       {done && result && !result.ok && result.kind === "rpc" && (

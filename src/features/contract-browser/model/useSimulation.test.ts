@@ -126,6 +126,7 @@ describe("useSimulation", () => {
     expect(result.current.state.result.ok).toBe(true);
     expect(result.current.state.parsedArgs).toEqual([ACCOUNT, 100n]);
     expect(result.current.state.parsedValue).toBeUndefined();
+    expect(result.current.state.account).toBe(ACCOUNT);
     expect(result.current.argErrors).toEqual({});
     expect(result.current.valueError).toBeUndefined();
     expect(addHistory).toHaveBeenCalledWith({
@@ -157,6 +158,7 @@ describe("useSimulation", () => {
     expect(result.current.state.status).toBe("done");
     if (result.current.state.status !== "done") throw new Error("not done");
     expect(result.current.state.parsedValue).toBe(1000000000000000000n);
+    expect(result.current.state.account).toBeUndefined();
     expect(client.simulateContract).toHaveBeenCalledWith(
       expect.objectContaining({ value: 1000000000000000000n }),
     );
