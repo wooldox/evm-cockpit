@@ -6,6 +6,9 @@ import type { TContract } from "@/entities/contract/model/types";
 import type { RpcProvider } from "@/shared/ports/rpc";
 import { viemRpc } from "@/app/web3/services";
 import { paramSchema } from "@/shared/lib/values/paramSchema";
+import { stringifyWithBigint } from "@/shared/lib/json/stringify";
+import { record } from "@/entities/history/model/store";
+import type { THistoryEntry } from "@/entities/history/model/types";
 import { getEffectiveAbi } from "./effectiveAbi";
 
 export type GetterStatus = "idle" | "loading" | "done" | "error";
@@ -23,9 +26,10 @@ export type UseGetterCallResult = UseGetterCallState & {
 
 type Deps = {
   rpc: RpcProvider;
+  addHistory: (e: Omit<THistoryEntry, "id" | "timestamp">) => void;
 };
 
-const defaultDeps: Deps = { rpc: viemRpc };
+const defaultDeps: Deps = { rpc: viemRpc, addHistory: record };
 
 export function useGetterCall(
   contract: TContract,
@@ -73,10 +77,28 @@ export function useGetterCall(
       });
 
       setState({ status: "done", result, argErrors: {} });
+      deps.addHistory({
+        contractId: contract.id,
+        chainId: contract.chainId,
+        type: "read",
+        fnName: fn.name,
+        args: rawArgs,
+        status: "ok",
+        result: stringifyWithBigint(result),
+      });
     } catch (e) {
       const err = e as { shortMessage?: string; message?: string };
       const message = err.shortMessage ?? err.message ?? "call failed";
       setState({ status: "error", error: message, argErrors: {} });
+      deps.addHistory({
+        contractId: contract.id,
+        chainId: contract.chainId,
+        type: "read",
+        fnName: fn.name,
+        args: rawArgs,
+        status: "error",
+        error: message,
+      });
     }
   }
 

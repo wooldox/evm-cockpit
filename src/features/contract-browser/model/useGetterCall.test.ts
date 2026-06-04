@@ -35,13 +35,14 @@ function makeFakeClient(readContractImpl?: () => Promise<unknown>) {
 }
 
 describe("useGetterCall", () => {
-  it("sets argErrors when address arg is invalid; does NOT call readContract", async () => {
+  it("sets argErrors when address arg is invalid; does NOT call readContract or record history", async () => {
     const fakeClient = makeFakeClient();
     const rpc: RpcProvider = { getClient: vi.fn().mockReturnValue(fakeClient) };
+    const addHistory = vi.fn();
 
     const contract = makeContract();
     const { result } = renderHook(() =>
-      useGetterCall(contract, balanceOfFn, { rpc }),
+      useGetterCall(contract, balanceOfFn, { rpc, addHistory }),
     );
 
     expect(result.current.status).toBe("idle");
@@ -53,15 +54,17 @@ describe("useGetterCall", () => {
     expect(result.current.argErrors["owner"]).toBeDefined();
     expect(result.current.status).toBe("idle");
     expect(fakeClient.readContract).not.toHaveBeenCalled();
+    expect(addHistory).not.toHaveBeenCalled();
   });
 
-  it("returns result and status=done for valid args", async () => {
+  it("returns result and status=done for valid args, recording an ok entry", async () => {
     const fakeClient = makeFakeClient(() => Promise.resolve(42n));
     const rpc: RpcProvider = { getClient: vi.fn().mockReturnValue(fakeClient) };
+    const addHistory = vi.fn();
 
     const contract = makeContract();
     const { result } = renderHook(() =>
-      useGetterCall(contract, balanceOfFn, { rpc }),
+      useGetterCall(contract, balanceOfFn, { rpc, addHistory }),
     );
 
     await act(async () => {
@@ -74,19 +77,30 @@ describe("useGetterCall", () => {
     expect(result.current.result).toBe(42n);
     expect(result.current.argErrors).toEqual({});
     expect(fakeClient.readContract).toHaveBeenCalledOnce();
+    expect(addHistory).toHaveBeenCalledOnce();
+    expect(addHistory).toHaveBeenCalledWith({
+      contractId: "test-id",
+      chainId: 1,
+      type: "read",
+      fnName: "balanceOf",
+      args: { owner: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd" },
+      status: "ok",
+      result: '"42"',
+    });
   });
 
-  it("sets status=error with shortMessage when client throws a viem-like error", async () => {
+  it("sets status=error with shortMessage when client throws a viem-like error, recording an error entry", async () => {
     const fakeClient = {
       readContract: vi
         .fn()
         .mockRejectedValue({ shortMessage: "execution reverted" }),
     };
     const rpc: RpcProvider = { getClient: vi.fn().mockReturnValue(fakeClient) };
+    const addHistory = vi.fn();
 
     const contract = makeContract();
     const { result } = renderHook(() =>
-      useGetterCall(contract, balanceOfFn, { rpc }),
+      useGetterCall(contract, balanceOfFn, { rpc, addHistory }),
     );
 
     await act(async () => {
@@ -97,6 +111,16 @@ describe("useGetterCall", () => {
 
     expect(result.current.status).toBe("error");
     expect(result.current.error).toBe("execution reverted");
+    expect(addHistory).toHaveBeenCalledOnce();
+    expect(addHistory).toHaveBeenCalledWith({
+      contractId: "test-id",
+      chainId: 1,
+      type: "read",
+      fnName: "balanceOf",
+      args: { owner: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd" },
+      status: "error",
+      error: "execution reverted",
+    });
   });
 
   it("falls back to .message when shortMessage is absent", async () => {
@@ -104,10 +128,11 @@ describe("useGetterCall", () => {
       readContract: vi.fn().mockRejectedValue(new Error("rpc failed")),
     };
     const rpc: RpcProvider = { getClient: vi.fn().mockReturnValue(fakeClient) };
+    const addHistory = vi.fn();
 
     const contract = makeContract();
     const { result } = renderHook(() =>
-      useGetterCall(contract, balanceOfFn, { rpc }),
+      useGetterCall(contract, balanceOfFn, { rpc, addHistory }),
     );
 
     await act(async () => {
