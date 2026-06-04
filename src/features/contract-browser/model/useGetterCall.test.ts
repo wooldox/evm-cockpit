@@ -28,7 +28,9 @@ const balanceOfFn = erc20Abi.find(
 
 function makeFakeClient(readContractImpl?: () => Promise<unknown>) {
   return {
-    readContract: vi.fn().mockImplementation(readContractImpl ?? (() => Promise.resolve(42n))),
+    readContract: vi
+      .fn()
+      .mockImplementation(readContractImpl ?? (() => Promise.resolve(42n))),
   };
 }
 
@@ -63,7 +65,9 @@ describe("useGetterCall", () => {
     );
 
     await act(async () => {
-      await result.current.call({ owner: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd" });
+      await result.current.call({
+        owner: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+      });
     });
 
     expect(result.current.status).toBe("done");
@@ -74,7 +78,9 @@ describe("useGetterCall", () => {
 
   it("sets status=error with shortMessage when client throws a viem-like error", async () => {
     const fakeClient = {
-      readContract: vi.fn().mockRejectedValue({ shortMessage: "execution reverted" }),
+      readContract: vi
+        .fn()
+        .mockRejectedValue({ shortMessage: "execution reverted" }),
     };
     const rpc: RpcProvider = { getClient: vi.fn().mockReturnValue(fakeClient) };
 
@@ -84,7 +90,9 @@ describe("useGetterCall", () => {
     );
 
     await act(async () => {
-      await result.current.call({ owner: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd" });
+      await result.current.call({
+        owner: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+      });
     });
 
     expect(result.current.status).toBe("error");
@@ -103,7 +111,9 @@ describe("useGetterCall", () => {
     );
 
     await act(async () => {
-      await result.current.call({ owner: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd" });
+      await result.current.call({
+        owner: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+      });
     });
 
     expect(result.current.status).toBe("error");

@@ -32,7 +32,14 @@ function makeWrapper() {
   return Wrapper;
 }
 
-function makeFakeClient(multicallResults: { status: "success"; result: unknown }[] | ({ status: "failure"; error: Error } | { status: "success"; result: unknown })[]) {
+function makeFakeClient(
+  multicallResults:
+    | { status: "success"; result: unknown }[]
+    | (
+        | { status: "failure"; error: Error }
+        | { status: "success"; result: unknown }
+      )[],
+) {
   return {
     multicall: vi.fn().mockResolvedValue(multicallResults),
   };
@@ -47,7 +54,8 @@ describe("useProperties", () => {
     // Build results: first = success, second = failure, rest = success
     const results = sections.properties.map((_, i) => {
       if (i === 0) return { status: "success" as const, result: "USD Coin" };
-      if (i === 1) return { status: "failure" as const, error: new Error("boom") };
+      if (i === 1)
+        return { status: "failure" as const, error: new Error("boom") };
       return { status: "success" as const, result: "fallback" };
     });
 

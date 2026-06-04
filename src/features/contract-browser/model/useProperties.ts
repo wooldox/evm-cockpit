@@ -40,31 +40,46 @@ export function useProperties(
 
       // Type the contracts array loosely so multicall's strict generics don't
       // reject a dynamically-built list. Cast result items via `unknown` as well.
-      const contracts: { address: `0x${string}`; abi: typeof abi; functionName: string }[] =
-        sections.properties.map((fn) => ({
-          address: contract.address,
-          abi,
-          functionName: fn.name,
-        }));
+      const contracts: {
+        address: `0x${string}`;
+        abi: typeof abi;
+        functionName: string;
+      }[] = sections.properties.map((fn) => ({
+        address: contract.address,
+        abi,
+        functionName: fn.name,
+      }));
 
       const res = await client.multicall({
-        contracts: contracts as Parameters<typeof client.multicall>[0]["contracts"],
+        contracts: contracts as Parameters<
+          typeof client.multicall
+        >[0]["contracts"],
         allowFailure: true,
       });
 
       return sections.properties.map((fn, i): PropertyRow => {
         // res[i] is defined because res has same length as contracts
-        const r = (res as { status: "success"; result: unknown }[] | { status: "failure"; error: unknown }[])[i] as
+        const r = (
+          res as
+            | { status: "success"; result: unknown }[]
+            | { status: "failure"; error: unknown }[]
+        )[i] as
           | { status: "success"; result: unknown }
           | { status: "failure"; error: unknown };
 
         if (r.status === "success") {
-          return { fn, status: "ok", value: (r as { status: "success"; result: unknown }).result };
+          return {
+            fn,
+            status: "ok",
+            value: (r as { status: "success"; result: unknown }).result,
+          };
         }
         return {
           fn,
           status: "error",
-          error: ((r as { status: "failure"; error: unknown }).error as Error)?.message ?? "call failed",
+          error:
+            ((r as { status: "failure"; error: unknown }).error as Error)
+              ?.message ?? "call failed",
         };
       });
     },
