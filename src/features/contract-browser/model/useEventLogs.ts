@@ -13,10 +13,18 @@ export type EventLogsState =
   | { status: "done"; result: TEventLogsResult }
   | { status: "error"; error: string };
 
+export type DefaultRange = { from: string; to: string };
+
 export type UseEventLogsResult = {
   state: EventLogsState;
-  defaultRange: { from: string; to: string } | null;
-  loadDefaultRange: () => Promise<void>;
+  defaultRange: DefaultRange | null;
+  /**
+   * Resolve the default look-back window (latest − 9999) and store it in
+   * `defaultRange`. Also returns the resolved range so a caller can use it
+   * synchronously within the same handler (state updates aren't visible to the
+   * running closure); returns null when the block-number lookup failed.
+   */
+  loadDefaultRange: () => Promise<DefaultRange | null>;
   fetchLogs: (event: AbiEvent, fromRaw: string, toRaw: string) => Promise<void>;
   reset: () => void;
 };
@@ -47,7 +55,7 @@ export function useEventLogs(
     setState({ status: "idle" });
   }
 
-  async function loadDefaultRange(): Promise<void> {
+  async function loadDefaultRange(): Promise<DefaultRange | null> {
     // Snapshot (don't bump): loading a range shouldn't invalidate an in-flight
     // fetch, but a late resolution must not clobber a concurrent fetch's state.
     const mySnapshot = callId.current;
@@ -55,17 +63,20 @@ export function useEventLogs(
       const client = deps.rpc.getClient(contract.chainId);
       const latest = await client.getBlockNumber();
       // A newer fetchLogs()/reset() ran during the await — bail without setState.
-      if (callId.current !== mySnapshot) return;
+      if (callId.current !== mySnapshot) return null;
       const from = latest > DEFAULT_LOOKBACK ? latest - DEFAULT_LOOKBACK : 0n;
-      setDefaultRange({ from: from.toString(), to: "latest" });
+      const range: DefaultRange = { from: from.toString(), to: "latest" };
+      setDefaultRange(range);
+      return range;
     } catch (e) {
       // Late failure must not clobber a concurrent fetch's state; if still fresh
       // keep current behavior and surface the error.
-      if (callId.current !== mySnapshot) return;
+      if (callId.current !== mySnapshot) return null;
       const err = e as { shortMessage?: string; message?: string };
       const message =
         err.shortMessage ?? err.message ?? "failed to load block range";
       setState({ status: "error", error: message });
+      return null;
     }
   }
 

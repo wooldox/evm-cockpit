@@ -265,14 +265,15 @@ describe("useEventLogs", () => {
       useEventLogs(makeContract(), { rpc: makeRpc(client) }),
     );
 
+    let returned: unknown;
     await act(async () => {
-      await result.current.loadDefaultRange();
+      returned = await result.current.loadDefaultRange();
     });
 
-    expect(result.current.defaultRange).toEqual({
-      from: (50000n - 9999n).toString(),
-      to: "latest",
-    });
+    const expected = { from: (50000n - 9999n).toString(), to: "latest" };
+    expect(result.current.defaultRange).toEqual(expected);
+    // Also returns the resolved range so a handler can use it synchronously.
+    expect(returned).toEqual(expected);
   });
 
   it("loadDefaultRange clamps from to '0' when latest < 9999", async () => {
@@ -302,7 +303,7 @@ describe("useEventLogs", () => {
       useEventLogs(makeContract(), { rpc: makeRpc(client) }),
     );
 
-    let rangePromise: Promise<void> = Promise.resolve();
+    let rangePromise: Promise<unknown> = Promise.resolve();
     act(() => {
       rangePromise = result.current.loadDefaultRange();
     });

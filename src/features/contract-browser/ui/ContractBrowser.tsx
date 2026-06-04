@@ -6,13 +6,18 @@ import type { RpcProvider } from "@/shared/ports/rpc";
 import type { THistoryEntry } from "@/entities/history/model/types";
 import { getBrowserSections } from "@/features/contract-browser/model/effectiveAbi";
 import { Icon } from "@/shared/icons";
-import { Badge, Empty, Input, Muted, Panel } from "@/shared/ui";
+import { Badge, Empty, Input } from "@/shared/ui";
 import { ContractHeader } from "./ContractHeader";
-import { PropertiesSection, SectionHead } from "./PropertiesSection";
+import { PropertiesSection } from "./PropertiesSection";
 import { GettersSection } from "./GettersSection";
 import { OperationsSection } from "./OperationsSection";
+import { EventsSection } from "./EventsSection";
 
-/** Test seam: forwarded to OperationsSection (defaults to singletons). */
+/**
+ * Test seam (flat). Forwarded as-is to OperationsSection; EventsSection only
+ * needs `{ rpc }`, which this superset satisfies, so the same flat object drives
+ * both sections and existing callers stay source-compatible.
+ */
 type BrowserDeps = {
   rpc: RpcProvider;
   addHistory: (e: Omit<THistoryEntry, "id" | "timestamp">) => void;
@@ -88,21 +93,11 @@ export function ContractBrowser({
 
         <OperationsSection contract={contract} q={ql} deps={deps} />
 
-        {/* Events placeholder */}
-        {sections.events.length > 0 && (
-          <section>
-            <SectionHead
-              tone="read"
-              title="Events"
-              count={sections.events.length}
-            />
-            <Panel className="p-3.5">
-              <Muted className="text-sm">
-                Event log fetching arrives in M4.
-              </Muted>
-            </Panel>
-          </section>
-        )}
+        <EventsSection
+          contract={contract}
+          q={ql}
+          deps={deps ? { rpc: deps.rpc } : undefined}
+        />
 
         {noMatch && <NoFunctionMatch q={q} />}
       </div>
