@@ -183,7 +183,7 @@ describe("fetchEventLogs (integration)", () => {
     expect(blocks).toEqual(sorted);
 
     // The whole range fits in one CHUNK_SIZE window, so exactly one round-trip.
-    expect(res.chunks).toBeGreaterThanOrEqual(1);
+    expect(res.chunks).toBe(1);
     expect(res.truncated).toBe(false);
   });
 });
