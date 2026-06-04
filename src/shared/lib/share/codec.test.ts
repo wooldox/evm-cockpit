@@ -3,6 +3,7 @@ import type { TContract } from "@/entities/contract/model/types";
 import { erc20Abi } from "@/shared/lib/abi/fixtures";
 import {
   SHARE_VERSION,
+  MAX_SHARE_PAYLOAD_CHARS,
   sharePayloadSchema,
   toSharePayload,
   encodeContractShare,
@@ -151,6 +152,24 @@ describe("decodeContractShare failure modes", () => {
       expect(err).toBeInstanceOf(Error);
       expect((err as Error).cause).toBeDefined();
     }
+  });
+
+  it("rejects tokens longer than MAX_SHARE_PAYLOAD_CHARS with a clean error", async () => {
+    const oversized = "a".repeat(MAX_SHARE_PAYLOAD_CHARS + 1);
+    await expect(decodeContractShare(oversized)).rejects.toThrow(
+      "invalid or corrupted share link",
+    );
+  });
+
+  it("rejects a decompression bomb that expands past the 2 MB cap", async () => {
+    // A 3 MB string of repeated chars compresses to well under 6000 chars
+    // (deflate achieves >700x ratio on uniform data), so it passes guard 1
+    // but the decompressed output blows past the 2 MB cap → guard 2 fires.
+    const token = await encodePayload("x".repeat(3_000_000));
+    expect(token.length).toBeLessThanOrEqual(MAX_SHARE_PAYLOAD_CHARS);
+    await expect(decodeContractShare(token)).rejects.toThrow(
+      "invalid or corrupted share link",
+    );
   });
 });
 

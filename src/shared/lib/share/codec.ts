@@ -106,11 +106,40 @@ async function deflate(json: string): Promise<Uint8Array> {
   return new Uint8Array(buf);
 }
 
+const MAX_DECOMPRESSED_BYTES = 2_000_000;
+
 async function inflate(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
   const stream = streamOf(bytes).pipeThrough(
     new DecompressionStream("deflate-raw"),
   );
-  return new Response(stream).text();
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk =
+        value instanceof Uint8Array
+          ? value
+          : new Uint8Array(value as ArrayBuffer);
+      total += chunk.byteLength;
+      if (total > MAX_DECOMPRESSED_BYTES) {
+        await reader.cancel();
+        throw new Error("decompressed size exceeds limit");
+      }
+      chunks.push(chunk);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const merged = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(merged);
 }
 
 /**
@@ -131,11 +160,14 @@ export async function encodeContractShare(c: TContract): Promise<string> {
 
 /**
  * Decode a share token back into a validated payload. Every failure mode (bad
- * base64, bad deflate stream, bad JSON, schema mismatch) collapses into a single
- * opaque error so internals never leak.
+ * base64, bad deflate stream, bad JSON, schema mismatch, oversized input, or
+ * decompression bomb) collapses into a single opaque error so internals never leak.
  */
 export async function decodeContractShare(s: string): Promise<TSharePayload> {
   try {
+    if (s.length > MAX_SHARE_PAYLOAD_CHARS) {
+      throw new Error("token exceeds maximum length");
+    }
     const bytes = base64UrlToBytes(s);
     const json = await inflate(bytes);
     const parsed: unknown = JSON.parse(json);
