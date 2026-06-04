@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getChainDisplay } from "@/entities/chain/model/chains";
 import { addressUrl } from "@/entities/chain/model/explorer";
@@ -9,6 +10,7 @@ import { Icon } from "@/shared/icons";
 import { trunc } from "@/shared/lib/format";
 import { Badge, Button, ChainBadge, useToast } from "@/shared/ui";
 import { Address, Copyable } from "@/shared/ui/copyable";
+import { ShareModal } from "@/features/share/ui/ShareModal";
 import { useAppShell } from "@/widgets/app-shell/AppShellProvider";
 
 /* ── ContractHeader ─────────────────────────────────────── */
@@ -22,12 +24,12 @@ export function ContractHeader({
   const toast = useToast();
   const router = useRouter();
   const { openEdit } = useAppShell();
+  const [shareOpen, setShareOpen] = useState(false);
   const chain = getChainDisplay(contract.chainId);
   const addrLink = addressUrl(contract.chainId, contract.address);
 
   const handleShare = () => {
-    toast({ kind: "info", title: "Share links arrive in a later milestone" });
-    // TODO(M4b): share/export-import flow
+    setShareOpen(true);
   };
 
   const handleHistory = () => {
@@ -128,6 +130,9 @@ export function ContractHeader({
           title="Remove"
         />
       </div>
+      {shareOpen && (
+        <ShareModal contract={contract} onClose={() => setShareOpen(false)} />
+      )}
     </div>
   );
 }

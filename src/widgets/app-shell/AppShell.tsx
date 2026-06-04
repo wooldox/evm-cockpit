@@ -5,6 +5,7 @@ import { useSettingsStore } from "@/entities/settings/model/store";
 import { Web3Providers } from "@/app/web3/Web3Providers";
 import { AddContractModal } from "@/features/add-contract/ui/AddContractModal";
 import { SettingsModal } from "@/features/settings/ui/SettingsModal";
+import { HashImport } from "@/features/share/ui/HashImport";
 import { AppShellProvider, useAppShell } from "./AppShellProvider";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
@@ -41,6 +42,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
           <ShellModals />
+          <HashImport />
         </ToastProvider>
       </AppShellProvider>
     </Web3Providers>

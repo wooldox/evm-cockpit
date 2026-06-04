@@ -1,9 +1,12 @@
 import "fake-indexeddb/auto";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ToastProvider } from "@/shared/ui";
 import { useContractsStore } from "@/entities/contract/model/store";
+import { erc20Abi } from "@/shared/lib/abi/fixtures";
+import { toSharePayload } from "@/shared/lib/share/codec";
+import type { TContract } from "@/entities/contract/model/types";
 import { AddContractModal } from "./AddContractModal";
 
 // next/navigation is used transitively by some imports
@@ -110,5 +113,60 @@ describe("AddContractModal", () => {
 
     // onClose should have been called
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  // ── 3. Import file: valid export prefills the form + activates manual tab ──
+
+  it("import file: valid export prefills fields and switches to manual tab", async () => {
+    renderModal();
+    await screen.findByRole("dialog");
+
+    const exportContract: TContract = {
+      id: "x",
+      name: "Imported Token",
+      chainId: 137,
+      address: VALID_ADDRESS as `0x${string}`,
+      abi: erc20Abi,
+      source: "manual",
+      addedAt: 0,
+    };
+    const json = JSON.stringify(toSharePayload(exportContract), null, 2);
+    const file = new File([json], "export.contract.json", {
+      type: "application/json",
+    });
+
+    const input = screen.getByLabelText(/import contract export file/i);
+    await userEvent.upload(input, file);
+
+    // Name prefilled
+    await waitFor(() =>
+      expect(screen.getByDisplayValue("Imported Token")).toBeInTheDocument(),
+    );
+    // Address prefilled
+    expect(screen.getByDisplayValue(VALID_ADDRESS)).toBeInTheDocument();
+    // Manual tab is active → ABI textarea is shown with the ABI JSON
+    const textarea = screen.getByPlaceholderText(/\[ \{ "type"/i);
+    expect((textarea as HTMLTextAreaElement).value).toContain('"type"');
+  });
+
+  it("import file: invalid file shows error and leaves fields untouched", async () => {
+    renderModal();
+    await screen.findByRole("dialog");
+
+    const file = new File(["{ not a valid export }"], "bad.json", {
+      type: "application/json",
+    });
+    const input = screen.getByLabelText(/import contract export file/i);
+    await userEvent.upload(input, file);
+
+    expect(
+      await screen.findByText(/not a valid contract export/i),
+    ).toBeInTheDocument();
+
+    // Name field still empty (untouched)
+    const nameInput = screen.getByPlaceholderText(
+      /my contract/i,
+    ) as HTMLInputElement;
+    expect(nameInput.value).toBe("");
   });
 });

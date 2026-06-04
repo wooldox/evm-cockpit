@@ -1,9 +1,11 @@
 "use client";
 
+import { useRef, useState } from "react";
 import { Icon } from "@/shared/icons";
 import { CHAIN_LIST } from "@/entities/chain/model/chains";
 import type { TContract } from "@/entities/contract/model/types";
 import { trunc } from "@/shared/lib/format";
+import { sharePayloadSchema } from "@/shared/lib/share/codec";
 import {
   Badge,
   Button,
@@ -29,6 +31,24 @@ export interface AddContractModalProps {
 export function AddContractModal({ onClose, editing }: AddContractModalProps) {
   const f = useAddContractForm({ editing });
   const toast = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+
+  async function handleImportFile(file: File): Promise<void> {
+    setImportError(null);
+    try {
+      const text = await file.text();
+      const payload = sharePayloadSchema.parse(JSON.parse(text));
+      // Prefill the form; the user reviews and saves through the normal flow.
+      f.setName(payload.name);
+      f.setChainId(payload.chainId);
+      f.setAddress(payload.address);
+      f.setAbiText(JSON.stringify(payload.abi, null, 2));
+      f.setMode("manual");
+    } catch {
+      setImportError("not a valid contract export");
+    }
+  }
 
   return (
     <Modal
@@ -111,8 +131,31 @@ export function AddContractModal({ onClose, editing }: AddContractModalProps) {
 
       {/* ── ABI section ──────────────────────────────────────────── */}
       <hr className="my-4 border-0 border-t border-border" />
-      <div className="mb-3 flex items-center justify-between">
-        <span className="text-[13px] font-medium text-fg-2">ABI</span>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-[13px] font-medium text-fg-2">ABI</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<Icon.file size={13} />}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            Import file
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            aria-label="Import contract export file"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void handleImportFile(file);
+              // Reset so re-selecting the same file re-fires onChange.
+              e.target.value = "";
+            }}
+          />
+        </div>
         <Segment
           value={f.mode}
           onChange={f.setMode}
@@ -130,6 +173,13 @@ export function AddContractModal({ onClose, editing }: AddContractModalProps) {
           ]}
         />
       </div>
+
+      {importError && (
+        <div className="mb-3 flex items-center gap-1.5 text-xs text-danger-fg">
+          <Icon.alertCircle size={13} />
+          {importError}
+        </div>
+      )}
 
       {/* ── Fetch tab ─────────────────────────────────────────────── */}
       {f.mode === "fetch" ? (

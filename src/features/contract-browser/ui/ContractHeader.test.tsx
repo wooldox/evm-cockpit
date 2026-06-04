@@ -47,4 +47,18 @@ describe("ContractHeader", () => {
 
     expect(pushMock).toHaveBeenCalledWith("/history?c=abc123");
   });
+
+  it("Share button opens the share modal with a link", async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ContractHeader contract={contract} onRemoved={vi.fn()} />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: /Share/ }));
+
+    expect(await screen.findByRole("dialog", undefined)).toBeInTheDocument();
+    expect(await screen.findByDisplayValue(/#import=/)).toBeInTheDocument();
+  });
 });
