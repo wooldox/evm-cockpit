@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, within, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChainPickerPanel } from "./chain-picker";
 import type { TPickerChain } from "./chain-picker";
@@ -88,6 +88,29 @@ describe("ChainPickerPanel", () => {
     });
     expect(screen.getByText("showing built-in networks")).toBeInTheDocument();
     expect(screen.getByText("FOOTER")).toBeInTheDocument();
+  });
+
+  it("clamps the active index when entries shrink while open", async () => {
+    const onSelect = vi.fn();
+    const { rerender } = render(
+      <ChainPickerPanel entries={ENTRIES} value={1} onSelect={onSelect} />,
+    );
+    const search = screen.getByRole("textbox", { name: /search networks/i });
+    // move highlight to the last row (index 2 = Polygon)
+    await userEvent.type(search, "{ArrowDown}{ArrowDown}");
+    // catalog re-renders with fewer entries (last row removed) while open
+    rerender(
+      <ChainPickerPanel
+        entries={ENTRIES.slice(0, 2)}
+        value={1}
+        onSelect={onSelect}
+      />,
+    );
+    // Enter must resolve to a valid (clamped) row, not the now-gone index 2
+    await act(async () => {
+      await userEvent.type(search, "{Enter}");
+    });
+    expect(onSelect).toHaveBeenCalledWith(8453);
   });
 
   it("shows an empty state when nothing matches", async () => {

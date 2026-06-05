@@ -95,9 +95,15 @@ export function ChainPickerPanel({
     );
   }, [q, entries]);
 
+  // Clamp the active index to the current result set: when `entries` change
+  // while the panel is open (e.g. the runtime catalog fetch lands and grows the
+  // list, or a filter shrinks it), `active` may point past the end. Deriving the
+  // clamped value keeps highlight/Enter valid without an effect.
+  const activeClamped = Math.min(active, Math.max(0, results.length - 1));
+
   // keep the highlighted row visible without scrollIntoView
   useEffect(() => {
-    const el = itemRefs.current[active];
+    const el = itemRefs.current[activeClamped];
     const list = listRef.current;
     if (!el || !list) return;
     const top = el.offsetTop;
@@ -105,7 +111,7 @@ export function ChainPickerPanel({
     if (top < list.scrollTop) list.scrollTop = top - 4;
     else if (bottom > list.scrollTop + list.clientHeight)
       list.scrollTop = bottom - list.clientHeight + 4;
-  }, [active, results]);
+  }, [activeClamped, results]);
 
   const onQueryChange = (next: string) => {
     setQ(next);
@@ -115,13 +121,13 @@ export function ChainPickerPanel({
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setActive((a) => Math.min(a + 1, results.length - 1));
+      setActive(Math.min(activeClamped + 1, results.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setActive((a) => Math.max(a - 1, 0));
+      setActive(Math.max(activeClamped - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      const c = results[active];
+      const c = results[activeClamped];
       if (c) onSelect(c.id);
     } else if (e.key === "Escape") {
       e.preventDefault();
@@ -187,12 +193,14 @@ export function ChainPickerPanel({
               }}
               type="button"
               role="option"
-              aria-selected={i === active}
+              aria-selected={i === activeClamped}
               onMouseMove={() => setActive(i)}
               onClick={() => onSelect(c.id)}
               className={cx(
                 "flex w-full items-center gap-[9px] rounded-sm border-0 px-2 py-[7px] text-left text-[13px] cursor-pointer",
-                i === active ? "bg-elev-3 text-fg" : "bg-transparent text-fg-2",
+                i === activeClamped
+                  ? "bg-elev-3 text-fg"
+                  : "bg-transparent text-fg-2",
               )}
             >
               <ChainGlyph chain={c} size={16} />
