@@ -34,6 +34,7 @@ import {
 } from "@/shared/ui";
 import { CopyBtn, ExtLink } from "@/shared/ui/copyable";
 import { Field } from "@/shared/ui/field";
+import { VerifyMessageCard } from "./VerifyMessageCard";
 
 // NOTE: the Sign page intentionally records NO history entries — signing/broadcasting
 // here is not bound to a stored contract (no contractId).
@@ -189,7 +190,7 @@ export function SignScreen({ deps }: { deps?: Deps }) {
       : undefined;
 
   return (
-    <div className="mx-auto w-full max-w-[760px] px-7 pb-16 pt-6">
+    <div className="mx-auto w-full max-w-[1080px] px-7 pb-16 pt-6">
       {/* page head */}
       <div className="mb-[22px]">
         <h1 className="text-[22px] font-semibold tracking-[-0.02em]">Sign</h1>
@@ -218,162 +219,166 @@ export function SignScreen({ deps }: { deps?: Deps }) {
         />
       </div>
 
-      <Card>
-        <CardHead>
-          <CardTitle>
-            {mode === "tx" ? "Transaction payload" : "Message to sign"}
-          </CardTitle>
-        </CardHead>
-        <CardBody className="flex flex-col gap-3.5">
-          {mode === "tx" ? (
-            <>
-              <Field
-                label="Unsigned transaction (JSON)"
-                error={parseError ?? undefined}
-              >
-                <Textarea
-                  mono
-                  rows={7}
-                  tone={parseError ? "invalid" : "default"}
-                  placeholder={TX_SAMPLE}
-                  value={raw}
-                  onChange={(e) => setRaw(e.target.value)}
-                />
-              </Field>
+      <div className="flex flex-col gap-[18px]">
+        <Card>
+          <CardHead>
+            <CardTitle>
+              {mode === "tx" ? "Transaction payload" : "Message to sign"}
+            </CardTitle>
+          </CardHead>
+          <CardBody className="flex flex-col gap-3.5">
+            {mode === "tx" ? (
+              <>
+                <Field
+                  label="Unsigned transaction (JSON)"
+                  error={parseError ?? undefined}
+                >
+                  <Textarea
+                    mono
+                    rows={7}
+                    tone={parseError ? "invalid" : "default"}
+                    placeholder={TX_SAMPLE}
+                    value={raw}
+                    onChange={(e) => setRaw(e.target.value)}
+                  />
+                </Field>
 
-              {tx && (
+                {tx && (
+                  <div className="rounded-sm border border-border bg-inset px-[15px] py-[13px]">
+                    <Eyebrow>You are about to sign</Eyebrow>
+                    <div className="mt-2.5 flex flex-col gap-[7px]">
+                      <SignRow k="To" v={trunc(tx.to, 6)} />
+                      <SignRow
+                        k="Value"
+                        v={`${fromBaseUnits(tx.valueWei ?? 0n, "ether")} ETH`}
+                      />
+                      <SignRow
+                        k="Data"
+                        v={tx.data ? `${(tx.data.length - 2) / 2} bytes` : "—"}
+                      />
+                      <SignRow k="Nonce" v={tx.nonce ?? "—"} />
+                      <SignRow
+                        k="Gas"
+                        v={tx.gas !== undefined ? tx.gas.toLocaleString() : "—"}
+                      />
+                      <SignRow
+                        k="Chain"
+                        v={
+                          tx.chainId !== undefined ? (
+                            <span className="inline-flex items-center gap-2">
+                              {getChainDisplay(tx.chainId).name}
+                              {chainMismatch && (
+                                <Badge size="sm" variant="danger">
+                                  wallet on different chain
+                                </Badge>
+                              )}
+                            </span>
+                          ) : (
+                            "—"
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <Muted className="text-xs leading-normal">
+                  Browser wallets can&apos;t return a signed transaction without
+                  sending it — this signs and broadcasts.
+                </Muted>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="write"
+                    icon={txBusy ? <Spinner /> : <Icon.sign size={15} />}
+                    onClick={() => void handleBroadcast()}
+                    disabled={sendDisabled}
+                    title={sendTitle}
+                  >
+                    {sendLabel}
+                  </Button>
+                </div>
+
+                {/* broadcast status */}
+                {txStatus.kind === "pending" && (
+                  <p className="font-mono text-[12px] text-fg-3">
+                    Submitted · {trunc(txStatus.hash, 6)}
+                  </p>
+                )}
+                {txStatus.kind === "confirmed" && (
+                  <p className="inline-flex items-center gap-1.5 font-mono text-[12px] text-success-fg">
+                    Confirmed in block {txStatus.blockNumber.toString()} ·{" "}
+                    {trunc(txStatus.hash, 6)}
+                    {confirmedHashLink && <ExtLink href={confirmedHashLink} />}
+                  </p>
+                )}
+                {txStatus.kind === "failed" && (
+                  <p className="font-mono text-[12px] text-danger-fg">
+                    {txStatus.error}
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <Field label="Message">
+                  <Textarea
+                    mono
+                    rows={7}
+                    placeholder={MSG_SAMPLE}
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                  />
+                </Field>
+
                 <div className="rounded-sm border border-border bg-inset px-[15px] py-[13px]">
                   <Eyebrow>You are about to sign</Eyebrow>
                   <div className="mt-2.5 flex flex-col gap-[7px]">
-                    <SignRow k="To" v={trunc(tx.to, 6)} />
-                    <SignRow
-                      k="Value"
-                      v={`${fromBaseUnits(tx.valueWei ?? 0n, "ether")} ETH`}
-                    />
-                    <SignRow
-                      k="Data"
-                      v={tx.data ? `${(tx.data.length - 2) / 2} bytes` : "—"}
-                    />
-                    <SignRow k="Nonce" v={tx.nonce ?? "—"} />
-                    <SignRow
-                      k="Gas"
-                      v={tx.gas !== undefined ? tx.gas.toLocaleString() : "—"}
-                    />
-                    <SignRow
-                      k="Chain"
-                      v={
-                        tx.chainId !== undefined ? (
-                          <span className="inline-flex items-center gap-2">
-                            {getChainDisplay(tx.chainId).name}
-                            {chainMismatch && (
-                              <Badge size="sm" variant="danger">
-                                wallet on different chain
-                              </Badge>
-                            )}
-                          </span>
-                        ) : (
-                          "—"
-                        )
-                      }
-                    />
+                    <SignRow k="Type" v="personal_sign" />
+                    <SignRow k="Length" v={`${msgByteLength} bytes`} />
                   </div>
                 </div>
-              )}
 
-              <Muted className="text-xs leading-normal">
-                Browser wallets can&apos;t return a signed transaction without
-                sending it — this signs and broadcasts.
-              </Muted>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="write"
-                  icon={txBusy ? <Spinner /> : <Icon.sign size={15} />}
-                  onClick={() => void handleBroadcast()}
-                  disabled={sendDisabled}
-                  title={sendTitle}
-                >
-                  {sendLabel}
-                </Button>
-              </div>
-
-              {/* broadcast status */}
-              {txStatus.kind === "pending" && (
-                <p className="font-mono text-[12px] text-fg-3">
-                  Submitted · {trunc(txStatus.hash, 6)}
-                </p>
-              )}
-              {txStatus.kind === "confirmed" && (
-                <p className="inline-flex items-center gap-1.5 font-mono text-[12px] text-success-fg">
-                  Confirmed in block {txStatus.blockNumber.toString()} ·{" "}
-                  {trunc(txStatus.hash, 6)}
-                  {confirmedHashLink && <ExtLink href={confirmedHashLink} />}
-                </p>
-              )}
-              {txStatus.kind === "failed" && (
-                <p className="font-mono text-[12px] text-danger-fg">
-                  {txStatus.error}
-                </p>
-              )}
-            </>
-          ) : (
-            <>
-              <Field label="Message">
-                <Textarea
-                  mono
-                  rows={7}
-                  placeholder={MSG_SAMPLE}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                />
-              </Field>
-
-              <div className="rounded-sm border border-border bg-inset px-[15px] py-[13px]">
-                <Eyebrow>You are about to sign</Eyebrow>
-                <div className="mt-2.5 flex flex-col gap-[7px]">
-                  <SignRow k="Type" v="personal_sign" />
-                  <SignRow k="Length" v={`${msgByteLength} bytes`} />
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="write"
+                    icon={signing ? <Spinner /> : <Icon.sign size={15} />}
+                    onClick={() => void handleSignMessage()}
+                    disabled={signDisabled}
+                    title={signTitle}
+                  >
+                    Sign
+                  </Button>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="write"
-                  icon={signing ? <Spinner /> : <Icon.sign size={15} />}
-                  onClick={() => void handleSignMessage()}
-                  disabled={signDisabled}
-                  title={signTitle}
-                >
-                  Sign
-                </Button>
-              </div>
+                {signError && (
+                  <p className="font-mono text-[12px] text-danger-fg">
+                    {signError}
+                  </p>
+                )}
 
-              {signError && (
-                <p className="font-mono text-[12px] text-danger-fg">
-                  {signError}
-                </p>
-              )}
-
-              {signature && (
-                <div className="rounded-sm border border-border bg-inset px-[15px] py-[13px]">
-                  <div className="mb-2 flex items-center justify-between">
-                    <Eyebrow>Signature</Eyebrow>
-                    <Badge size="sm" variant="success">
-                      signed
-                    </Badge>
+                {signature && (
+                  <div className="rounded-sm border border-border bg-inset px-[15px] py-[13px]">
+                    <div className="mb-2 flex items-center justify-between">
+                      <Eyebrow>Signature</Eyebrow>
+                      <Badge size="sm" variant="success">
+                        signed
+                      </Badge>
+                    </div>
+                    <div className="flex items-start gap-1.5">
+                      <span className="break-all font-mono text-[12px] text-fg-2">
+                        {signature}
+                      </span>
+                      <CopyBtn value={signature} />
+                    </div>
                   </div>
-                  <div className="flex items-start gap-1.5">
-                    <span className="break-all font-mono text-[12px] text-fg-2">
-                      {signature}
-                    </span>
-                    <CopyBtn value={signature} />
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </CardBody>
-      </Card>
+                )}
+              </>
+            )}
+          </CardBody>
+        </Card>
+
+        {mode === "message" && <VerifyMessageCard />}
+      </div>
     </div>
   );
 }

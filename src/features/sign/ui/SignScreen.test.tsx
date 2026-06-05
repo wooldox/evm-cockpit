@@ -88,7 +88,9 @@ describe("SignScreen — message mode", () => {
 
     await user.click(screen.getByRole("button", { name: /^Sign$/ }));
 
-    await screen.findByText("Signature");
+    // wait for the signature-result block (the rendered signature value is
+    // unique — "Signature" as a label now also appears in the verify panel).
+    await screen.findByText(SIG);
     expect(signMessageAsync).toHaveBeenCalledWith({ message: "hello" });
     expect(screen.getByText(SIG)).toBeInTheDocument();
     // copy button present
@@ -111,7 +113,9 @@ describe("SignScreen — message mode", () => {
         screen.getAllByText("User rejected the request").length,
       ).toBeGreaterThan(0),
     );
-    expect(screen.queryByText("Signature")).not.toBeInTheDocument();
+    // no signature-result block ("signed" badge is unique to it; "Signature"
+    // as a label now also appears in the verify panel).
+    expect(screen.queryByText("signed")).not.toBeInTheDocument();
   });
 
   it("not connected → Sign disabled with title", async () => {
@@ -125,6 +129,22 @@ describe("SignScreen — message mode", () => {
     const btn = screen.getByRole("button", { name: /^Sign$/ });
     expect(btn).toBeDisabled();
     expect(btn).toHaveAttribute("title", "Connect a wallet to sign");
+  });
+});
+
+describe("SignScreen — layout & verify panel", () => {
+  it("uses the shared 1080px content column (matches Deploy/History)", () => {
+    const { container } = renderScreen(makeRpc().rpc);
+    expect(container.querySelector(".max-w-\\[1080px\\]")).not.toBeNull();
+    expect(container.querySelector(".max-w-\\[760px\\]")).toBeNull();
+  });
+
+  it("shows the verify panel on the Message tab only", async () => {
+    const user = userEvent.setup();
+    renderScreen(makeRpc().rpc);
+    expect(screen.queryByText(/verify a signed message/i)).toBeNull();
+    await user.click(screen.getByRole("tab", { name: /Message/ }));
+    expect(screen.getByText(/verify a signed message/i)).toBeInTheDocument();
   });
 });
 
