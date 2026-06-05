@@ -1,21 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { useChainCatalog } from "@/entities/chain/model/catalogStore";
-import { buildStaticCatalog } from "@/entities/chain/model/catalog";
+import { resetCatalog as resetStore } from "@/entities/chain/model/testing/resetCatalog";
 import { CHAIN_COLORS, useAddChainForm } from "./useAddChainForm";
-
-// Reset the catalog store between tests the same way catalogStore.test.ts does
-// (custom: [] + re-derived entries) so duplicate checks read a clean catalog.
-function resetStore() {
-  const fresh = buildStaticCatalog();
-  useChainCatalog.setState({
-    base: fresh,
-    custom: [],
-    entries: fresh,
-    byId: new Map(fresh.map((c) => [c.id, c])),
-    status: "static",
-  });
-}
 
 function fillValid(r: { current: ReturnType<typeof useAddChainForm> }) {
   act(() => {
@@ -46,6 +32,14 @@ describe("useAddChainForm", () => {
     expect(result.current.canSave).toBe(false);
   });
 
+  it("rejects an unsafe-integer id (80-digit)", () => {
+    const { result } = renderHook(() => useAddChainForm());
+    fillValid(result);
+    act(() => result.current.setIdStr("9".repeat(80)));
+    expect(result.current.idError).toMatch(/positive integer/i);
+    expect(result.current.canSave).toBe(false);
+  });
+
   it("flags an id that already exists in the catalog (mainnet)", () => {
     const { result } = renderHook(() => useAddChainForm());
     fillValid(result);
@@ -60,6 +54,27 @@ describe("useAddChainForm", () => {
     act(() => result.current.setRpc("wss://rpc.nope.xyz"));
     expect(result.current.rpcError).toMatch(/http/i);
     expect(result.current.canSave).toBe(false);
+  });
+
+  it("flags a non-URL explorer and blocks save", () => {
+    const { result } = renderHook(() => useAddChainForm());
+    fillValid(result);
+    act(() => result.current.setExplorer("ftp://x"));
+    expect(result.current.explorerError).toMatch(/not a valid url/i);
+    expect(result.current.explorerOk).toBe(false);
+    expect(result.current.canSave).toBe(false);
+  });
+
+  it("accepts a schemeless explorer host (normalizes to https)", () => {
+    const { result } = renderHook(() => useAddChainForm());
+    fillValid(result);
+    act(() => result.current.setExplorer("scan.test.xyz/"));
+    expect(result.current.explorerError).toBeUndefined();
+    expect(result.current.explorerOk).toBe(true);
+    expect(result.current.canSave).toBe(true);
+    expect(result.current.buildEntry().explorerUrl).toBe(
+      "https://scan.test.xyz",
+    );
   });
 
   it("buildEntry derives short/nativeSymbol/explorerUrl and source custom", () => {

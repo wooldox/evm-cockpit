@@ -6,8 +6,9 @@ import {
   useChainDisplay,
   CHAINS_ENDPOINT,
 } from "./catalogStore";
-import { buildStaticCatalog, type TCatalogChain } from "./catalog";
+import { type TCatalogChain } from "./catalog";
 import { CURATED_VIEM_CHAINS } from "./chains";
+import { resetCatalog as resetStore } from "./testing/resetCatalog";
 
 const REMOTE_ITEM = {
   name: "Zeta Chain",
@@ -17,17 +18,6 @@ const REMOTE_ITEM = {
   explorers: [{ url: "https://zetascan.example" }],
   nativeCurrency: { name: "Zeta", symbol: "ZET", decimals: 18 },
 };
-
-function resetStore() {
-  const fresh = buildStaticCatalog();
-  useChainCatalog.setState({
-    base: fresh,
-    custom: [],
-    entries: fresh,
-    byId: new Map(fresh.map((c) => [c.id, c])),
-    status: "static",
-  });
-}
 
 describe("useChainCatalog", () => {
   beforeEach(resetStore);

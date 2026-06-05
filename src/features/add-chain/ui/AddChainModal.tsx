@@ -104,10 +104,15 @@ export function AddChainModal({
             onChange={(e) => f.setSymbol(e.target.value.trim())}
           />
         </Field>
-        <Field label="Block explorer URL" hint="Optional">
+        <Field
+          label="Block explorer URL"
+          hint="Optional"
+          error={f.explorerError}
+        >
           <Input
             mono
             aria-label="Block explorer URL"
+            tone={f.explorer ? (f.explorerOk ? "valid" : "invalid") : "default"}
             placeholder="https://explorer.my-network.xyz"
             value={f.explorer}
             onChange={(e) => f.setExplorer(e.target.value.trim())}

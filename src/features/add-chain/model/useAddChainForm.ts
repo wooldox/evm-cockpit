@@ -36,20 +36,47 @@ export function useAddChainForm() {
   const byId = useChainCatalog((s) => s.byId);
 
   const idNum = Number(idStr);
-  const idValid = /^\d+$/.test(idStr.trim()) && idNum > 0;
+  const idValid =
+    /^\d+$/.test(idStr.trim()) && idNum > 0 && Number.isSafeInteger(idNum);
   const idDup = idValid && byId.has(idNum);
   const rpcValid = /^https?:\/\/.+/i.test(rpc.trim());
+
+  // Explorer is optional: empty is ok. When present, the normalized candidate
+  // must parse as a URL with an http/https protocol and a non-empty hostname.
+  // A schemeful input whose scheme is not http(s) (e.g. "ftp://x") is rejected
+  // outright — normalizeExplorer would otherwise prepend https:// and mangle it
+  // into a superficially-parseable "https://ftp://x".
+  const explorerOk = (() => {
+    const trimmed = explorer.trim();
+    if (!trimmed) return true;
+    const scheme = /^([a-z][a-z0-9+.-]*):\/\//i.exec(trimmed);
+    if (scheme && !/^https?$/i.test(scheme[1]!)) return false;
+    const candidate = normalizeExplorer(explorer);
+    if (candidate === undefined) return true;
+    try {
+      const u = new URL(candidate);
+      return (
+        (u.protocol === "http:" || u.protocol === "https:") &&
+        Boolean(u.hostname)
+      );
+    } catch {
+      return false;
+    }
+  })();
 
   let idError: string | undefined;
   if (idStr && !idValid) idError = "Must be a positive integer";
   else if (idDup) idError = "This chain ID already exists";
   const rpcError = rpc && !rpcValid ? "Must start with http(s)://" : undefined;
+  const explorerError =
+    explorer.trim() && !explorerOk ? "Not a valid URL" : undefined;
 
   const canSave =
     Boolean(name.trim()) &&
     idValid &&
     !idDup &&
     rpcValid &&
+    explorerOk &&
     Boolean(symbol.trim());
 
   /** The character previewed in the accent glyph. */
@@ -91,6 +118,8 @@ export function useAddChainForm() {
     idError,
     rpcValid,
     rpcError,
+    explorerOk,
+    explorerError,
     canSave,
     glyphChar,
     buildEntry,

@@ -3,20 +3,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ToastProvider } from "@/shared/ui";
 import { useChainCatalog } from "@/entities/chain/model/catalogStore";
-import { buildStaticCatalog } from "@/entities/chain/model/catalog";
+import { resetCatalog as resetStore } from "@/entities/chain/model/testing/resetCatalog";
 import { AddChainModal } from "./AddChainModal";
-
-// Reset the catalog store between tests (same pattern as catalogStore.test.ts).
-function resetStore() {
-  const fresh = buildStaticCatalog();
-  useChainCatalog.setState({
-    base: fresh,
-    custom: [],
-    entries: fresh,
-    byId: new Map(fresh.map((c) => [c.id, c])),
-    status: "static",
-  });
-}
 
 function setup() {
   const onClose = vi.fn();
