@@ -77,6 +77,11 @@ export function VerifyMessageCard() {
       : "Valid signature"
     : "Verification failed";
 
+  let verifyTitle: string | undefined;
+  if (!msg.trim() || !sig.trim())
+    verifyTitle = "Paste a message and its signature";
+  else if (!signerFormatOk) verifyTitle = "Fix the expected signer address";
+
   return (
     <Card>
       <CardHead>
@@ -157,6 +162,7 @@ export function VerifyMessageCard() {
             icon={verifying ? <Spinner /> : <Icon.checkCircle size={15} />}
             onClick={() => void handleVerify()}
             disabled={!canVerify}
+            title={verifyTitle}
           >
             Verify signature
           </Button>
