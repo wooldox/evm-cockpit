@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { getChainDisplay } from "@/entities/chain/model/chains";
+import { useChainDisplay } from "@/entities/chain/model/catalogStore";
 import { addressUrl } from "@/entities/chain/model/explorer";
 import type { TContract } from "@/entities/contract/model/types";
 import { useContractsStore } from "@/entities/contract/model/store";
@@ -25,7 +25,7 @@ export function ContractHeader({
   const router = useRouter();
   const { openEdit } = useAppShell();
   const [shareOpen, setShareOpen] = useState(false);
-  const chain = getChainDisplay(contract.chainId);
+  const chain = useChainDisplay(contract.chainId);
   const addrLink = addressUrl(contract.chainId, contract.address);
 
   const handleShare = () => {

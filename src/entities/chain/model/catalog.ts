@@ -1,5 +1,5 @@
 import * as allViemChains from "viem/chains";
-import { getCuratedMeta, SUPPORTED_VIEM_CHAINS } from "./chains";
+import { getCuratedMeta, CURATED_VIEM_CHAINS } from "./chains";
 
 /**
  * The full, app-wide chain catalog. Built statically from every chain bundled
@@ -136,7 +136,7 @@ function toCatalogChain(c: ViemChainLike): TCatalogChain {
 }
 
 /** Curated supported ids, in chains.ts declaration order (sort leaders). */
-const CURATED_IDS = SUPPORTED_VIEM_CHAINS.map((c) => c.id);
+const CURATED_IDS = CURATED_VIEM_CHAINS.map((c) => c.id);
 const CURATED_RANK = new Map<number, number>(
   CURATED_IDS.map((id, i) => [id, i]),
 );
@@ -152,7 +152,7 @@ function sortCatalog(a: TCatalogChain, b: TCatalogChain): number {
 
 /**
  * Build the static catalog from every viem chain. Curated chains.ts entries
- * (SUPPORTED_VIEM_CHAINS) take precedence on collision so the 31337 name
+ * (CURATED_VIEM_CHAINS) take precedence on collision so the 31337 name
  * override survives. Sorted: curated ids first (declaration order), then the
  * rest alphabetically by name.
  */
@@ -166,7 +166,7 @@ export function buildStaticCatalog(): TCatalogChain[] {
   }
 
   // Curated entries win — overwrite whatever viem produced for the same id.
-  for (const c of SUPPORTED_VIEM_CHAINS) {
+  for (const c of CURATED_VIEM_CHAINS) {
     if (isViemChainLike(c)) byId.set(c.id, toCatalogChain(c));
   }
 

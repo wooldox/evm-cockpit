@@ -9,7 +9,7 @@ import type {
 } from "@/entities/history/model/types";
 import { useContractsStore } from "@/entities/contract/model/store";
 import { useRerunStore } from "@/entities/rerun/model/store";
-import { getChainDisplay } from "@/entities/chain/model/chains";
+import { useChainDisplay } from "@/entities/chain/model/catalogStore";
 import { txUrl } from "@/entities/chain/model/explorer";
 import { trunc } from "@/shared/lib/format";
 import {
@@ -55,7 +55,7 @@ function HistoryRow({
   onRerun: (entry: THistoryEntry) => void;
 }) {
   const badge = TYPE_BADGE[entry.type];
-  const chainName = getChainDisplay(entry.chainId).name;
+  const chainName = useChainDisplay(entry.chainId).name;
   const link = entry.txHash ? txUrl(entry.chainId, entry.txHash) : undefined;
 
   return (

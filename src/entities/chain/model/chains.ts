@@ -7,6 +7,7 @@ import {
   sepolia,
   foundry,
 } from "viem/chains";
+import * as allViemChains from "viem/chains";
 import type { Chain as ViemChain } from "viem";
 
 export type TChainDisplay = {
@@ -46,7 +47,10 @@ export function getCuratedMeta(
   return META[id];
 }
 
-const SUPPORTED: ViemChain[] = [
+/** Curated chains, in priority/display order. These keep their exact object
+ *  identity (notably the Localhost · Anvil multicall3 override) and win over
+ *  any same-id chain bundled with viem. */
+const CURATED: ViemChain[] = [
   mainnet,
   base,
   arbitrum,
@@ -69,7 +73,43 @@ const SUPPORTED: ViemChain[] = [
     },
   },
 ];
-export const SUPPORTED_VIEM_CHAINS: ViemChain[] = SUPPORTED;
+
+/** The curated, app-authoritative chains (display order + the 31337 override).
+ *  catalog.ts uses these as sort leaders / precedence; chains.ts derives
+ *  display fallbacks from them. SUPPORTED_VIEM_CHAINS is the full superset. */
+export const CURATED_VIEM_CHAINS: ViemChain[] = CURATED;
+
+/** Minimal structural guard for a chain-shaped value from viem/chains. */
+function isViemChain(v: unknown): v is ViemChain {
+  if (typeof v !== "object" || v === null) return false;
+  const o = v as Record<string, unknown>;
+  if (typeof o.id !== "number") return false;
+  if (typeof o.name !== "string") return false;
+  const nc = o.nativeCurrency;
+  if (typeof nc !== "object" || nc === null) return false;
+  const rpc = o.rpcUrls;
+  return typeof rpc === "object" && rpc !== null && "default" in rpc;
+}
+
+/**
+ * All chains wagmi/viem should know about: the curated set first (preserving
+ * object identity + order), then every other structurally-valid chain bundled
+ * with viem, deduped by id (curated win). Order beyond the curated head is
+ * stable but otherwise unspecified.
+ */
+function buildSupported(): ViemChain[] {
+  const out: ViemChain[] = [...CURATED];
+  const seen = new Set(CURATED.map((c) => c.id));
+  for (const raw of Object.values(allViemChains)) {
+    if (!isViemChain(raw)) continue;
+    if (seen.has(raw.id)) continue;
+    seen.add(raw.id);
+    out.push(raw);
+  }
+  return out;
+}
+
+export const SUPPORTED_VIEM_CHAINS: ViemChain[] = buildSupported();
 function toDisplay(c: ViemChain): TChainDisplay {
   const m = META[c.id];
   return {
@@ -79,7 +119,7 @@ function toDisplay(c: ViemChain): TChainDisplay {
     color: m?.color ?? "#6b7682",
   };
 }
-export const CHAIN_LIST: TChainDisplay[] = SUPPORTED.map(toDisplay);
+export const CHAIN_LIST: TChainDisplay[] = CURATED.map(toDisplay);
 const BY_ID = new Map<number, TChainDisplay>(CHAIN_LIST.map((c) => [c.id, c]));
 export function getChainDisplay(id: number): TChainDisplay {
   return (

@@ -8,7 +8,10 @@ import { trunc } from "@/shared/lib/format";
 import { Icon } from "@/shared/icons";
 import { Button, ChainGlyph } from "@/shared/ui";
 import { Ident } from "@/shared/ui/copyable";
-import { getChainDisplay } from "@/entities/chain/model/chains";
+import {
+  catalogDisplay,
+  useChainDisplay,
+} from "@/entities/chain/model/catalogStore";
 import {
   filterAndGroup,
   type SidebarContract,
@@ -73,7 +76,7 @@ export function Sidebar({
     proxy: !!c.proxy,
   }));
 
-  const currentChain = getChainDisplay(currentChainId);
+  const currentChain = useChainDisplay(currentChainId);
   const groups = filterAndGroup(contracts, { scope, query: q, currentChainId });
   const hasContracts = contracts.length > 0;
 
@@ -157,7 +160,9 @@ export function Sidebar({
           ))}
 
         {groups.map(({ chainId, contracts: list }) => {
-          const chain = getChainDisplay(chainId);
+          // Non-reactive: can't call hooks inside a map. The static catalog is
+          // populated synchronously at store init, so names resolve correctly.
+          const chain = catalogDisplay(chainId);
           return (
             <div key={chainId} className="mb-3">
               <div className="flex items-center gap-[7px] px-2 py-1.5 text-[11px] font-semibold uppercase tracking-[0.04em] text-fg-3">

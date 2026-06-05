@@ -26,4 +26,26 @@ describe("resolveRpcUrl", () => {
   it("returns undefined for an unknown chain with an empty override", () => {
     expect(resolveRpcUrl(999999, { 999999: "  " })).toBeUndefined();
   });
+
+  it("falls back to the first catalog RPC for a chain with no curated default", () => {
+    expect(
+      resolveRpcUrl(999999, {}, ["https://a.example", "https://b.example"]),
+    ).toBe("https://a.example");
+  });
+
+  it("prefers the override over the catalog RPCs", () => {
+    expect(
+      resolveRpcUrl(999999, { 999999: "https://my.rpc" }, ["https://a"]),
+    ).toBe("https://my.rpc");
+  });
+
+  it("prefers the curated default over the catalog RPCs", () => {
+    expect(resolveRpcUrl(1, {}, ["https://a.example"])).toBe(
+      DEFAULT_RPC_URLS[1],
+    );
+  });
+
+  it("returns undefined when catalog RPCs are empty", () => {
+    expect(resolveRpcUrl(999999, {}, [])).toBeUndefined();
+  });
 });

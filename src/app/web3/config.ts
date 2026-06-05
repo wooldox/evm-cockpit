@@ -5,8 +5,10 @@ import { createE2EConfig } from "./configE2E";
 import { IS_E2E } from "./e2e";
 import { dynamicHttp } from "./dynamicHttp";
 
-// RainbowKit requires a non-empty tuple: readonly [Chain, ...Chain[]]
-// SUPPORTED_VIEM_CHAINS is a mutable ViemChain[] — assert it to the tuple type.
+// RainbowKit requires a non-empty tuple: readonly [Chain, ...Chain[]].
+// SUPPORTED_VIEM_CHAINS is now the FULL set of viem chains (curated 7 first,
+// then every other bundled chain) — wagmi/RainbowKit can switch to any of them.
+// It's a mutable ViemChain[] — assert it to the tuple type.
 const chains = SUPPORTED_VIEM_CHAINS as unknown as readonly [Chain, ...Chain[]];
 
 // dynamicHttp resolves the RPC URL (settings override → curated default → viem
