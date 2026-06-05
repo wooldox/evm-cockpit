@@ -126,8 +126,9 @@ describe("AppShell", () => {
     // The trigger button shows the current chain name: "Ethereum"
     const trigger = screen.getByRole("button", { name: /ethereum/i });
     await userEvent.click(trigger);
-    // Dropdown appears: "Network" heading
-    expect(screen.getByText(/network/i)).toBeInTheDocument();
+    // Dropdown appears: the searchable list with a "Network" heading.
+    expect(screen.getByRole("listbox")).toBeInTheDocument();
+    expect(screen.getByText("Network")).toBeInTheDocument();
   });
 
   it("switches the current chain when a different chain is selected", async () => {
@@ -141,14 +142,17 @@ describe("AppShell", () => {
     const trigger = screen.getByRole("button", { name: /ethereum/i });
     await userEvent.click(trigger);
 
-    // The dropdown lists all chains; pick "Base"
-    // Multiple buttons could have text "Base" (trigger + dropdown item) — scope
-    // to the dropdown container (the div with z-50/animate-pop-in classes)
-    const dropdown = screen
-      .getAllByRole("button", { name: /base/i })
-      .find((el) => el.closest("[class*='animate-pop-in']"));
-    expect(dropdown).toBeTruthy();
-    await userEvent.click(dropdown!);
+    // Narrow the searchable list to Base via its numeric id, then pick it.
+    await userEvent.type(
+      screen.getByRole("textbox", { name: /search networks/i }),
+      "8453",
+    );
+    const baseOption = screen.getAllByRole("option").find((el) => {
+      const name = within(el).queryByText("Base");
+      return name?.tagName === "SPAN" && el.textContent?.includes("8453");
+    });
+    expect(baseOption).toBeTruthy();
+    await userEvent.click(baseOption!);
 
     // Trigger now shows "Base"
     expect(screen.getByRole("button", { name: /base/i })).toBeInTheDocument();
