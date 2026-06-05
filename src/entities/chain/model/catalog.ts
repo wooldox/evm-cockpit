@@ -273,6 +273,10 @@ export function mergeCatalog(
  * after the curated head — easy to find — and WIN id collisions with base
  * entries (a remote merge landing later must not shadow the user's entry).
  * Returns `base` as-is when there is nothing custom (referential stability).
+ *
+ * Assumes custom ids are disjoint from the CURATED ids (addCustomChain rejects
+ * any id already in the catalog, and curated ids always are) — a curated
+ * collision would knock that entry out of the sorted head.
  */
 export function composeCatalog(
   base: TCatalogChain[],
