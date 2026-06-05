@@ -28,7 +28,11 @@ const control = tv({
     mono: { true: "font-mono", false: "" },
     as: {
       input: "h-[34px] px-2.5",
-      select: "h-[34px] px-2.5",
+      // appearance-none kills the native caret (which sits flush against the
+      // right edge and can't be padded) so we can pad the right and draw our
+      // own chevron (see <Select/>) — consistent spacing across browsers.
+      select:
+        "h-[34px] pl-2.5 pr-8 appearance-none cursor-pointer [&::-ms-expand]:hidden",
       textarea: "min-h-[76px] px-2.5 py-2 leading-normal resize-y",
     },
   },
@@ -118,21 +122,31 @@ export function Textarea({ tone, mono, className, ...rest }: TextareaProps) {
 export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   tone?: ControlTone;
   mono?: boolean;
+  /** Classes for the positioning wrapper (e.g. a width); replaces its
+   *  default `w-full`. `className` still styles the <select> itself. */
+  wrapClassName?: string;
 }
 export function Select({
   tone,
   mono,
   className,
+  wrapClassName,
   children,
   ...rest
 }: SelectProps) {
   return (
-    <select
-      className={control({ tone, mono, as: "select", className })}
-      {...rest}
-    >
-      {children}
-    </select>
+    <div className={`relative ${wrapClassName ?? "w-full"}`}>
+      <select
+        className={control({ tone, mono, as: "select", className })}
+        {...rest}
+      >
+        {children}
+      </select>
+      <Icon.chevD
+        size={14}
+        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-fg-3"
+      />
+    </div>
   );
 }
 

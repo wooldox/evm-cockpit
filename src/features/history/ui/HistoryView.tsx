@@ -171,7 +171,7 @@ export function HistoryView({
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1080px] px-7 py-12">
+    <div className="mx-auto w-full max-w-[1080px] px-7 pb-16 pt-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-baseline gap-2.5">
           <h1 className="m-0 text-[22px] font-semibold tracking-[-0.02em]">
@@ -188,7 +188,7 @@ export function HistoryView({
             options={TYPE_FILTER_OPTIONS}
           />
           <Select
-            className="w-[200px]"
+            wrapClassName="w-[200px]"
             value={sel}
             onChange={(e) => setSel(e.target.value)}
             aria-label="Filter by contract"
