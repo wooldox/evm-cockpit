@@ -113,6 +113,16 @@ function isViemChainLike(v: unknown): v is ViemChainLike {
   const rpc = o.rpcUrls;
   if (typeof rpc !== "object" || rpc === null) return false;
   if (!("default" in rpc)) return false;
+  // Require a usable default http URL (matches the chains.ts config filter).
+  // A viem chain without one (e.g. `arc`: `default.http: []`) is unusable via
+  // the viem-default tier AND would shadow a usable chainid.network entry for
+  // the same id in mergeCatalog — skip it so the remote merge can supply it.
+  const def = (rpc as { default: unknown }).default;
+  if (typeof def !== "object" || def === null) return false;
+  const http = (def as Record<string, unknown>).http;
+  if (!Array.isArray(http) || typeof http[0] !== "string" || http[0] === "") {
+    return false;
+  }
   const nc = o.nativeCurrency;
   if (typeof nc !== "object" || nc === null) return false;
   return typeof (nc as Record<string, unknown>).symbol === "string";

@@ -45,6 +45,23 @@ describe("SUPPORTED_VIEM_CHAINS (all viem chains)", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  // Regression: viem's `arc` (5042) ships `rpcUrls.default.http: []`. wagmi
+  // builds a transport for EVERY config chain, and viem's http(undefined)
+  // throws UrlRequiredError at client creation when the chain carries no
+  // default URL to fall back on — an unhandled rejection at app startup.
+  // Every chain we hand to wagmi must have a usable default http RPC.
+  it("every config chain has a usable default http RPC (transport invariant)", () => {
+    const broken = SUPPORTED_VIEM_CHAINS.filter((c) => {
+      const url = c.rpcUrls?.default?.http?.[0];
+      return typeof url !== "string" || url === "";
+    });
+    expect(broken.map((c) => `${c.id} ${c.name}`)).toEqual([]);
+  });
+
+  it("excludes viem chains without a default http RPC (e.g. arc/5042)", () => {
+    expect(SUPPORTED_VIEM_CHAINS.find((c) => c.id === 5042)).toBeUndefined();
+  });
+
   it("preserves the curated Localhost · Anvil 31337 multicall3 override", () => {
     const anvil = SUPPORTED_VIEM_CHAINS.find((c) => c.id === 31337);
     expect(anvil).toBeDefined();

@@ -88,7 +88,15 @@ function isViemChain(v: unknown): v is ViemChain {
   const nc = o.nativeCurrency;
   if (typeof nc !== "object" || nc === null) return false;
   const rpc = o.rpcUrls;
-  return typeof rpc === "object" && rpc !== null && "default" in rpc;
+  if (typeof rpc !== "object" || rpc === null) return false;
+  // A config chain MUST carry a usable default http RPC: wagmi creates a
+  // transport for every chain in the config, and viem's http(undefined) throws
+  // UrlRequiredError when the chain has no default URL to fall back on
+  // (viem's `arc` ships `rpcUrls.default.http: []` and crashed app startup).
+  const def = (rpc as Record<string, unknown>).default;
+  if (typeof def !== "object" || def === null) return false;
+  const http = (def as Record<string, unknown>).http;
+  return Array.isArray(http) && typeof http[0] === "string" && http[0] !== "";
 }
 
 /**
