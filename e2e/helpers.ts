@@ -75,9 +75,16 @@ export async function addContractViaUi(
   await expect(dialog).toBeVisible();
 
   await dialog.getByPlaceholder("My Contract").fill(name);
-  await dialog
-    .getByRole("combobox")
-    .selectOption({ label: "Localhost · Anvil · 31337" });
+
+  // Chain combobox: open → search → pick the Localhost · Anvil option.
+  // The popover renders in a body portal (escapes the modal's overflow), so
+  // the search field and options are scoped to the page, not the dialog.
+  await dialog.getByRole("combobox", { name: "Chain" }).click();
+  await page
+    .getByRole("textbox", { name: /search networks/i })
+    .fill("Localhost");
+  await page.getByRole("option", { name: /Localhost · Anvil/ }).click();
+
   await dialog
     .getByPlaceholder("0x0000000000000000000000000000000000000000")
     .fill(address);

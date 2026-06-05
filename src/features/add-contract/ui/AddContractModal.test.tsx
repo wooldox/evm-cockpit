@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ToastProvider } from "@/shared/ui";
 import { useContractsStore } from "@/entities/contract/model/store";
@@ -113,6 +113,65 @@ describe("AddContractModal", () => {
 
     // onClose should have been called
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  // ── 2b. Chain combobox: search + select changes the chain on the saved contract ──
+
+  it("chain combobox: search and select sets the chain on the added contract", async () => {
+    const onClose = vi.fn();
+    renderModal(onClose);
+    await screen.findByRole("dialog");
+
+    await userEvent.click(screen.getByRole("tab", { name: /paste manually/i }));
+    await userEvent.type(screen.getByPlaceholderText(/my contract/i), "OnBase");
+    await userEvent.type(
+      screen.getByPlaceholderText(/0x0000000000000000000000000000000000000000/),
+      VALID_ADDRESS,
+    );
+    const textarea = screen.getByPlaceholderText(/\[ \{ "type"/i);
+    await userEvent.click(textarea);
+    await userEvent.paste(VALID_ABI);
+
+    // Open the chain combobox, search by exact id, pick Base (8453).
+    await userEvent.click(screen.getByRole("combobox", { name: "Chain" }));
+    await userEvent.type(
+      screen.getByRole("textbox", { name: /search networks/i }),
+      "8453",
+    );
+    const listbox = screen.getByRole("listbox");
+    await userEvent.click(
+      within(listbox).getByRole("option", { name: /Base8453$/ }),
+    );
+    // Popover closed and the trigger reflects the new chain.
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.getByRole("combobox", { name: "Chain" })).toHaveTextContent(
+      "Base",
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /add contract/i }),
+    );
+
+    const added = useContractsStore.getState().contracts[0]!;
+    expect(added.chainId).toBe(8453);
+  });
+
+  it("chain combobox: Escape in the search closes the popover but not the modal", async () => {
+    const onClose = vi.fn();
+    renderModal(onClose);
+    await screen.findByRole("dialog");
+
+    await userEvent.click(screen.getByRole("combobox", { name: "Chain" }));
+    await userEvent.type(
+      screen.getByRole("textbox", { name: /search networks/i }),
+      "{Escape}",
+    );
+
+    // Popover closed…
+    expect(screen.queryByRole("listbox")).toBeNull();
+    // …but the modal stays open and onClose was not called.
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   // ── 3. Import file: valid export prefills the form + activates manual tab ──

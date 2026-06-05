@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Icon } from "@/shared/icons";
-import { CHAIN_LIST } from "@/entities/chain/model/chains";
+import { useChainCatalog } from "@/entities/chain/model/catalogStore";
 import type { TAddress, TContract } from "@/entities/contract/model/types";
 import type { Abi } from "abitype";
 import { trunc } from "@/shared/lib/format";
@@ -10,6 +10,7 @@ import { sharePayloadSchema } from "@/shared/lib/share/codec";
 import {
   Badge,
   Button,
+  ChainCombobox,
   ErrorBanner,
   Field,
   Input,
@@ -17,7 +18,6 @@ import {
   Mono,
   Muted,
   Segment,
-  Select,
   Spinner,
   Textarea,
   useToast,
@@ -32,6 +32,7 @@ export interface AddContractModalProps {
 export function AddContractModal({ onClose, editing }: AddContractModalProps) {
   const f = useAddContractForm({ editing });
   const toast = useToast();
+  const chainEntries = useChainCatalog((s) => s.entries);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importError, setImportError] = useState<string | null>(null);
 
@@ -102,16 +103,12 @@ export function AddContractModal({ onClose, editing }: AddContractModalProps) {
           />
         </Field>
         <Field label="Chain" required>
-          <Select
+          <ChainCombobox
             value={f.chainId}
-            onChange={(e) => f.setChainId(Number(e.target.value))}
-          >
-            {CHAIN_LIST.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} · {c.id}
-              </option>
-            ))}
-          </Select>
+            onChange={f.setChainId}
+            entries={chainEntries}
+            aria-label="Chain"
+          />
         </Field>
 
         {/* ── Address (full-width) ─────────────────────────────────── */}

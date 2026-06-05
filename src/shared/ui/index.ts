@@ -17,6 +17,8 @@ export {
   mutTag,
   type Chain,
 } from "./badge";
+export { ChainPickerPanel, type TPickerChain } from "./chain-picker";
+export { ChainCombobox, type ChainComboboxTone } from "./chain-combobox";
 export { Ident, CopyBtn, Copyable, Address, ExtLink } from "./copyable";
 export { Switch } from "./switch";
 export { Segment, type SegmentOption } from "./segment";
