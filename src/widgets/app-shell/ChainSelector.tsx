@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { Icon } from "@/shared/icons";
-import { ChainGlyph, ChainPickerPanel, useToast } from "@/shared/ui";
+import { ChainGlyph, ChainPickerPanel } from "@/shared/ui";
 import {
   useChainCatalog,
   useChainDisplay,
 } from "@/entities/chain/model/catalogStore";
+import { AddChainModal } from "@/features/add-chain/ui/AddChainModal";
 
 /* ============================================================
    ChainSelector
@@ -34,9 +35,9 @@ export function ChainSelector({
   const { entries, status } = useChainCatalog(
     useShallow((s) => ({ entries: s.entries, status: s.status })),
   );
-  const toast = useToast();
 
   const [open, setOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
   // close on click/tap outside (ref-contains — robust, no self-close race)
@@ -56,12 +57,8 @@ export function ChainSelector({
   };
 
   const onAddCustom = () => {
-    // TODO(backlog): custom chain entry flow
-    toast({
-      kind: "info",
-      title: "Custom chains are coming soon",
-      msg: "Track it on the backlog — for now use Settings → RPC override for supported networks.",
-    });
+    setOpen(false);
+    setAddOpen(true);
   };
 
   return (
@@ -102,6 +99,12 @@ export function ChainSelector({
             }
           />
         </div>
+      )}
+      {addOpen && (
+        <AddChainModal
+          onClose={() => setAddOpen(false)}
+          onAdded={(id) => onChange(id)}
+        />
       )}
     </div>
   );

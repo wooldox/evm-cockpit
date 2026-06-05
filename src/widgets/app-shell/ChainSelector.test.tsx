@@ -3,16 +3,12 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ToastProvider } from "@/shared/ui";
 import { useChainCatalog } from "@/entities/chain/model/catalogStore";
-import { buildStaticCatalog } from "@/entities/chain/model/catalog";
+import { resetCatalog } from "@/entities/chain/model/testing/resetCatalog";
 import { ChainSelector } from "./ChainSelector";
 
-function resetCatalog(status: "static" | "static-fallback" = "static") {
-  const entries = buildStaticCatalog();
-  useChainCatalog.setState({
-    entries,
-    byId: new Map(entries.map((c) => [c.id, c])),
-    status,
-  });
+function resetCatalogStatus(status: "static" | "static-fallback" = "static") {
+  resetCatalog();
+  if (status !== "static") useChainCatalog.setState({ status });
 }
 
 function renderSelector(value = 1) {
@@ -28,7 +24,7 @@ function renderSelector(value = 1) {
 describe("ChainSelector", () => {
   beforeEach(() => {
     document.documentElement.setAttribute("data-theme", "dark");
-    resetCatalog();
+    resetCatalogStatus();
   });
 
   it("trigger shows the current chain name", () => {
@@ -122,19 +118,40 @@ describe("ChainSelector", () => {
     ).toHaveValue("");
   });
 
-  it("shows a coming-soon toast for Add custom chain", async () => {
-    renderSelector(1);
+  it("Add custom chain opens the modal (dropdown closes)", async () => {
+    renderSelector();
     await userEvent.click(screen.getByRole("button", { name: /ethereum/i }));
     await userEvent.click(
       screen.getByRole("button", { name: /add custom chain/i }),
     );
-    expect(
-      screen.getByText(/custom chains are coming soon/i),
-    ).toBeInTheDocument();
+    // The shared Modal renders its title as a div (not a heading) but sets
+    // role="dialog" — query the open modal by that role.
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    // the dropdown is gone
+    expect(screen.queryByRole("listbox")).toBeNull();
+  });
+
+  it("adding a chain selects it", async () => {
+    const { onChange } = renderSelector();
+    await userEvent.click(screen.getByRole("button", { name: /ethereum/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /add custom chain/i }),
+    );
+    await userEvent.type(screen.getByLabelText(/network name/i), "Testlandia");
+    await userEvent.type(screen.getByLabelText(/chain id/i), "999777");
+    await userEvent.type(
+      screen.getByLabelText(/rpc url/i),
+      "http://127.0.0.1:9999",
+    );
+    await userEvent.type(screen.getByLabelText(/currency symbol/i), "TLD");
+    await userEvent.click(screen.getByRole("button", { name: /add chain/i }));
+    expect(onChange).toHaveBeenCalledWith(999777);
+    // modal closed
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("shows the static-fallback notice when the catalog fell back", async () => {
-    resetCatalog("static-fallback");
+    resetCatalogStatus("static-fallback");
     renderSelector(1);
     await userEvent.click(screen.getByRole("button", { name: /ethereum/i }));
     expect(
