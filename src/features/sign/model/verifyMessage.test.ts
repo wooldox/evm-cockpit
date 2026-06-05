@@ -45,7 +45,7 @@ describe("verifySignedMessage", () => {
     expect(r.ok).toBe(false);
     if (r.ok) throw new Error("unreachable");
     expect(r.recovered).toBe(account.address);
-    expect(r.reason).toMatch(/does not match/i);
+    expect(r.error).toMatch(/does not match/i);
   });
 
   it("a tampered message recovers a DIFFERENT signer (mismatch against expected)", async () => {
@@ -67,7 +67,7 @@ describe("verifySignedMessage", () => {
     });
     expect(r).toEqual({
       ok: false,
-      reason: "Malformed signature — expected a 65-byte 0x-hex string.",
+      error: "Malformed signature — expected a 65-byte 0x-hex string.",
     });
   });
 

@@ -9,9 +9,9 @@ import type { Address } from "viem";
  */
 export type TVerifyResult =
   | { ok: true; recovered: Address }
-  | { ok: false; recovered?: Address; reason: string };
+  | { ok: false; recovered?: Address; error: string };
 
-/** 65-byte (or longer, e.g. ERC-6492-wrapped) 0x-hex signature shape. */
+/** 65-byte (or longer) 0x-hex signature shape. */
 export const SIGNATURE_RE = /^0x[0-9a-fA-F]{130,}$/;
 
 export async function verifySignedMessage(args: {
@@ -25,7 +25,7 @@ export async function verifySignedMessage(args: {
   if (!SIGNATURE_RE.test(signature)) {
     return {
       ok: false,
-      reason: "Malformed signature — expected a 65-byte 0x-hex string.",
+      error: "Malformed signature — expected a 65-byte 0x-hex string.",
     };
   }
 
@@ -38,7 +38,7 @@ export async function verifySignedMessage(args: {
   } catch {
     return {
       ok: false,
-      reason: "Could not recover a signer from this signature.",
+      error: "Could not recover a signer from this signature.",
     };
   }
 
@@ -47,7 +47,7 @@ export async function verifySignedMessage(args: {
     return {
       ok: false,
       recovered,
-      reason: "Recovered signer does not match the expected address.",
+      error: "Recovered signer does not match the expected address.",
     };
   }
   return { ok: true, recovered };
