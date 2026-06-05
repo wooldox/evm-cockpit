@@ -4,8 +4,10 @@ import {
   genDisplay,
   buildStaticCatalog,
   mergeCatalog,
+  composeCatalog,
   type TCatalogChain,
 } from "./catalog";
+import { CURATED_VIEM_CHAINS } from "./chains";
 
 // Curated supported ids in chains.ts order — must lead the sort.
 const CURATED_ORDER = [1, 8453, 42161, 10, 137, 11155111, 31337];
@@ -290,5 +292,50 @@ describe("mergeCatalog", () => {
   it("treats non-array remote input gracefully via [] (no additions)", () => {
     const out = mergeCatalog(base, []);
     expect(out).toEqual(base);
+  });
+});
+
+describe("composeCatalog", () => {
+  const mk = (
+    id: number,
+    name: string,
+    source: TCatalogChain["source"] = "viem",
+  ): TCatalogChain => ({
+    id,
+    name,
+    short: name.slice(0, 3).toUpperCase(),
+    color: "#6b7682",
+    rpcUrls: [`https://rpc.${id}.xyz`],
+    nativeSymbol: "ETH",
+    source,
+  });
+
+  it("returns base unchanged when there are no custom entries", () => {
+    const base = buildStaticCatalog();
+    expect(composeCatalog(base, [])).toBe(base);
+  });
+
+  it("inserts custom entries right after the curated head", () => {
+    const base = buildStaticCatalog();
+    const custom = [mk(999001, "My Net", "custom")];
+    const out = composeCatalog(base, custom);
+    // curated head intact …
+    expect(out.slice(0, CURATED_VIEM_CHAINS.length).map((c) => c.id)).toEqual(
+      CURATED_VIEM_CHAINS.map((c) => c.id),
+    );
+    // … custom immediately after …
+    expect(out[CURATED_VIEM_CHAINS.length]!.id).toBe(999001);
+    // … and nothing lost
+    expect(out.length).toBe(base.length + 1);
+  });
+
+  it("custom wins on id collision with a base entry", () => {
+    const base = [...buildStaticCatalog(), mk(999002, "Remote Net", "remote")];
+    const custom = [mk(999002, "Mine", "custom")];
+    const out = composeCatalog(base, custom);
+    const hits = out.filter((c) => c.id === 999002);
+    expect(hits).toHaveLength(1);
+    expect(hits[0]!.name).toBe("Mine");
+    expect(hits[0]!.source).toBe("custom");
   });
 });

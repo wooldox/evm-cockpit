@@ -20,7 +20,7 @@ export type TCatalogChain = {
   explorerUrl?: string;
   nativeSymbol: string;
   testnet?: boolean;
-  source: "viem" | "remote";
+  source: "viem" | "remote" | "custom";
 };
 
 /** ~10 muted hues that read well on both our dark and light tokens. */
@@ -266,4 +266,22 @@ export function mergeCatalog(
 
   added.sort((a, b) => a.name.localeCompare(b.name));
   return [...base, ...added];
+}
+
+/**
+ * Compose the final catalog: custom entries (user-added) are inserted right
+ * after the curated head — easy to find — and WIN id collisions with base
+ * entries (a remote merge landing later must not shadow the user's entry).
+ * Returns `base` as-is when there is nothing custom (referential stability).
+ */
+export function composeCatalog(
+  base: TCatalogChain[],
+  custom: TCatalogChain[],
+): TCatalogChain[] {
+  if (custom.length === 0) return base;
+  const customIds = new Set(custom.map((c) => c.id));
+  const rest = base.filter((c) => !customIds.has(c.id));
+  let head = 0;
+  while (head < rest.length && CURATED_RANK.has(rest[head]!.id)) head++;
+  return [...rest.slice(0, head), ...custom, ...rest.slice(head)];
 }

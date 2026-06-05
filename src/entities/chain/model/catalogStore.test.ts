@@ -1,3 +1,4 @@
+import "fake-indexeddb/auto";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
 import {
@@ -6,7 +7,8 @@ import {
   useChainDisplay,
   CHAINS_ENDPOINT,
 } from "./catalogStore";
-import { buildStaticCatalog } from "./catalog";
+import { buildStaticCatalog, type TCatalogChain } from "./catalog";
+import { CURATED_VIEM_CHAINS } from "./chains";
 
 const REMOTE_ITEM = {
   name: "Zeta Chain",
@@ -20,6 +22,8 @@ const REMOTE_ITEM = {
 function resetStore() {
   const fresh = buildStaticCatalog();
   useChainCatalog.setState({
+    base: fresh,
+    custom: [],
     entries: fresh,
     byId: new Map(fresh.map((c) => [c.id, c])),
     status: "static",
@@ -109,6 +113,106 @@ describe("useChainCatalog", () => {
     await useChainCatalog.getState().loadRemote();
     expect(useChainCatalog.getState().status).toBe("static-fallback");
     fetchSpy.mockRestore();
+  });
+});
+
+describe("custom chains", () => {
+  beforeEach(resetStore);
+
+  const CUSTOM: TCatalogChain = {
+    id: 999777,
+    name: "Testlandia",
+    short: "TLD",
+    color: "#22c55e",
+    rpcUrls: ["http://127.0.0.1:9999"],
+    nativeSymbol: "TLD",
+    source: "custom",
+  };
+
+  it("addCustomChain adds, indexes, and places after the curated head", () => {
+    useChainCatalog.getState().addCustomChain(CUSTOM);
+    const s = useChainCatalog.getState();
+    expect(s.byId.get(999777)?.name).toBe("Testlandia");
+    expect(s.entries[CURATED_VIEM_CHAINS.length]!.id).toBe(999777);
+  });
+
+  it("addCustomChain no-ops on a duplicate id (defense in depth)", () => {
+    useChainCatalog.getState().addCustomChain(CUSTOM);
+    useChainCatalog.getState().addCustomChain({ ...CUSTOM, name: "Imposter" });
+    const s = useChainCatalog.getState();
+    expect(s.byId.get(999777)?.name).toBe("Testlandia");
+    expect(s.entries.filter((c) => c.id === 999777)).toHaveLength(1);
+  });
+
+  it("addCustomChain rejects ids already in the base catalog (e.g. mainnet)", () => {
+    useChainCatalog.getState().addCustomChain({ ...CUSTOM, id: 1 });
+    expect(useChainCatalog.getState().byId.get(1)?.source).not.toBe("custom");
+  });
+
+  it("custom entries survive a remote merge and win id collisions", async () => {
+    useChainCatalog.getState().addCustomChain(CUSTOM);
+    const remote = [
+      {
+        chainId: 999777, // collides with the custom entry
+        name: "Remote Testlandia",
+        rpc: ["https://rpc.remote.xyz"],
+        explorers: [{ url: "https://scan.remote.xyz" }],
+        nativeCurrency: { symbol: "RTL" },
+      },
+    ];
+    await useChainCatalog
+      .getState()
+      .loadRemote({ fetchJson: async () => remote });
+    const s = useChainCatalog.getState();
+    expect(s.status).toBe("extended");
+    expect(s.byId.get(999777)?.name).toBe("Testlandia"); // custom won
+  });
+
+  it("catalogDisplay resolves a custom chain", () => {
+    useChainCatalog.getState().addCustomChain(CUSTOM);
+    expect(catalogDisplay(999777)).toEqual({
+      id: 999777,
+      name: "Testlandia",
+      short: "TLD",
+      color: "#22c55e",
+    });
+  });
+
+  it("persists ONLY the custom array (partialize)", () => {
+    useChainCatalog.getState().addCustomChain(CUSTOM);
+    const opts = useChainCatalog.persist.getOptions();
+    const partial = opts.partialize!(useChainCatalog.getState()) as {
+      custom: TCatalogChain[];
+    };
+    expect(Object.keys(partial)).toEqual(["custom"]);
+    expect(partial.custom).toEqual([CUSTOM]);
+  });
+
+  it("rehydrate re-derives entries from a persisted custom array (merge)", async () => {
+    // Reset first and let its fire-and-forget persist write flush, THEN seed the
+    // persisted record directly so rehydrate reads our value (not a later write).
+    resetStore();
+    await Promise.resolve();
+    const opts = useChainCatalog.persist.getOptions();
+    await opts.storage!.setItem("cc-chains", {
+      state: { custom: [CUSTOM] },
+      version: 0,
+    });
+    expect(useChainCatalog.getState().byId.has(999777)).toBe(false);
+    await useChainCatalog.persist.rehydrate();
+    const s = useChainCatalog.getState();
+    expect(s.byId.get(999777)?.name).toBe("Testlandia");
+    expect(s.entries[CURATED_VIEM_CHAINS.length]!.id).toBe(999777);
+  });
+
+  it("rehydrate with no persisted state falls back to an empty custom array", async () => {
+    // No prior write for this run's key → merge takes the `?? []` branch.
+    await useChainCatalog.persist.clearStorage();
+    resetStore();
+    await useChainCatalog.persist.rehydrate();
+    const s = useChainCatalog.getState();
+    expect(s.custom).toEqual([]);
+    expect(s.byId.get(1)?.short).toBe("ETH");
   });
 });
 
