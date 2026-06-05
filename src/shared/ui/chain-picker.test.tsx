@@ -121,4 +121,42 @@ describe("ChainPickerPanel", () => {
     );
     expect(screen.getByText(/no networks match/i)).toBeInTheDocument();
   });
+
+  // jsdom has no layout — stub the metrics the scroll effect reads so the
+  // last row sits below the visible viewport (would force a scroll adjustment).
+  function stubListMetrics() {
+    const list = screen.getByRole("listbox");
+    const options = screen.getAllByRole("option");
+    Object.defineProperty(list, "clientHeight", { value: 60 });
+    options.forEach((el, i) => {
+      Object.defineProperty(el, "offsetTop", { value: i * 30 });
+      Object.defineProperty(el, "offsetHeight", { value: 30 });
+    });
+    list.scrollTop = 0;
+    return { list, options };
+  }
+
+  // Regression: hovering a partially-visible bottom row used to auto-scroll it
+  // into view, moving the list under the cursor → next row hovered → cascade.
+  it("mouse hover highlights but never scrolls the list", async () => {
+    renderPanel();
+    const { list, options } = stubListMetrics();
+
+    const last = options[options.length - 1]!;
+    await act(async () => {
+      await userEvent.pointer({ target: last, coords: { x: 10, y: 10 } });
+    });
+    expect(last).toHaveAttribute("aria-selected", "true");
+    expect(list.scrollTop).toBe(0);
+  });
+
+  it("keyboard nav scrolls the highlighted row into view", async () => {
+    renderPanel();
+    const { list } = stubListMetrics();
+
+    const search = screen.getByRole("textbox", { name: /search networks/i });
+    await userEvent.type(search, "{ArrowDown}{ArrowDown}");
+    // active row 2: bottom(90) > scrollTop(0) + clientHeight(60) → 90 - 60 + 4
+    expect(list.scrollTop).toBe(34);
+  });
 });

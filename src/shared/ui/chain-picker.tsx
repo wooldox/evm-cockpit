@@ -72,6 +72,11 @@ export function ChainPickerPanel({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  // What moved the highlight last. Scroll-keeping must ONLY follow keyboard
+  // moves: scrolling on hover creates a feedback loop (hover a partially
+  // visible bottom row → list scrolls it into view → the row under the cursor
+  // changes → mousemove fires again → the list keeps auto-scrolling).
+  const navSource = useRef<"key" | "mouse">("key");
 
   // on mount: focus the search field (query/active start clean — no setState here).
   useEffect(() => {
@@ -101,8 +106,10 @@ export function ChainPickerPanel({
   // clamped value keeps highlight/Enter valid without an effect.
   const activeClamped = Math.min(active, Math.max(0, results.length - 1));
 
-  // keep the highlighted row visible without scrollIntoView
+  // keep the highlighted row visible without scrollIntoView — keyboard moves
+  // only (see navSource above; hover must never scroll the list).
   useEffect(() => {
+    if (navSource.current === "mouse") return;
     const el = itemRefs.current[activeClamped];
     const list = listRef.current;
     if (!el || !list) return;
@@ -114,6 +121,7 @@ export function ChainPickerPanel({
   }, [activeClamped, results]);
 
   const onQueryChange = (next: string) => {
+    navSource.current = "key"; // snap the list back to the top for new results
     setQ(next);
     setActive(0); // reset highlight to the top whenever the result set changes
   };
@@ -121,9 +129,11 @@ export function ChainPickerPanel({
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
+      navSource.current = "key";
       setActive(Math.min(activeClamped + 1, results.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
+      navSource.current = "key";
       setActive(Math.max(activeClamped - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
@@ -194,7 +204,10 @@ export function ChainPickerPanel({
               type="button"
               role="option"
               aria-selected={i === activeClamped}
-              onMouseMove={() => setActive(i)}
+              onMouseMove={() => {
+                navSource.current = "mouse";
+                setActive(i);
+              }}
               onClick={() => onSelect(c.id)}
               className={cx(
                 "flex w-full items-center gap-[9px] rounded-sm border-0 px-2 py-[7px] text-left text-[13px] cursor-pointer",
