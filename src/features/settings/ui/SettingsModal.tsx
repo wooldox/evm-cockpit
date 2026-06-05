@@ -1,7 +1,7 @@
 "use client";
 
 import { useSettingsStore } from "@/entities/settings/model/store";
-import { getChainDisplay } from "@/entities/chain/model/chains";
+import { useChainDisplay } from "@/entities/chain/model/catalogStore";
 import { useTheme } from "@/shared/lib/use-theme";
 import { Icon } from "@/shared/icons";
 import { Modal, Field, Input, Segment, Button, Muted } from "@/shared/ui";
@@ -18,7 +18,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const clearRpcOverride = useSettingsStore((s) => s.clearRpcOverride);
 
   const { currentChainId } = useAppShell();
-  const currentChain = getChainDisplay(currentChainId);
+  const currentChain = useChainDisplay(currentChainId);
 
   return (
     <Modal

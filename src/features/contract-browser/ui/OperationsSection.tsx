@@ -10,7 +10,7 @@ import type { TRerunIntent } from "@/entities/rerun/model/store";
 import { getBrowserSections } from "@/features/contract-browser/model/effectiveAbi";
 import { useSimulation } from "@/features/contract-browser/model/useSimulation";
 import { useSendOperation } from "@/features/contract-browser/model/useSendOperation";
-import { getChainDisplay } from "@/entities/chain/model/chains";
+import { useChainDisplay } from "@/entities/chain/model/catalogStore";
 import { Icon } from "@/shared/icons";
 import { trunc } from "@/shared/lib/format";
 import { fromBaseUnits, type EthUnit } from "@/shared/lib/units/units";
@@ -75,6 +75,9 @@ function OperationCard({
 
   const sim = useSimulation(contract, fn, deps);
   const sender = useSendOperation(contract, fn, deps);
+  // Catalog-aware: exotic (remote-catalog) chains get their real name in the
+  // "Switch to X & Send" label instead of the static "Chain <id>" fallback.
+  const chainName = useChainDisplay(contract.chainId).name;
 
   const payable = fn.stateMutability === "payable";
 
@@ -187,7 +190,6 @@ function OperationCard({
   }
 
   const wrongChain = isConnected && walletChainId !== contract.chainId;
-  const chainName = getChainDisplay(contract.chainId).name;
 
   /* Sign & Send button: label, disabled state and title. */
   const signDisabled = !result?.ok || !isConnected || sendBusy;
