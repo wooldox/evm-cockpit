@@ -7,6 +7,7 @@ import type { PublicClient } from "viem";
 import type { TContract } from "@/entities/contract/model/types";
 import type { RpcProvider } from "@/shared/ports/rpc";
 import { viemRpc } from "@/app/web3/services";
+import { formatCallError } from "@/shared/lib/errors/classifyWriteError";
 import { getEffectiveAbi, getBrowserSections } from "./effectiveAbi";
 
 export type PropertyRow =
@@ -33,14 +34,18 @@ type MulticallItem =
   | { status: "failure"; error: unknown };
 
 /** Map a single multicall result item to a PropertyRow. */
-function toRow(fn: AbiFunction, item: MulticallItem): PropertyRow {
+function toRow(
+  fn: AbiFunction,
+  item: MulticallItem,
+  abi: ReturnType<typeof getEffectiveAbi>,
+): PropertyRow {
   if (item.status === "success") {
     return { fn, status: "ok", value: item.result };
   }
   return {
     fn,
     status: "error",
-    error: (item.error as Error)?.message ?? "call failed",
+    error: formatCallError(abi, item.error),
   };
 }
 
@@ -77,7 +82,7 @@ async function readEachProperty(
     return {
       fn,
       status: "error",
-      error: (r.reason as Error)?.message ?? "call failed",
+      error: formatCallError(abi, r.reason),
     };
   });
 }
@@ -137,7 +142,7 @@ export function useProperties(
 
       // res[i] is defined — res has the same length as contracts.
       return sections.properties.map(
-        (fn, i): PropertyRow => toRow(fn, res[i]!),
+        (fn, i): PropertyRow => toRow(fn, res[i]!, abi),
       );
     },
   });

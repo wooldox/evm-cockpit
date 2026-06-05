@@ -9,6 +9,7 @@ import { paramSchema } from "@/shared/lib/values/paramSchema";
 import { stringifyWithBigint } from "@/shared/lib/json/stringify";
 import { record } from "@/entities/history/model/store";
 import type { THistoryEntry } from "@/entities/history/model/types";
+import { formatCallError } from "@/shared/lib/errors/classifyWriteError";
 import { getEffectiveAbi } from "./effectiveAbi";
 
 export type GetterStatus = "idle" | "loading" | "done" | "error";
@@ -87,8 +88,10 @@ export function useGetterCall(
         result: stringifyWithBigint(result),
       });
     } catch (e) {
-      const err = e as { shortMessage?: string; message?: string };
-      const message = err.shortMessage ?? err.message ?? "call failed";
+      // Decoded revert ("reverted: Foo()") or the transport short message —
+      // a read through a proxy can hit guarded functions (e.g. UUPS
+      // proxiableUUID's notDelegated) and the custom error is the answer.
+      const message = formatCallError(getEffectiveAbi(contract), e);
       setState({ status: "error", error: message, argErrors: {} });
       deps.addHistory({
         contractId: contract.id,

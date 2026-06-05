@@ -24,8 +24,31 @@ export function classifyWriteError(
     }
     return { kind: "rpc", message: error.shortMessage ?? error.message };
   }
-  return {
-    kind: "rpc",
-    message: error instanceof Error ? error.message : String(error),
-  };
+  // Duck-typed error-likes (viem-shaped mocks, cross-realm errors): honor
+  // shortMessage/message before falling back to String().
+  if (error && typeof error === "object") {
+    const o = error as { shortMessage?: unknown; message?: unknown };
+    if (typeof o.shortMessage === "string") {
+      return { kind: "rpc", message: o.shortMessage };
+    }
+    if (typeof o.message === "string") {
+      return { kind: "rpc", message: o.message };
+    }
+  }
+  return { kind: "rpc", message: String(error) };
+}
+
+/**
+ * Compact one-line form of a failed contract CALL (read or write) for inline
+ * display: a decoded revert ("reverted: Foo(...)") or the transport error's
+ * short message — never viem's multi-line dump (Contract Call / Docs /
+ * Version). E.g. a UUPS `proxiableUUID()` read through a proxy renders as
+ * "reverted: UnauthorizedCallContext()".
+ */
+export function formatCallError(abi: Abi, error: unknown): string {
+  const { kind, message } = classifyWriteError(abi, error);
+  // decodeRevert already prefixes some shapes (`reverted: "msg"`, `panic(n)`,
+  // `execution reverted (…)`) — only prefix bare custom-error names.
+  const alreadyMarked = /reverted|panic\(/i.test(message);
+  return kind === "revert" && !alreadyMarked ? `reverted: ${message}` : message;
 }

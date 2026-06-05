@@ -5,7 +5,7 @@ import {
   HttpRequestError,
   encodeErrorResult,
 } from "viem";
-import { classifyWriteError } from "./classifyWriteError";
+import { classifyWriteError, formatCallError } from "./classifyWriteError";
 import { erc20Abi } from "@/shared/lib/abi/fixtures";
 
 function makeRevertedError(
@@ -116,5 +116,62 @@ describe("classifyWriteError", () => {
     const result = classifyWriteError(erc20Abi, "just a string");
     expect(result.kind).toBe("rpc");
     expect(result.message).toBe("just a string");
+  });
+});
+
+describe("formatCallError", () => {
+  function wrap(data: `0x${string}`): BaseError {
+    return new BaseError("call failed", {
+      cause: makeRevertedError(data),
+    });
+  }
+
+  it("prefixes a bare custom-error revert with 'reverted:'", () => {
+    // The UUPS proxiableUUID-through-proxy case: a no-arg custom error.
+    const abi = [
+      ...erc20Abi,
+      { type: "error", name: "UnauthorizedCallContext", inputs: [] },
+    ] as const;
+    const data = encodeErrorResult({
+      abi,
+      errorName: "UnauthorizedCallContext",
+      args: [],
+    });
+    expect(formatCallError(abi, wrap(data))).toBe(
+      "reverted: UnauthorizedCallContext",
+    );
+  });
+
+  it("does not double-prefix an Error(string) revert", () => {
+    const data = encodeErrorResult({
+      abi: [{ type: "error", name: "Error", inputs: [{ type: "string" }] }],
+      errorName: "Error",
+      args: ["nope"],
+    });
+    expect(formatCallError(erc20Abi, wrap(data))).toBe('reverted: "nope"');
+  });
+
+  it("leaves a panic untouched by the prefix regex", () => {
+    const data = encodeErrorResult({
+      abi: [{ type: "error", name: "Panic", inputs: [{ type: "uint256" }] }],
+      errorName: "Panic",
+      args: [17n],
+    });
+    expect(formatCallError(erc20Abi, wrap(data))).toBe("panic(17)");
+  });
+
+  it("passes rpc errors through compact (shortMessage, no prefix)", () => {
+    const err = new HttpRequestError({
+      url: "https://example.com",
+      status: 500,
+    });
+    expect(formatCallError(erc20Abi, err)).toBe(err.shortMessage);
+  });
+
+  it("honors duck-typed viem-shaped errors (shortMessage on a plain object)", () => {
+    expect(
+      formatCallError(erc20Abi, { shortMessage: "execution reverted" }),
+    ).toBe("execution reverted");
+    expect(formatCallError(erc20Abi, { message: "boom" })).toBe("boom");
   });
 });
