@@ -32,6 +32,9 @@ import { AppShell } from "./AppShell";
 describe("AppShell", () => {
   beforeEach(() => {
     document.documentElement.setAttribute("data-theme", "dark");
+    // The current chain persists to localStorage (cc-chain) — clear it so each
+    // test starts at the Ethereum default regardless of test order.
+    window.localStorage.clear();
   });
 
   // ----------------------------------------------------------------
@@ -160,6 +163,34 @@ describe("AppShell", () => {
     expect(
       screen.queryAllByRole("button", { name: /^ethereum$/i }),
     ).toHaveLength(0);
+  });
+
+  it("add-contract modal defaults its chain to the app's current chain", async () => {
+    render(
+      <AppShell>
+        <div>content</div>
+      </AppShell>,
+    );
+
+    // Switch the app chain to Base first
+    await userEvent.click(screen.getByRole("button", { name: /ethereum/i }));
+    await userEvent.type(
+      screen.getByRole("textbox", { name: /search networks/i }),
+      "8453",
+    );
+    const baseOption = screen.getAllByRole("option").find((el) => {
+      const name = within(el).queryByText("Base");
+      return name?.tagName === "SPAN" && el.textContent?.includes("8453");
+    });
+    await userEvent.click(baseOption!);
+
+    // Open the add-contract modal — its chain combobox must show Base, not Ethereum
+    await userEvent.click(
+      screen.getByRole("button", { name: /add contract/i }),
+    );
+    const combobox = await screen.findByRole("combobox");
+    expect(combobox).toHaveTextContent(/base/i);
+    expect(combobox).not.toHaveTextContent(/ethereum/i);
   });
 
   // ----------------------------------------------------------------

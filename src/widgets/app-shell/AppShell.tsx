@@ -13,11 +13,23 @@ import { TopBar } from "./TopBar";
 
 /** Rendered inside AppShellProvider — safe to call useAppShell(). */
 function ShellModals() {
-  const { addOpen, editing, closeAdd, settingsOpen, closeSettings } =
-    useAppShell();
+  const {
+    addOpen,
+    editing,
+    closeAdd,
+    settingsOpen,
+    closeSettings,
+    currentChainId,
+  } = useAppShell();
   return (
     <>
-      {addOpen && <AddContractModal editing={editing} onClose={closeAdd} />}
+      {addOpen && (
+        <AddContractModal
+          editing={editing}
+          defaultChainId={currentChainId}
+          onClose={closeAdd}
+        />
+      )}
       {settingsOpen && <SettingsModal onClose={closeSettings} />}
     </>
   );

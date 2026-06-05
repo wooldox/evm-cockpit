@@ -27,10 +27,17 @@ import { useAddContractForm } from "../model/useAddContractForm";
 export interface AddContractModalProps {
   onClose: () => void;
   editing?: TContract | null;
+  /** Initial chain for NEW contracts — the caller passes the app's currently
+   *  selected chain so the dropdown doesn't always reset to Ethereum. */
+  defaultChainId?: number;
 }
 
-export function AddContractModal({ onClose, editing }: AddContractModalProps) {
-  const f = useAddContractForm({ editing });
+export function AddContractModal({
+  onClose,
+  editing,
+  defaultChainId,
+}: AddContractModalProps) {
+  const f = useAddContractForm({ editing, defaultChainId });
   const toast = useToast();
   const chainEntries = useChainCatalog((s) => s.entries);
   const fileInputRef = useRef<HTMLInputElement>(null);

@@ -111,6 +111,9 @@ type ResolvedData = {
 
 export function useAddContractForm(opts?: {
   editing?: TContract | null;
+  /** Initial chain for NEW contracts (the app's currently selected chain).
+   *  An `editing` contract's own chain always wins. */
+  defaultChainId?: number;
   deps?: Partial<Deps>;
 }): AddContractFormResult {
   const editing = opts?.editing ?? null;
@@ -122,7 +125,9 @@ export function useAddContractForm(opts?: {
 
   // ── Field state ─────────────────────────────────────────────────────────
   const [name, setName] = useState<string>(editing?.name ?? "");
-  const [chainId, setChainIdState] = useState<number>(editing?.chainId ?? 1);
+  const [chainId, setChainIdState] = useState<number>(
+    editing?.chainId ?? opts?.defaultChainId ?? 1,
+  );
   const [address, setAddressState] = useState<string>(editing?.address ?? "");
   const [abiText, setAbiText] = useState<string>(
     editing?.abi ? JSON.stringify(editing.abi, null, 2) : "",

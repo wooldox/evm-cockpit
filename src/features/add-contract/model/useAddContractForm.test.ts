@@ -503,6 +503,44 @@ describe("useAddContractForm", () => {
     });
   });
 
+  // ── 6b. Default chain ──────────────────────────────────────────────────────
+
+  describe("defaultChainId", () => {
+    it("a new contract defaults to the app's current chain, not Ethereum", () => {
+      const { result } = renderHook(() =>
+        useAddContractForm({ defaultChainId: 8453, deps: makeDeps() }),
+      );
+      expect(result.current.chainId).toBe(8453);
+    });
+
+    it("an editing contract's own chain wins over defaultChainId", () => {
+      const existing: TContract = {
+        id: "existing-id",
+        name: "Old Name",
+        chainId: 137,
+        address: VALID_ADDRESS,
+        abi: erc20Abi,
+        source: "sourcify",
+        addedAt: 1000,
+      };
+      const { result } = renderHook(() =>
+        useAddContractForm({
+          editing: existing,
+          defaultChainId: 8453,
+          deps: makeDeps(),
+        }),
+      );
+      expect(result.current.chainId).toBe(137);
+    });
+
+    it("falls back to mainnet when no default is provided", () => {
+      const { result } = renderHook(() =>
+        useAddContractForm({ deps: makeDeps() }),
+      );
+      expect(result.current.chainId).toBe(1);
+    });
+  });
+
   // ── 7. Editing mode ───────────────────────────────────────────────────────
 
   describe("editing mode", () => {
