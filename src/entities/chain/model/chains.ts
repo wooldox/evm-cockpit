@@ -37,6 +37,15 @@ const META: Record<number, { short: string; color: string }> = {
   11155111: { short: "SEP", color: "#9b6dff" },
   31337: { short: "LOC", color: "#6b7682" },
 };
+/** Curated short/color overrides for the supported chains, exposed for the
+ *  catalog's display generator so curated entries stay authoritative. Returns
+ *  undefined for non-curated ids. */
+export function getCuratedMeta(
+  id: number,
+): { short: string; color: string } | undefined {
+  return META[id];
+}
+
 const SUPPORTED: ViemChain[] = [
   mainnet,
   base,
