@@ -2,12 +2,17 @@
 
 import { useRef, useState } from "react";
 import { useAccount } from "wagmi";
+import { encodeFunctionData } from "viem";
 import type { AbiFunction } from "abitype";
 import type { TContract } from "@/entities/contract/model/types";
 import type { RpcProvider } from "@/shared/ports/rpc";
 import type { THistoryEntry } from "@/entities/history/model/types";
 import type { TRerunIntent } from "@/entities/rerun/model/store";
-import { getBrowserSections } from "@/features/contract-browser/model/effectiveAbi";
+import {
+  getBrowserSections,
+  getEffectiveAbi,
+} from "@/features/contract-browser/model/effectiveAbi";
+import { parseOperationInputs } from "@/features/contract-browser/model/parseOperationInputs";
 import { useSimulation } from "@/features/contract-browser/model/useSimulation";
 import { useSendOperation } from "@/features/contract-browser/model/useSendOperation";
 import { useChainDisplay } from "@/entities/chain/model/catalogStore";
@@ -46,6 +51,14 @@ type OpDeps = {
   addHistory: (e: Omit<THistoryEntry, "id" | "timestamp">) => void;
 };
 
+/** Execute (skip-simulation) state: parsed inputs + calldata encoded from them. */
+type ExecState = {
+  parsedArgs: readonly unknown[];
+  parsedValue: bigint | undefined;
+  data: `0x${string}`;
+  account: `0x${string}` | undefined;
+};
+
 /* ── OperationCard ──────────────────────────────────────── */
 function OperationCard({
   contract,
@@ -67,6 +80,18 @@ function OperationCard({
   const [args, setArgs] = useState<Record<string, string>>(initialArgs ?? {});
   const [ethAmount, setEthAmount] = useState("");
   const [ethUnit, setEthUnit] = useState<EthUnit>("ether");
+  // Execute (skip-simulation) state. Holds the parsed args/value and the
+  // calldata encoded FROM those exact args, so the raw-tx panel renders — and
+  // Sign & Send sends — what was validated/displayed (no sim round-trip).
+  const [exec, setExec] = useState<ExecState | null>(null);
+  // Execute's own input errors (the sim path owns sim.argErrors). Inputs read
+  // sim's error first, then exec's, so both paths surface field errors.
+  const [execArgErrors, setExecArgErrors] = useState<Record<string, string>>(
+    {},
+  );
+  const [execValueError, setExecValueError] = useState<string | undefined>(
+    undefined,
+  );
 
   const toast = useToast();
   /** Synchronous guard: blocks a second click before the disabled state commits. */
@@ -81,9 +106,17 @@ function OperationCard({
 
   const payable = fn.stateMutability === "payable";
 
-  /** Any input/value/unit change invalidates a stale simulation. */
+  /** Clear exec state + its field errors (mutual exclusion / re-edit). */
+  function clearExec(): void {
+    setExec(null);
+    setExecArgErrors({});
+    setExecValueError(undefined);
+  }
+
+  /** Any input/value/unit change invalidates BOTH a stale sim and exec panel. */
   function invalidate(): void {
     sim.reset();
+    clearExec();
   }
 
   function onArg(key: string, v: string): void {
@@ -98,11 +131,42 @@ function OperationCard({
   }
 
   function onSimulate(): void {
+    // Mutual exclusion: Simulate replaces an exec panel.
+    clearExec();
     void sim.simulate(
       args,
       payable ? { amount: ethAmount, unit: ethUnit } : undefined,
       address,
     );
+  }
+
+  function onExecute(): void {
+    const parsed = parseOperationInputs(
+      fn,
+      args,
+      payable ? { amount: ethAmount, unit: ethUnit } : undefined,
+    );
+    if (!parsed.ok) {
+      // Surface the same field errors as the sim path (no panel).
+      setExec(null);
+      setExecArgErrors(parsed.argErrors);
+      setExecValueError(parsed.valueError);
+      return;
+    }
+    // Mutual exclusion: Execute clears any simulation verdict.
+    sim.reset();
+    setExecArgErrors({});
+    setExecValueError(undefined);
+    setExec({
+      parsedArgs: parsed.args,
+      parsedValue: parsed.value,
+      data: encodeFunctionData({
+        abi: getEffectiveAbi(contract),
+        functionName: fn.name,
+        args: parsed.args,
+      }),
+      account: address,
+    });
   }
 
   const loading = sim.state.status === "loading";
@@ -120,7 +184,21 @@ function OperationCard({
     sendState.status === "wallet" || sendState.status === "pending";
 
   async function handleSend(): Promise<void> {
-    if (!done || !result || !result.ok) return;
+    // Source the send inputs from whichever path is active: a passing sim
+    // (gas from the estimate) or an exec panel (gas undefined — the wallet
+    // estimates at sign time). Both carry parsed args/value that match the
+    // displayed raw tx.
+    const src =
+      done && result && result.ok
+        ? {
+            args: done.parsedArgs,
+            value: done.parsedValue,
+            gas: result.gas as bigint | undefined,
+          }
+        : exec
+          ? { args: exec.parsedArgs, value: exec.parsedValue, gas: undefined }
+          : null;
+    if (!src) return;
     // Synchronous re-entrancy guard: a rapid second click lands before the
     // button's disabled state commits (especially across switchChainAsync), so
     // gate here to keep the "Sending" toast (and send) from firing twice.
@@ -133,9 +211,9 @@ function OperationCard({
         msg: "Awaiting signature in wallet…",
       });
       const final = await sender.send({
-        args: done.parsedArgs,
-        value: done.parsedValue,
-        gas: result.gas,
+        args: src.args,
+        value: src.value,
+        gas: src.gas,
         rawArgs: args,
       });
       if (final.status === "confirmed") {
@@ -189,6 +267,30 @@ function OperationCard({
     });
   }
 
+  function onDownloadExec(): void {
+    if (!exec) return;
+    downloadJson(
+      `${fn.name}-tx.json`,
+      buildUnsignedTxJson({
+        chainId: contract.chainId,
+        to: contract.address,
+        data: exec.data,
+        value: exec.parsedValue,
+        from: address,
+      }),
+    );
+    toast({
+      kind: "success",
+      title: "Transaction downloaded",
+      msg: (
+        <>
+          Unsigned tx saved as <Mono>{fn.name}-tx.json</Mono> — for offline /
+          multisig signing.
+        </>
+      ),
+    });
+  }
+
   const wrongChain = isConnected && walletChainId !== contract.chainId;
 
   /* Sign & Send button: label, disabled state and title. */
@@ -226,7 +328,7 @@ function OperationCard({
               key={key}
               param={p}
               value={args[key]}
-              error={sim.argErrors[key]}
+              error={sim.argErrors[key] ?? execArgErrors[key]}
               autoFocus={i === 0}
               onChange={(v) => onArg(key, v)}
             />
@@ -236,13 +338,22 @@ function OperationCard({
           <EthValueInput
             amount={ethAmount}
             unit={ethUnit}
-            error={sim.valueError}
+            error={sim.valueError ?? execValueError}
             onChange={onEth}
           />
         )}
       </div>
 
       <div className="my-3 flex items-center gap-2">
+        <Button
+          variant="write"
+          size="sm"
+          icon={<Icon.bolt size={14} />}
+          onClick={onExecute}
+          title="Skip simulation — review the raw transaction and sign"
+        >
+          Execute
+        </Button>
         <Button
           variant="read"
           fill="soft"
@@ -354,6 +465,34 @@ function OperationCard({
           </SimDetail>
         </SimShell>
       )}
+
+      {/* Execute (skip-simulation) idle panel: the raw tx with NO verdict
+          header, no gas estimate, no revert lock — review + Sign & Send.
+          Mutually exclusive with a sim verdict (guarded by !done). */}
+      {exec && !done && (
+        <SimShell status="idle">
+          <SimDetail>
+            <Eyebrow className="mt-0.5">Raw transaction</Eyebrow>
+            <TxGrid>
+              <TxField label="From" value={fromValue} />
+              <TxField label="To" value={trunc(contract.address, 6)} />
+              <TxField label="Nonce" value="—" />
+              <TxField label="Gas limit" value="—" />
+              <TxField label="Max fee" value="—" />
+              <TxField label="Priority fee" value="—" />
+            </TxGrid>
+            <Field label="Data (calldata)">
+              <div className="rounded-sm border border-border bg-inset">
+                <div className="overflow-x-auto break-all px-3.5 py-[11px] font-mono text-[13px] leading-[1.6] text-fg-2">
+                  {exec.data}
+                </div>
+              </div>
+            </Field>
+            {renderExecButtons()}
+            {renderSendStatus()}
+          </SimDetail>
+        </SimShell>
+      )}
     </FnCard>
   );
 
@@ -384,6 +523,41 @@ function OperationCard({
             <Icon.lock size={13} /> Sign blocked while revert is predicted
           </span>
         )}
+      </div>
+    );
+  }
+
+  /* ── buttons row (execute idle shell) ──
+     No revert-gating (no prediction): Sign is enabled when connected. */
+  function renderExecButtons() {
+    const signDisabledExec = !isConnected || sendBusy;
+    let titleExec: string | undefined;
+    if (!isConnected) titleExec = "Connect a wallet to sign";
+    else if (!sendBusy) titleExec = "Sign and broadcast";
+
+    let labelExec = "Sign & Send";
+    if (sendState.status === "wallet") labelExec = "Confirm in wallet…";
+    else if (sendState.status === "pending") labelExec = "Pending…";
+    else if (wrongChain) labelExec = `Switch to ${chainName} & Send`;
+
+    return (
+      <div className="flex flex-wrap items-center gap-2 pt-0.5">
+        <Button
+          variant="write"
+          icon={sendBusy ? <Spinner /> : <Icon.sign size={15} />}
+          onClick={() => void handleSend()}
+          disabled={signDisabledExec}
+          title={titleExec}
+        >
+          {labelExec}
+        </Button>
+        <Button
+          variant="subtle"
+          icon={<Icon.download size={15} />}
+          onClick={onDownloadExec}
+        >
+          Download
+        </Button>
       </div>
     );
   }

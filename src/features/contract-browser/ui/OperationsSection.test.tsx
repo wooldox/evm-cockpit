@@ -434,6 +434,115 @@ describe("OperationsSection", () => {
     ).not.toBeInTheDocument();
   });
 
+  /* ── Execute (skip-simulation) ─────────────────────────── */
+  it("Execute reveals the raw-transaction panel without a verdict header", async () => {
+    const user = userEvent.setup();
+    renderSection(makeFakeClient());
+
+    await expand(user, /^transfer/);
+    await user.type(
+      screen.getByPlaceholderText("0x0000000000000000000000000000000000000000"),
+      ACCOUNT,
+    );
+    await user.type(screen.getByPlaceholderText("0"), "100");
+
+    await user.click(screen.getByRole("button", { name: /^Execute$/ }));
+
+    // Raw-tx panel appears with its eyebrow + calldata field.
+    expect(screen.getByText("Raw transaction")).toBeInTheDocument();
+    expect(screen.getByText("Data (calldata)")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Sign & Send/ })).toBeEnabled();
+
+    // No verdict header / gas metric — Execute skips the dry-run.
+    expect(screen.queryByText("Will succeed")).not.toBeInTheDocument();
+    expect(screen.queryByText("Will revert")).not.toBeInTheDocument();
+    expect(screen.queryByText("Est. gas")).not.toBeInTheDocument();
+  });
+
+  it("Execute with invalid args shows the field error and no panel", async () => {
+    const user = userEvent.setup();
+    renderSection(makeFakeClient());
+
+    await expand(user, /^transfer/);
+    await user.type(
+      screen.getByPlaceholderText("0x0000000000000000000000000000000000000000"),
+      "not-an-address",
+    );
+    await user.type(screen.getByPlaceholderText("0"), "100");
+
+    await user.click(screen.getByRole("button", { name: /^Execute$/ }));
+
+    // No raw-tx panel; the arg error is surfaced.
+    expect(screen.queryByText("Raw transaction")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Sign & Send/ })).toBeNull();
+  });
+
+  it("editing an arg after Execute clears the raw-tx panel", async () => {
+    const user = userEvent.setup();
+    renderSection(makeFakeClient());
+
+    await expand(user, /^transfer/);
+    const toInput = screen.getByPlaceholderText(
+      "0x0000000000000000000000000000000000000000",
+    );
+    await user.type(toInput, ACCOUNT);
+    await user.type(screen.getByPlaceholderText("0"), "100");
+    await user.click(screen.getByRole("button", { name: /^Execute$/ }));
+    expect(screen.getByText("Raw transaction")).toBeInTheDocument();
+
+    await user.type(toInput, "0");
+    await waitFor(() =>
+      expect(screen.queryByText("Raw transaction")).not.toBeInTheDocument(),
+    );
+  });
+
+  it("Simulate after Execute replaces the panel with a verdict (mutual exclusion)", async () => {
+    const user = userEvent.setup();
+    renderSection(makeFakeClient());
+
+    await expand(user, /^transfer/);
+    await user.type(
+      screen.getByPlaceholderText("0x0000000000000000000000000000000000000000"),
+      ACCOUNT,
+    );
+    await user.type(screen.getByPlaceholderText("0"), "100");
+
+    await user.click(screen.getByRole("button", { name: /^Execute$/ }));
+    expect(screen.getByText("Raw transaction")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /^Simulate$/ }));
+    await screen.findByText("Will succeed");
+    // The verdict's raw-tx panel is the only one — but the plain exec panel
+    // (no verdict header) is gone; the success shell now owns the panel.
+    expect(screen.getByText("Est. gas")).toBeInTheDocument();
+  });
+
+  it("Sign & Send from the Execute panel calls send with the parsed args (no gas)", async () => {
+    const user = userEvent.setup();
+    renderSection(makeFakeClient());
+
+    await expand(user, /^transfer/);
+    await user.type(
+      screen.getByPlaceholderText("0x0000000000000000000000000000000000000000"),
+      ACCOUNT,
+    );
+    await user.type(screen.getByPlaceholderText("0"), "1");
+
+    await user.click(screen.getByRole("button", { name: /^Execute$/ }));
+    await user.click(screen.getByRole("button", { name: /Sign & Send/ }));
+
+    await screen.findByText(/Confirmed in block 99/);
+    expect(writeContractAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        address: ADDR,
+        functionName: "transfer",
+        args: [ACCOUNT, 1n],
+        gas: undefined,
+        chainId: 1,
+      }),
+    );
+  });
+
   it("download click triggers a json download named <fn>-tx.json", async () => {
     const createObjectURL = vi.fn().mockReturnValue("blob:fake");
     const revokeObjectURL = vi.fn();

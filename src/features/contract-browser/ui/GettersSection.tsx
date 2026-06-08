@@ -65,7 +65,7 @@ export function FnCard({
         {badge}
       </button>
       {open && (
-        <div data-cc="fn-body" className="px-3.5 pb-3.5">
+        <div data-cc="fn-body" className="px-3.5 pb-3.5 pt-3">
           {children}
         </div>
       )}
