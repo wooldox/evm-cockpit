@@ -41,6 +41,14 @@ export type ChainComboboxTone = keyof typeof triggerCx;
 
 const GAP = 6; // px between trigger and popover
 const POPOVER_W = 290;
+const VIEWPORT_MARGIN = 8; // keep the popover this far from the viewport edges
+const MAX_POPOVER_H = 380;
+const MIN_POPOVER_H = 160; // below this, flipping isn't worth it
+
+/** Vertical anchor: open downward (`top`) or upward (`bottom`), height-capped. */
+type Anchor =
+  | { left: number; top: number; maxHeight: number }
+  | { left: number; bottom: number; maxHeight: number };
 
 export function ChainCombobox({
   value,
@@ -56,7 +64,7 @@ export function ChainCombobox({
   "aria-label"?: string;
 }): React.JSX.Element {
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  const [pos, setPos] = useState<Anchor | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
@@ -70,10 +78,31 @@ export function ChainCombobox({
     const r = t.getBoundingClientRect();
     // Clamp horizontally so the fixed-width popover never overflows the viewport.
     const left = Math.max(
-      8,
-      Math.min(r.left, window.innerWidth - POPOVER_W - 8),
+      VIEWPORT_MARGIN,
+      Math.min(r.left, window.innerWidth - POPOVER_W - VIEWPORT_MARGIN),
     );
-    setPos({ left, top: r.bottom + GAP });
+
+    // Flip upward when there isn't enough room below (e.g. the trigger sits low
+    // in a modal near the viewport bottom) and there's more room above. Either
+    // way, cap the height to the space available on the chosen side so the
+    // popover never runs off the page.
+    const spaceBelow = window.innerHeight - r.bottom - GAP - VIEWPORT_MARGIN;
+    const spaceAbove = r.top - GAP - VIEWPORT_MARGIN;
+    const openUp = spaceBelow < MIN_POPOVER_H && spaceAbove > spaceBelow;
+
+    if (openUp) {
+      setPos({
+        left,
+        bottom: window.innerHeight - (r.top - GAP),
+        maxHeight: Math.min(MAX_POPOVER_H, spaceAbove),
+      });
+    } else {
+      setPos({
+        left,
+        top: r.bottom + GAP,
+        maxHeight: Math.min(MAX_POPOVER_H, spaceBelow),
+      });
+    }
   }, []);
 
   // Measure synchronously before paint when opening, then track scroll/resize.
@@ -144,8 +173,13 @@ export function ChainCombobox({
         createPortal(
           <div
             ref={popRef}
-            style={{ left: pos.left, top: pos.top, width: POPOVER_W }}
-            className="fixed z-[110] flex max-h-[min(380px,60vh)] flex-col overflow-hidden rounded-md border border-border-strong bg-elev-2 shadow-[var(--shadow-pop)] animate-pop-in"
+            style={{
+              left: pos.left,
+              width: POPOVER_W,
+              maxHeight: pos.maxHeight,
+              ...("top" in pos ? { top: pos.top } : { bottom: pos.bottom }),
+            }}
+            className="fixed z-[110] flex flex-col overflow-hidden rounded-md border border-border-strong bg-elev-2 shadow-[var(--shadow-pop)] animate-pop-in"
           >
             <ChainPickerPanel
               entries={entries}
