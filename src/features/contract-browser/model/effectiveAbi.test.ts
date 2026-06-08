@@ -35,7 +35,7 @@ describe("getEffectiveAbi", () => {
     expect(getEffectiveAbi(c)).toBe(c.abi);
   });
 
-  it("merges abi + proxy.implAbi when both present", () => {
+  it("de-duplicates an identical impl ABI (proxy ABI == impl ABI)", () => {
     const c = makeContract({
       proxy: {
         kind: "eip1967",
@@ -43,8 +43,31 @@ describe("getEffectiveAbi", () => {
         implAbi: erc20Abi,
       },
     });
+    // erc20 ∪ erc20 = erc20 — every item collides and collapses.
+    expect(getEffectiveAbi(c)).toHaveLength(erc20Abi.length);
+  });
+
+  it("merges distinct impl items while collapsing the shared ones", () => {
+    const implOnly = {
+      type: "function",
+      name: "implOnlyFn",
+      inputs: [],
+      outputs: [],
+      stateMutability: "nonpayable",
+    } as const;
+    const c = makeContract({
+      proxy: {
+        kind: "eip1967",
+        implAddress: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+        implAbi: [...erc20Abi, implOnly],
+      },
+    });
+    // the shared erc20 items collapse; only the impl-unique fn is added.
     const result = getEffectiveAbi(c);
-    expect(result).toHaveLength(erc20Abi.length * 2);
+    expect(result).toHaveLength(erc20Abi.length + 1);
+    expect(
+      result.some((i) => i.type === "function" && i.name === "implOnlyFn"),
+    ).toBe(true);
   });
 });
 
@@ -60,7 +83,7 @@ describe("getBrowserSections", () => {
     expect(sections.events.length).toBe(expected.events.length);
   });
 
-  it("with proxy.implAbi = erc20Abi → function counts double", () => {
+  it("with proxy.implAbi = erc20Abi → counts stay single (deduped)", () => {
     const c = makeContract({
       proxy: {
         kind: "eip1967",
@@ -71,8 +94,9 @@ describe("getBrowserSections", () => {
     const sections = getBrowserSections(c);
     const base = categorizeAbi(erc20Abi);
 
-    expect(sections.properties.length).toBe(base.properties.length * 2);
-    expect(sections.getters.length).toBe(base.getters.length * 2);
-    expect(sections.operations.length).toBe(base.operations.length * 2);
+    expect(sections.properties.length).toBe(base.properties.length);
+    expect(sections.getters.length).toBe(base.getters.length);
+    expect(sections.operations.length).toBe(base.operations.length);
+    expect(sections.events.length).toBe(base.events.length);
   });
 });
