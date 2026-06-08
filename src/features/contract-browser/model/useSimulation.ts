@@ -5,10 +5,10 @@ import type { AbiFunction } from "abitype";
 import type { TContract } from "@/entities/contract/model/types";
 import type { RpcProvider } from "@/shared/ports/rpc";
 import { viemRpc } from "@/app/web3/services";
-import { paramSchema } from "@/shared/lib/values/paramSchema";
-import { toBaseUnits, type EthUnit } from "@/shared/lib/units/units";
+import { type EthUnit } from "@/shared/lib/units/units";
 import { record } from "@/entities/history/model/store";
 import type { THistoryEntry } from "@/entities/history/model/types";
+import { parseOperationInputs } from "./parseOperationInputs";
 import { simulateOperation, type TSimResult } from "./simulateOperation";
 
 export type SimulationState =
@@ -76,38 +76,13 @@ export function useSimulation(
     callId.current += 1;
     const myCallId = callId.current;
 
-    // Validate each input
-    const nextArgErrors: Record<string, string> = {};
-    const args: unknown[] = [];
-    for (let i = 0; i < fn.inputs.length; i++) {
-      const input = fn.inputs[i]!;
-      const key = input.name ?? String(i);
-      const raw = rawArgs[key] ?? "";
-      const parsed = paramSchema(input.type).safeParse(raw);
-      if (!parsed.success) {
-        nextArgErrors[key] = parsed.error.issues[0]?.message ?? "invalid value";
-      } else {
-        args.push(parsed.data);
-      }
-    }
-
-    // Validate payable value
-    let value: bigint | undefined;
-    let nextValueError: string | undefined;
-    if (rawValue) {
-      const amount = rawValue.amount.trim();
-      if (amount !== "" && amount !== "0") {
-        try {
-          value = toBaseUnits(amount, rawValue.unit);
-        } catch (e) {
-          nextValueError = e instanceof Error ? e.message : String(e);
-        }
-      }
-    }
-
-    if (Object.keys(nextArgErrors).length > 0 || nextValueError !== undefined) {
-      setArgErrors(nextArgErrors);
-      setValueError(nextValueError);
+    // Validate + coerce inputs via the shared pure helper (also used by the
+    // Execute path) so a signed tx can never use args that differ from what
+    // was validated/displayed here.
+    const parsed = parseOperationInputs(fn, rawArgs, rawValue);
+    if (!parsed.ok) {
+      setArgErrors(parsed.argErrors);
+      setValueError(parsed.valueError);
       setState({ status: "idle" });
       return;
     }
@@ -118,7 +93,7 @@ export function useSimulation(
 
     const result = await simulateOperation(
       { rpc: deps.rpc },
-      { contract, fn, args, value, account },
+      { contract, fn, args: parsed.args, value: parsed.value, account },
     );
 
     // Staleness guard: if a newer simulate() or reset() happened during the
@@ -128,8 +103,8 @@ export function useSimulation(
     setState({
       status: "done",
       result,
-      parsedArgs: args,
-      parsedValue: value,
+      parsedArgs: parsed.args,
+      parsedValue: parsed.value,
       account,
     });
 
