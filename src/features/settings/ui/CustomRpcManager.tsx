@@ -102,6 +102,8 @@ export function CustomRpcManager({
         <Button
           variant="read"
           fill="soft"
+          // Match the 34px height of the URL input + chain combobox in this row.
+          className="h-[34px]"
           icon={<Icon.plus size={15} />}
           onClick={onAdd}
           disabled={!canAdd}
