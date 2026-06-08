@@ -4,6 +4,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ToastProvider } from "@/shared/ui";
 import { useContractsStore } from "@/entities/contract/model/store";
+import { useSettingsStore } from "@/entities/settings/model/store";
 import { erc20Abi } from "@/shared/lib/abi/fixtures";
 import { toSharePayload } from "@/shared/lib/share/codec";
 import type { TContract } from "@/entities/contract/model/types";
@@ -27,6 +28,30 @@ function renderModal(onClose = vi.fn()) {
 describe("AddContractModal", () => {
   beforeEach(() => {
     useContractsStore.setState({ contracts: [] });
+    useSettingsStore.setState({ etherscanApiKey: "" });
+  });
+
+  // ── 0. Default ABI-source tab follows the Etherscan key ──────────────────
+
+  it("defaults to Paste manually when no Etherscan key is set", async () => {
+    useSettingsStore.setState({ etherscanApiKey: "" });
+    renderModal();
+    await screen.findByRole("dialog");
+    expect(
+      screen.getByRole("tab", { name: /paste manually/i }),
+    ).toHaveAttribute("aria-selected", "true");
+    expect(
+      screen.getByRole("tab", { name: /auto-fetch from explorer/i }),
+    ).toHaveAttribute("aria-selected", "false");
+  });
+
+  it("defaults to Auto-fetch when an Etherscan key is set", async () => {
+    useSettingsStore.setState({ etherscanApiKey: "ABC123" });
+    renderModal();
+    await screen.findByRole("dialog");
+    expect(
+      screen.getByRole("tab", { name: /auto-fetch from explorer/i }),
+    ).toHaveAttribute("aria-selected", "true");
   });
 
   // ── 1. Manual mode: invalid ABI shows error and disables submit ──────────

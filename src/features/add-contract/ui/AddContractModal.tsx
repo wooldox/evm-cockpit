@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Icon } from "@/shared/icons";
 import { useChainCatalog } from "@/entities/chain/model/catalogStore";
+import { useSettingsStore } from "@/entities/settings/model/store";
 import type { TAddress, TContract } from "@/entities/contract/model/types";
 import type { Abi } from "abitype";
 import { trunc } from "@/shared/lib/format";
@@ -37,7 +38,15 @@ export function AddContractModal({
   editing,
   defaultChainId,
 }: AddContractModalProps) {
-  const f = useAddContractForm({ editing, defaultChainId });
+  // Auto-fetch is the default tab only when an Etherscan key is set; otherwise
+  // open on "Paste manually". Read once at mount (the modal remounts per open).
+  const hasEtherscanKey =
+    useSettingsStore.getState().etherscanApiKey.trim() !== "";
+  const f = useAddContractForm({
+    editing,
+    defaultChainId,
+    defaultMode: hasEtherscanKey ? "fetch" : "manual",
+  });
   const toast = useToast();
   const chainEntries = useChainCatalog((s) => s.entries);
   const fileInputRef = useRef<HTMLInputElement>(null);

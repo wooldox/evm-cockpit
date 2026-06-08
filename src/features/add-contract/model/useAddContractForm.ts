@@ -114,6 +114,10 @@ export function useAddContractForm(opts?: {
   /** Initial chain for NEW contracts (the app's currently selected chain).
    *  An `editing` contract's own chain always wins. */
   defaultChainId?: number;
+  /** Which ABI-source tab opens first. The modal sets this from the Etherscan
+   *  key — auto-fetch by default only when a key is present (Sourcify needs no
+   *  key, but the explorer fallback does). Defaults to "fetch". */
+  defaultMode?: "fetch" | "manual";
   deps?: Partial<Deps>;
 }): AddContractFormResult {
   const editing = opts?.editing ?? null;
@@ -132,7 +136,9 @@ export function useAddContractForm(opts?: {
   const [abiText, setAbiText] = useState<string>(
     editing?.abi ? JSON.stringify(editing.abi, null, 2) : "",
   );
-  const [mode, setMode] = useState<"fetch" | "manual">("fetch");
+  const [mode, setMode] = useState<"fetch" | "manual">(
+    opts?.defaultMode ?? "fetch",
+  );
   // Proxy info carried in from a file import (manual mode). Belongs to one exact
   // address+chainId, so it is cleared whenever either of those is edited below.
   const [importedProxy, setImportedProxy] = useState<TProxyInfo | undefined>(

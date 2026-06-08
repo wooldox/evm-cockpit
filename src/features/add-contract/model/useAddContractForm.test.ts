@@ -37,6 +37,31 @@ function makeDeps(overrides?: Partial<Deps>): Deps {
 // ─── Test suite ──────────────────────────────────────────────────────────────
 
 describe("useAddContractForm", () => {
+  // ── 0. Initial mode ────────────────────────────────────────────────────────
+
+  describe("defaultMode", () => {
+    it("defaults to fetch when no defaultMode is given", () => {
+      const { result } = renderHook(() =>
+        useAddContractForm({ deps: makeDeps() }),
+      );
+      expect(result.current.mode).toBe("fetch");
+    });
+
+    it("opens in manual when defaultMode is 'manual'", () => {
+      const { result } = renderHook(() =>
+        useAddContractForm({ defaultMode: "manual", deps: makeDeps() }),
+      );
+      expect(result.current.mode).toBe("manual");
+    });
+
+    it("opens in fetch when defaultMode is 'fetch'", () => {
+      const { result } = renderHook(() =>
+        useAddContractForm({ defaultMode: "fetch", deps: makeDeps() }),
+      );
+      expect(result.current.mode).toBe("fetch");
+    });
+  });
+
   // ── 1. Manual mode ────────────────────────────────────────────────────────
 
   describe("manual mode", () => {
