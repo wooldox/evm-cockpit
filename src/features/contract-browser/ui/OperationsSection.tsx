@@ -56,7 +56,6 @@ type ExecState = {
   parsedArgs: readonly unknown[];
   parsedValue: bigint | undefined;
   data: `0x${string}`;
-  account: `0x${string}` | undefined;
 };
 
 /* ── OperationCard ──────────────────────────────────────── */
@@ -165,7 +164,6 @@ function OperationCard({
         functionName: fn.name,
         args: parsed.args,
       }),
-      account: address,
     });
   }
 
@@ -193,7 +191,7 @@ function OperationCard({
         ? {
             args: done.parsedArgs,
             value: done.parsedValue,
-            gas: result.gas as bigint | undefined,
+            gas: result.gas,
           }
         : exec
           ? { args: exec.parsedArgs, value: exec.parsedValue, gas: undefined }
