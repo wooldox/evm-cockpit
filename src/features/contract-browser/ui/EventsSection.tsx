@@ -191,6 +191,9 @@ export function EventsSection({
           <Button
             variant="read"
             fill="soft"
+            // Match the 34px height of the Field inputs in this row (the
+            // default md button is 32px) so the row aligns on the baseline.
+            className="h-[34px]"
             icon={loading ? <Spinner /> : <Icon.filter size={14} />}
             onClick={() => void onFetch()}
             disabled={loading}
