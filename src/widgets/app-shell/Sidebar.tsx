@@ -125,7 +125,7 @@ export function Sidebar({
           >
             <ScopeBtn active={scope === "all"} onClick={() => setScope("all")}>
               <Icon.layers size={13} className="flex-none" />
-              All chains
+              <span className="min-w-0 truncate">All chains</span>
             </ScopeBtn>
             <ScopeBtn
               active={scope === "current"}
@@ -133,7 +133,7 @@ export function Sidebar({
               title={`Only ${currentChain.name}`}
             >
               <ChainGlyph chain={currentChain} size={13} />
-              {currentChain.name}
+              <span className="min-w-0 truncate">{currentChain.name}</span>
             </ScopeBtn>
           </div>
         </div>
