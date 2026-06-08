@@ -117,7 +117,11 @@ export function ChainCombobox({
     };
   }, [open, reposition]);
 
-  // close on click/tap outside (trigger + portaled popover both count as inside)
+  // Close on click/tap outside (trigger + portaled popover both count as inside).
+  // Capture phase is required: when the combobox lives inside a Modal, the
+  // modal content stops mousedown propagation (to guard its backdrop-close), so
+  // a bubble-phase document listener would never fire. Capturing on the way
+  // down runs before that stopPropagation.
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
@@ -126,8 +130,8 @@ export function ChainCombobox({
       if (popRef.current?.contains(target)) return;
       setOpen(false);
     };
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
+    document.addEventListener("mousedown", onDown, true);
+    return () => document.removeEventListener("mousedown", onDown, true);
   }, [open]);
 
   const select = (id: number) => {

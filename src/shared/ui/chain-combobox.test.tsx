@@ -88,4 +88,26 @@ describe("ChainCombobox", () => {
     await userEvent.click(document.body);
     expect(screen.queryByRole("listbox")).toBeNull();
   });
+
+  // Regression: inside a Modal, the modal content stops mousedown propagation
+  // (to guard its backdrop-close). A bubble-phase outside listener would never
+  // fire; the capture-phase listener must still close the popover.
+  it("closes on an outside click even when an ancestor stops mousedown propagation", async () => {
+    const onChange = vi.fn();
+    render(
+      <div onMouseDown={(e) => e.stopPropagation()}>
+        <ChainCombobox
+          value={1}
+          onChange={onChange}
+          entries={ENTRIES}
+          aria-label="Chain"
+        />
+        <button type="button">outside</button>
+      </div>,
+    );
+    await userEvent.click(screen.getByRole("combobox", { name: "Chain" }));
+    expect(screen.getByRole("listbox")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "outside" }));
+    expect(screen.queryByRole("listbox")).toBeNull();
+  });
 });
