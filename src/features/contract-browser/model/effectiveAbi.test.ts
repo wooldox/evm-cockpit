@@ -1,45 +1,45 @@
-import { describe, it, expect } from "vitest";
-import { getEffectiveAbi, getBrowserSections } from "./effectiveAbi";
-import { erc20Abi } from "@/shared/lib/abi/fixtures";
-import { categorizeAbi } from "@/shared/lib/abi/categorize";
-import type { TContract } from "@/entities/contract/model/types";
+import { describe, it, expect } from 'vitest';
+import { getEffectiveAbi, getBrowserSections } from './effectiveAbi';
+import { erc20Abi } from '@/shared/lib/abi/fixtures';
+import { categorizeAbi } from '@/shared/lib/abi/categorize';
+import type { TContract } from '@/entities/contract/model/types';
 
-const ADDR = "0x1234567890123456789012345678901234567890" as const;
+const ADDR = '0x1234567890123456789012345678901234567890' as const;
 
 function makeContract(overrides?: Partial<TContract>): TContract {
   return {
-    id: "test-id",
-    name: "TestToken",
+    id: 'test-id',
+    name: 'TestToken',
     chainId: 1,
     address: ADDR,
     abi: erc20Abi,
-    source: "manual",
+    source: 'manual',
     addedAt: 0,
     ...overrides,
   };
 }
 
-describe("getEffectiveAbi", () => {
-  it("returns contract.abi when no proxy", () => {
+describe('getEffectiveAbi', () => {
+  it('returns contract.abi when no proxy', () => {
     const c = makeContract();
     expect(getEffectiveAbi(c)).toBe(c.abi);
   });
 
-  it("returns contract.abi when proxy has no implAbi", () => {
+  it('returns contract.abi when proxy has no implAbi', () => {
     const c = makeContract({
       proxy: {
-        kind: "eip1967",
-        implAddress: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+        kind: 'eip1967',
+        implAddress: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
       },
     });
     expect(getEffectiveAbi(c)).toBe(c.abi);
   });
 
-  it("de-duplicates an identical impl ABI (proxy ABI == impl ABI)", () => {
+  it('de-duplicates an identical impl ABI (proxy ABI == impl ABI)', () => {
     const c = makeContract({
       proxy: {
-        kind: "eip1967",
-        implAddress: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+        kind: 'eip1967',
+        implAddress: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
         implAbi: erc20Abi,
       },
     });
@@ -47,18 +47,18 @@ describe("getEffectiveAbi", () => {
     expect(getEffectiveAbi(c)).toHaveLength(erc20Abi.length);
   });
 
-  it("merges distinct impl items while collapsing the shared ones", () => {
+  it('merges distinct impl items while collapsing the shared ones', () => {
     const implOnly = {
-      type: "function",
-      name: "implOnlyFn",
+      type: 'function',
+      name: 'implOnlyFn',
       inputs: [],
       outputs: [],
-      stateMutability: "nonpayable",
+      stateMutability: 'nonpayable',
     } as const;
     const c = makeContract({
       proxy: {
-        kind: "eip1967",
-        implAddress: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+        kind: 'eip1967',
+        implAddress: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
         implAbi: [...erc20Abi, implOnly],
       },
     });
@@ -66,13 +66,13 @@ describe("getEffectiveAbi", () => {
     const result = getEffectiveAbi(c);
     expect(result).toHaveLength(erc20Abi.length + 1);
     expect(
-      result.some((i) => i.type === "function" && i.name === "implOnlyFn"),
+      result.some((i) => i.type === 'function' && i.name === 'implOnlyFn'),
     ).toBe(true);
   });
 });
 
-describe("getBrowserSections", () => {
-  it("no proxy → same counts as categorizeAbi(erc20Abi)", () => {
+describe('getBrowserSections', () => {
+  it('no proxy → same counts as categorizeAbi(erc20Abi)', () => {
     const c = makeContract();
     const sections = getBrowserSections(c);
     const expected = categorizeAbi(erc20Abi);
@@ -83,11 +83,11 @@ describe("getBrowserSections", () => {
     expect(sections.events.length).toBe(expected.events.length);
   });
 
-  it("with proxy.implAbi = erc20Abi → counts stay single (deduped)", () => {
+  it('with proxy.implAbi = erc20Abi → counts stay single (deduped)', () => {
     const c = makeContract({
       proxy: {
-        kind: "eip1967",
-        implAddress: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+        kind: 'eip1967',
+        implAddress: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
         implAbi: erc20Abi,
       },
     });

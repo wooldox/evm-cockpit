@@ -1,7 +1,7 @@
-import { BaseError, ContractFunctionRevertedError, type Abi } from "viem";
-import { decodeRevert } from "./decodeRevert";
+import { BaseError, ContractFunctionRevertedError, type Abi } from 'viem';
+import { decodeRevert } from './decodeRevert';
 
-export type WriteErrorKind = "revert" | "rpc";
+export type WriteErrorKind = 'revert' | 'rpc';
 export type ClassifiedWriteError = { kind: WriteErrorKind; message: string };
 
 /**
@@ -20,22 +20,22 @@ export function classifyWriteError(
       const message = revertErr.raw
         ? decodeRevert(abi, revertErr.raw)
         : (revertErr.reason ?? revertErr.shortMessage);
-      return { kind: "revert", message };
+      return { kind: 'revert', message };
     }
-    return { kind: "rpc", message: error.shortMessage ?? error.message };
+    return { kind: 'rpc', message: error.shortMessage ?? error.message };
   }
   // Duck-typed error-likes (viem-shaped mocks, cross-realm errors): honor
   // shortMessage/message before falling back to String().
-  if (error && typeof error === "object") {
+  if (error && typeof error === 'object') {
     const o = error as { shortMessage?: unknown; message?: unknown };
-    if (typeof o.shortMessage === "string") {
-      return { kind: "rpc", message: o.shortMessage };
+    if (typeof o.shortMessage === 'string') {
+      return { kind: 'rpc', message: o.shortMessage };
     }
-    if (typeof o.message === "string") {
-      return { kind: "rpc", message: o.message };
+    if (typeof o.message === 'string') {
+      return { kind: 'rpc', message: o.message };
     }
   }
-  return { kind: "rpc", message: String(error) };
+  return { kind: 'rpc', message: String(error) };
 }
 
 /**
@@ -50,5 +50,5 @@ export function formatCallError(abi: Abi, error: unknown): string {
   // decodeRevert already prefixes some shapes (`reverted: "msg"`, `panic(n)`,
   // `execution reverted (…)`) — only prefix bare custom-error names.
   const alreadyMarked = /reverted|panic\(/i.test(message);
-  return kind === "revert" && !alreadyMarked ? `reverted: ${message}` : message;
+  return kind === 'revert' && !alreadyMarked ? `reverted: ${message}` : message;
 }

@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import type { ReactNode } from "react";
-import { cx } from "@/shared/lib/cx";
+import type { ReactNode } from 'react';
+import { cx } from '@/shared/lib/cx';
 
 export interface SegmentOption<T extends string> {
   value: T;
@@ -31,8 +31,8 @@ export function Segment<T extends string>({
     <div
       role="tablist"
       className={cx(
-        "inline-flex gap-0.5 rounded-sm border border-border bg-elev-3 p-[3px]",
-        block && "flex w-full",
+        'inline-flex gap-0.5 rounded-sm border border-border bg-elev-3 p-[3px]',
+        block && 'flex w-full',
         className,
       )}
     >
@@ -47,14 +47,14 @@ export function Segment<T extends string>({
             title={o.title}
             onClick={() => onChange(o.value)}
             className={cx(
-              "inline-flex items-center justify-center gap-1.5 rounded-xs border-0 bg-transparent px-3 py-[5px]",
-              "font-sans text-[13px] font-medium cursor-pointer transition-[color,background-color,box-shadow] duration-[110ms]",
-              "[&_svg]:flex-none",
+              'inline-flex items-center justify-center gap-1.5 rounded-xs border-0 bg-transparent px-3 py-[5px]',
+              'font-sans text-[13px] font-medium cursor-pointer transition-[color,background-color,box-shadow] duration-[110ms]',
+              '[&_svg]:flex-none',
               block &&
-                "min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap",
+                'min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap',
               active
-                ? "bg-elev-1 text-fg shadow-[var(--shadow-sm)]"
-                : "text-fg-3 hover:text-fg-2",
+                ? 'bg-elev-1 text-fg shadow-[var(--shadow-sm)]'
+                : 'text-fg-3 hover:text-fg-2',
             )}
           >
             {o.icon}

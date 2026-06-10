@@ -1,7 +1,7 @@
-import type { Chain, Transport } from "viem";
-import { createConfig } from "wagmi";
-import { mock } from "wagmi/connectors";
-import { ANVIL_ACCOUNT_0 } from "./e2e";
+import type { Chain, Transport } from 'viem';
+import { createConfig } from 'wagmi';
+import { mock } from 'wagmi/connectors';
+import { ANVIL_ACCOUNT_0 } from './e2e';
 
 /**
  * E2E-only wagmi config: a plain config whose sole connector is wagmi's `mock`.

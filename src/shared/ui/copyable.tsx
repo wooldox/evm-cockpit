@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useCopy } from "@/shared/lib/use-copy";
-import { identGradient, trunc } from "@/shared/lib/format";
-import { Icon } from "@/shared/icons";
-import { cx } from "@/shared/lib/cx";
+import { useCopy } from '@/shared/lib/use-copy';
+import { identGradient, trunc } from '@/shared/lib/format';
+import { Icon } from '@/shared/icons';
+import { cx } from '@/shared/lib/cx';
 
 /* ---------- Ident — deterministic gradient identicon ---------- */
 export function Ident({ seed, size = 16 }: { seed: string; size?: number }) {
@@ -29,10 +29,10 @@ export function CopyBtn({
       type="button"
       title="Copy"
       className={cx(
-        "inline-grid size-[22px] flex-none place-items-center rounded-xs border-0 bg-transparent",
-        "cursor-pointer transition-[background-color,color] duration-[110ms]",
-        "hover:bg-elev-4 hover:text-fg",
-        copied ? "text-success-fg" : "text-fg-3",
+        'inline-grid size-[22px] flex-none place-items-center rounded-xs border-0 bg-transparent',
+        'cursor-pointer transition-[background-color,color] duration-[110ms]',
+        'hover:bg-elev-4 hover:text-fg',
+        copied ? 'text-success-fg' : 'text-fg-3',
       )}
       onClick={(e) => {
         e.stopPropagation();
@@ -61,14 +61,14 @@ export function Copyable({
   return (
     <span
       className={cx(
-        "inline-flex max-w-full items-center gap-1.5 rounded-xs border border-border bg-inset py-[3px] pl-[9px] pr-1 text-[13px] text-fg",
+        'inline-flex max-w-full items-center gap-1.5 rounded-xs border border-border bg-inset py-[3px] pl-[9px] pr-1 text-[13px] text-fg',
         className,
       )}
     >
       <span
         className={cx(
-          "overflow-hidden text-ellipsis whitespace-nowrap",
-          mono && "font-mono",
+          'overflow-hidden text-ellipsis whitespace-nowrap',
+          mono && 'font-mono',
         )}
       >
         {display ?? value}

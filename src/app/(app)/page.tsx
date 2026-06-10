@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Icon } from "@/shared/icons";
-import { Button, Empty } from "@/shared/ui";
-import { useContractsStore } from "@/entities/contract/model/store";
-import { useAppShell } from "@/widgets/app-shell/AppShellProvider";
-import { ContractBrowser } from "@/features/contract-browser/ui/ContractBrowser";
+import { Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Icon } from '@/shared/icons';
+import { Button, Empty } from '@/shared/ui';
+import { useContractsStore } from '@/entities/contract/model/store';
+import { useAppShell } from '@/widgets/app-shell/AppShellProvider';
+import { ContractBrowser } from '@/features/contract-browser/ui/ContractBrowser';
 
 function BrowserRoute() {
   const router = useRouter();
-  const id = useSearchParams().get("c");
+  const id = useSearchParams().get('c');
   const contracts = useContractsStore((s) => s.contracts);
   const contract = useContractsStore((s) =>
     s.contracts.find((c) => c.id === id),
@@ -22,7 +22,7 @@ function BrowserRoute() {
       <ContractBrowser
         key={contract.id}
         contract={contract}
-        onRemoved={() => router.push("/")}
+        onRemoved={() => router.push('/')}
       />
     );
   }
@@ -35,7 +35,7 @@ function BrowserRoute() {
           icon={<Icon.book size={26} />}
           title="Contract not found"
           actions={
-            <Button variant="subtle" onClick={() => router.push("/")}>
+            <Button variant="subtle" onClick={() => router.push('/')}>
               Back to contracts
             </Button>
           }

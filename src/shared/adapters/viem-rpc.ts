@@ -1,10 +1,10 @@
-import { createPublicClient, defineChain, http } from "viem";
-import type { Chain, PublicClient } from "viem";
-import { SUPPORTED_VIEM_CHAINS } from "@/entities/chain/model/chains";
-import { resolveRpcUrl } from "@/entities/chain/model/resolveRpcUrl";
-import { useChainCatalog } from "@/entities/chain/model/catalogStore";
-import type { TCatalogChain } from "@/entities/chain/model/catalog";
-import type { RpcProvider } from "@/shared/ports/rpc";
+import { createPublicClient, defineChain, http } from 'viem';
+import type { Chain, PublicClient } from 'viem';
+import { SUPPORTED_VIEM_CHAINS } from '@/entities/chain/model/chains';
+import { resolveRpcUrl } from '@/entities/chain/model/resolveRpcUrl';
+import { useChainCatalog } from '@/entities/chain/model/catalogStore';
+import type { TCatalogChain } from '@/entities/chain/model/catalog';
+import type { RpcProvider } from '@/shared/ports/rpc';
 
 const CHAIN_MAP = new Map(SUPPORTED_VIEM_CHAINS.map((c) => [c.id, c]));
 
@@ -24,7 +24,7 @@ function synthChain(entry: TCatalogChain): Chain {
     ...(entry.explorerUrl
       ? {
           blockExplorers: {
-            default: { name: "Explorer", url: entry.explorerUrl },
+            default: { name: 'Explorer', url: entry.explorerUrl },
           },
         }
       : {}),
@@ -44,7 +44,7 @@ export function createViemRpc(
       // viem chain default (unchanged behavior).
       if (viemChain) {
         const url: string | undefined = resolveRpcUrl(chainId, getOverrides());
-        const cacheKey = `${chainId}:${url ?? "default"}`;
+        const cacheKey = `${chainId}:${url ?? 'default'}`;
         const cached = cache.get(cacheKey);
         if (cached) return cached;
 
@@ -72,7 +72,7 @@ export function createViemRpc(
         throw new Error(`no RPC known for chain ${chainId}`);
       }
 
-      const cacheKey = `${chainId}:${url ?? "default"}`;
+      const cacheKey = `${chainId}:${url ?? 'default'}`;
       const cached = cache.get(cacheKey);
       if (cached) return cached;
 

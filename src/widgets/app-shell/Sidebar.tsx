@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { cx } from "@/shared/lib/cx";
-import { trunc } from "@/shared/lib/format";
-import { Icon } from "@/shared/icons";
-import { Button, ChainGlyph } from "@/shared/ui";
-import { Ident } from "@/shared/ui/copyable";
+import { useState } from 'react';
+import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { cx } from '@/shared/lib/cx';
+import { trunc } from '@/shared/lib/format';
+import { Icon } from '@/shared/icons';
+import { Button, ChainGlyph } from '@/shared/ui';
+import { Ident } from '@/shared/ui/copyable';
 import {
   catalogDisplay,
   useChainDisplay,
-} from "@/entities/chain/model/catalogStore";
+} from '@/entities/chain/model/catalogStore';
 import {
   filterAndGroup,
   type SidebarContract,
-} from "@/widgets/app-shell/lib/filterContracts";
-import { useAppShell } from "@/widgets/app-shell/AppShellProvider";
-import { Logo } from "@/widgets/app-shell/Logo";
-import { useContractsStore } from "@/entities/contract/model/store";
+} from '@/widgets/app-shell/lib/filterContracts';
+import { useAppShell } from '@/widgets/app-shell/AppShellProvider';
+import { Logo } from '@/widgets/app-shell/Logo';
+import { useContractsStore } from '@/entities/contract/model/store';
 
 /* ---------- ScopeBtn ---------- */
 function ScopeBtn({
@@ -40,10 +40,10 @@ function ScopeBtn({
       title={title}
       onClick={onClick}
       className={cx(
-        "flex min-w-0 flex-1 items-center justify-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap rounded-xs border-0 px-1.5 py-[5px] text-xs font-medium cursor-pointer transition-colors",
+        'flex min-w-0 flex-1 items-center justify-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap rounded-xs border-0 px-1.5 py-[5px] text-xs font-medium cursor-pointer transition-colors',
         active
-          ? "bg-elev-4 text-fg shadow-[var(--shadow-sm),inset_0_0_0_1px_var(--border-strong)]"
-          : "bg-transparent text-fg-3 hover:text-fg-2",
+          ? 'bg-elev-4 text-fg shadow-[var(--shadow-sm),inset_0_0_0_1px_var(--border-strong)]'
+          : 'bg-transparent text-fg-3 hover:text-fg-2',
       )}
     >
       {children}
@@ -63,9 +63,9 @@ export function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const selectedId = currentId ?? searchParams.get("c") ?? undefined;
-  const [q, setQ] = useState("");
-  const [scope, setScope] = useState<"all" | "current">("all");
+  const selectedId = currentId ?? searchParams.get('c') ?? undefined;
+  const [q, setQ] = useState('');
+  const [scope, setScope] = useState<'all' | 'current'>('all');
 
   const rawContracts = useContractsStore((s) => s.contracts);
   const contracts: SidebarContract[] = rawContracts.map((c) => ({
@@ -82,9 +82,9 @@ export function Sidebar({
 
   /* ---------- Bottom nav item ---------- */
   const navLinks: { href: string; icon: React.ReactNode; label: string }[] = [
-    { href: "/deploy", icon: <Icon.rocket size={15} />, label: "Deploy" },
-    { href: "/sign", icon: <Icon.sign size={15} />, label: "Sign" },
-    { href: "/history", icon: <Icon.history size={15} />, label: "History" },
+    { href: '/deploy', icon: <Icon.rocket size={15} />, label: 'Deploy' },
+    { href: '/sign', icon: <Icon.sign size={15} />, label: 'Sign' },
+    { href: '/history', icon: <Icon.history size={15} />, label: 'History' },
   ];
 
   return (
@@ -123,13 +123,13 @@ export function Sidebar({
             role="tablist"
             className="flex w-full gap-0.5 rounded-sm border border-border bg-elev-3 p-[3px]"
           >
-            <ScopeBtn active={scope === "all"} onClick={() => setScope("all")}>
+            <ScopeBtn active={scope === 'all'} onClick={() => setScope('all')}>
               <Icon.layers size={13} className="flex-none" />
               <span className="min-w-0 truncate">All chains</span>
             </ScopeBtn>
             <ScopeBtn
-              active={scope === "current"}
-              onClick={() => setScope("current")}
+              active={scope === 'current'}
+              onClick={() => setScope('current')}
               title={`Only ${currentChain.name}`}
             >
               <ChainGlyph chain={currentChain} size={13} />
@@ -142,20 +142,20 @@ export function Sidebar({
       {/* Contract list */}
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-3 pt-1">
         {groups.length === 0 &&
-          (scope === "current" && !q ? (
+          (scope === 'current' && !q ? (
             <div className="px-3 py-6 text-center text-[13px] text-fg-4">
               No contracts on {currentChain.name}.
               <button
                 type="button"
                 className="mx-auto mt-2 block cursor-pointer border-0 bg-transparent text-read-fg underline"
-                onClick={() => setScope("all")}
+                onClick={() => setScope('all')}
               >
                 Show all chains
               </button>
             </div>
           ) : (
             <div className="px-3 py-6 text-center text-[13px] text-fg-4">
-              {q ? "No matches" : "No saved contracts"}
+              {q ? 'No matches' : 'No saved contracts'}
             </div>
           ))}
 
@@ -173,7 +173,7 @@ export function Sidebar({
                 </span>
               </div>
               {list.map((c) => {
-                const active = selectedId === c.id && pathname === "/";
+                const active = selectedId === c.id && pathname === '/';
                 return (
                   <button
                     key={c.id}
@@ -183,10 +183,10 @@ export function Sidebar({
                       onSelect?.(c.id);
                     }}
                     className={cx(
-                      "flex w-full items-center gap-2.5 rounded-sm border px-[9px] py-2 text-left transition-colors",
+                      'flex w-full items-center gap-2.5 rounded-sm border px-[9px] py-2 text-left transition-colors',
                       active
-                        ? "border-border-strong bg-elev-3"
-                        : "border-transparent bg-transparent hover:bg-elev-3",
+                        ? 'border-border-strong bg-elev-3'
+                        : 'border-transparent bg-transparent hover:bg-elev-3',
                     )}
                   >
                     <Ident seed={c.address} size={26} />
@@ -228,11 +228,11 @@ export function Sidebar({
               key={href}
               href={href}
               className={cx(
-                "flex items-center gap-2.5 rounded-sm border-0 bg-transparent px-2.5 py-2 text-[13px] font-medium",
-                "cursor-pointer transition-colors no-underline",
+                'flex items-center gap-2.5 rounded-sm border-0 bg-transparent px-2.5 py-2 text-[13px] font-medium',
+                'cursor-pointer transition-colors no-underline',
                 active
-                  ? "bg-elev-3 text-fg [&_svg]:text-read-fg"
-                  : "text-fg-2 hover:bg-elev-3 hover:text-fg",
+                  ? 'bg-elev-3 text-fg [&_svg]:text-read-fg'
+                  : 'text-fg-2 hover:bg-elev-3 hover:text-fg',
               )}
             >
               {icon}

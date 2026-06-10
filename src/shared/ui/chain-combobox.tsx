@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   useCallback,
@@ -7,12 +7,12 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-} from "react";
-import { createPortal } from "react-dom";
-import { cx } from "@/shared/lib/cx";
-import { Icon } from "@/shared/icons";
-import { ChainGlyph } from "./badge";
-import { ChainPickerPanel, type TPickerChain } from "./chain-picker";
+} from 'react';
+import { createPortal } from 'react-dom';
+import { cx } from '@/shared/lib/cx';
+import { Icon } from '@/shared/icons';
+import { ChainGlyph } from './badge';
+import { ChainPickerPanel, type TPickerChain } from './chain-picker';
 
 /* ============================================================
    ChainCombobox
@@ -31,10 +31,10 @@ import { ChainPickerPanel, type TPickerChain } from "./chain-picker";
 
 const triggerCx = {
   default:
-    "border-border-strong focus:border-read focus:[box-shadow:0_0_0_3px_var(--read-bg)]",
-  invalid: "border-danger focus:[box-shadow:0_0_0_3px_var(--danger-bg)]",
+    'border-border-strong focus:border-read focus:[box-shadow:0_0_0_3px_var(--read-bg)]',
+  invalid: 'border-danger focus:[box-shadow:0_0_0_3px_var(--danger-bg)]',
   valid:
-    "border-success-border focus:border-read focus:[box-shadow:0_0_0_3px_var(--read-bg)]",
+    'border-success-border focus:border-read focus:[box-shadow:0_0_0_3px_var(--read-bg)]',
 } as const;
 
 export type ChainComboboxTone = keyof typeof triggerCx;
@@ -54,14 +54,14 @@ export function ChainCombobox({
   value,
   onChange,
   entries,
-  tone = "default",
-  "aria-label": ariaLabel,
+  tone = 'default',
+  'aria-label': ariaLabel,
 }: {
   value: number;
   onChange: (id: number) => void;
   entries: readonly TPickerChain[];
   tone?: ChainComboboxTone;
-  "aria-label"?: string;
+  'aria-label'?: string;
 }): React.JSX.Element {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<Anchor | null>(null);
@@ -109,11 +109,11 @@ export function ChainCombobox({
   useLayoutEffect(() => {
     if (!open) return;
     reposition();
-    window.addEventListener("scroll", reposition, true);
-    window.addEventListener("resize", reposition);
+    window.addEventListener('scroll', reposition, true);
+    window.addEventListener('resize', reposition);
     return () => {
-      window.removeEventListener("scroll", reposition, true);
-      window.removeEventListener("resize", reposition);
+      window.removeEventListener('scroll', reposition, true);
+      window.removeEventListener('resize', reposition);
     };
   }, [open, reposition]);
 
@@ -130,8 +130,8 @@ export function ChainCombobox({
       if (popRef.current?.contains(target)) return;
       setOpen(false);
     };
-    document.addEventListener("mousedown", onDown, true);
-    return () => document.removeEventListener("mousedown", onDown, true);
+    document.addEventListener('mousedown', onDown, true);
+    return () => document.removeEventListener('mousedown', onDown, true);
   }, [open]);
 
   const select = (id: number) => {
@@ -151,9 +151,9 @@ export function ChainCombobox({
         aria-label={ariaLabel}
         onClick={() => setOpen((o) => !o)}
         className={cx(
-          "flex h-[34px] w-full items-center gap-2 rounded-sm border bg-elev-3 px-2.5 text-[13px] text-fg outline-none",
-          "transition-[border-color,box-shadow,background-color] duration-[110ms]",
-          "hover:border-[var(--gray-500)]",
+          'flex h-[34px] w-full items-center gap-2 rounded-sm border bg-elev-3 px-2.5 text-[13px] text-fg outline-none',
+          'transition-[border-color,box-shadow,background-color] duration-[110ms]',
+          'hover:border-[var(--gray-500)]',
           triggerCx[tone],
         )}
       >
@@ -181,7 +181,7 @@ export function ChainCombobox({
               left: pos.left,
               width: POPOVER_W,
               maxHeight: pos.maxHeight,
-              ...("top" in pos ? { top: pos.top } : { bottom: pos.bottom }),
+              ...('top' in pos ? { top: pos.top } : { bottom: pos.bottom }),
             }}
             className="fixed z-[110] flex flex-col overflow-hidden rounded-md border border-border-strong bg-elev-2 shadow-[var(--shadow-pop)] animate-pop-in"
           >

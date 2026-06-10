@@ -1,6 +1,6 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { AbiEvent } from "abitype";
-import type { TContract } from "@/entities/contract/model/types";
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import type { AbiEvent } from 'abitype';
+import type { TContract } from '@/entities/contract/model/types';
 import {
   ANVIL_ACCOUNTS,
   clientsFor,
@@ -8,9 +8,9 @@ import {
   loadArtifact,
   startAnvil,
   type AnvilHandle,
-} from "@/test/anvil";
-import { createViemRpc } from "@/shared/adapters/viem-rpc";
-import { fetchEventLogs } from "./fetchEventLogs";
+} from '@/test/anvil';
+import { createViemRpc } from '@/shared/adapters/viem-rpc';
+import { fetchEventLogs } from './fetchEventLogs';
 
 /**
  * Exercises {@link fetchEventLogs} against a live Anvil node through the REAL
@@ -18,7 +18,7 @@ import { fetchEventLogs } from "./fetchEventLogs";
  * mint, one per `transfer`, and one more from the `deposit` mint (plus a
  * `Deposit` event), so we can assert exact log counts and decoded args.
  */
-describe("fetchEventLogs (integration)", () => {
+describe('fetchEventLogs (integration)', () => {
   let anvil: AnvilHandle;
   const INITIAL_SUPPLY = 1000n * 10n ** 18n;
   const DEPOSIT_VALUE = 10n ** 18n;
@@ -36,7 +36,7 @@ describe("fetchEventLogs (integration)", () => {
 
   function eventByName(name: string): AbiEvent {
     const ev = contract.abi.find(
-      (e): e is AbiEvent => e.type === "event" && e.name === name,
+      (e): e is AbiEvent => e.type === 'event' && e.name === name,
     );
     if (!ev) throw new Error(`no event ${name} in ABI`);
     return ev;
@@ -44,21 +44,21 @@ describe("fetchEventLogs (integration)", () => {
 
   beforeAll(async () => {
     anvil = await startAnvil();
-    const address = await deployArtifact(anvil.rpcUrl, "TestToken", [
-      "Cockpit Token",
-      "CKPT",
+    const address = await deployArtifact(anvil.rpcUrl, 'TestToken', [
+      'Cockpit Token',
+      'CKPT',
       INITIAL_SUPPLY,
     ]);
 
-    const { abi } = loadArtifact("TestToken");
+    const { abi } = loadArtifact('TestToken');
     rpc = createViemRpc(() => ({ 31337: anvil.rpcUrl }));
     contract = {
-      id: "t1",
-      name: "Cockpit Token",
+      id: 't1',
+      name: 'Cockpit Token',
       chainId: 31337,
       address,
       abi,
-      source: "manual",
+      source: 'manual',
       addedAt: 0,
     };
 
@@ -72,7 +72,7 @@ describe("fetchEventLogs (integration)", () => {
       const hash = await wallet.writeContract({
         address,
         abi,
-        functionName: "transfer",
+        functionName: 'transfer',
         args: [ANVIL_ACCOUNTS[1], TRANSFER_AMOUNT],
         account: wallet.account ?? null,
         chain: null,
@@ -85,7 +85,7 @@ describe("fetchEventLogs (integration)", () => {
     const depositHash = await wallet.writeContract({
       address,
       abi,
-      functionName: "deposit",
+      functionName: 'deposit',
       args: [],
       value: DEPOSIT_VALUE,
       account: wallet.account ?? null,
@@ -100,12 +100,12 @@ describe("fetchEventLogs (integration)", () => {
     await anvil?.stop();
   });
 
-  it("fetches all Transfer logs over the full block range", async () => {
+  it('fetches all Transfer logs over the full block range', async () => {
     const res = await fetchEventLogs(
       { rpc },
       {
         contract,
-        event: eventByName("Transfer"),
+        event: eventByName('Transfer'),
         fromBlock: 0n,
         toBlock: latestBlock,
       },
@@ -120,7 +120,7 @@ describe("fetchEventLogs (integration)", () => {
     const first = res.logs[0];
     expect(first?.blockNumber).toBe(deployBlock);
     expect(first?.args).toMatchObject({
-      from: "0x0000000000000000000000000000000000000000",
+      from: '0x0000000000000000000000000000000000000000',
       to: ANVIL_ACCOUNTS[0],
       value: INITIAL_SUPPLY,
     });
@@ -136,12 +136,12 @@ describe("fetchEventLogs (integration)", () => {
     });
   });
 
-  it("narrows the range to logs after the 2nd transfer", async () => {
+  it('narrows the range to logs after the 2nd transfer', async () => {
     const res = await fetchEventLogs(
       { rpc },
       {
         contract,
-        event: eventByName("Transfer"),
+        event: eventByName('Transfer'),
         fromBlock: secondTransferBlock + 1n,
         toBlock: latestBlock,
       },
@@ -151,12 +151,12 @@ describe("fetchEventLogs (integration)", () => {
     expect(res.logs).toHaveLength(3);
   });
 
-  it("fetches the single Deposit log with decoded args", async () => {
+  it('fetches the single Deposit log with decoded args', async () => {
     const res = await fetchEventLogs(
       { rpc },
       {
         contract,
-        event: eventByName("Deposit"),
+        event: eventByName('Deposit'),
         fromBlock: 0n,
         toBlock: latestBlock,
       },
@@ -167,12 +167,12 @@ describe("fetchEventLogs (integration)", () => {
     expect(res.logs[0]?.args.amount).toBe(DEPOSIT_VALUE);
   });
 
-  it("returns logs in ascending block order across a single chunk", async () => {
+  it('returns logs in ascending block order across a single chunk', async () => {
     const res = await fetchEventLogs(
       { rpc },
       {
         contract,
-        event: eventByName("Transfer"),
+        event: eventByName('Transfer'),
         fromBlock: 0n,
         toBlock: latestBlock,
       },

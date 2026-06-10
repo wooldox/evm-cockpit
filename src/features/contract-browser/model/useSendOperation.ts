@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import { useRef, useState } from "react";
-import { useAccount, useSwitchChain, useWriteContract } from "wagmi";
-import type { AbiFunction } from "abitype";
-import type { TContract } from "@/entities/contract/model/types";
-import type { RpcProvider } from "@/shared/ports/rpc";
-import { viemRpc } from "@/app/web3/services";
-import { record } from "@/entities/history/model/store";
-import type { THistoryEntry } from "@/entities/history/model/types";
-import { getEffectiveAbi } from "./effectiveAbi";
+import { useRef, useState } from 'react';
+import { useAccount, useSwitchChain, useWriteContract } from 'wagmi';
+import type { AbiFunction } from 'abitype';
+import type { TContract } from '@/entities/contract/model/types';
+import type { RpcProvider } from '@/shared/ports/rpc';
+import { viemRpc } from '@/app/web3/services';
+import { record } from '@/entities/history/model/store';
+import type { THistoryEntry } from '@/entities/history/model/types';
+import { getEffectiveAbi } from './effectiveAbi';
 
 export type SendState =
-  | { status: "idle" }
-  | { status: "wallet" } // awaiting signature in wallet
-  | { status: "pending"; hash: `0x${string}` }
-  | { status: "confirmed"; hash: `0x${string}`; blockNumber: bigint }
-  | { status: "failed"; error: string; hash?: `0x${string}` };
+  | { status: 'idle' }
+  | { status: 'wallet' } // awaiting signature in wallet
+  | { status: 'pending'; hash: `0x${string}` }
+  | { status: 'confirmed'; hash: `0x${string}`; blockNumber: bigint }
+  | { status: 'failed'; error: string; hash?: `0x${string}` };
 
 export type UseSendOperationResult = {
   state: SendState;
@@ -34,7 +34,7 @@ export type UseSendOperationResult = {
 
 type Deps = {
   rpc: RpcProvider;
-  addHistory: (e: Omit<THistoryEntry, "id" | "timestamp">) => void;
+  addHistory: (e: Omit<THistoryEntry, 'id' | 'timestamp'>) => void;
 };
 
 const defaultDeps: Deps = { rpc: viemRpc, addHistory: record };
@@ -44,7 +44,7 @@ export function useSendOperation(
   fn: AbiFunction,
   deps: Deps = defaultDeps,
 ): UseSendOperationResult {
-  const [state, setState] = useState<SendState>({ status: "idle" });
+  const [state, setState] = useState<SendState>({ status: 'idle' });
   // Re-entrancy guard. A ref, not `state`, because the state value captured in
   // this closure can be stale across overlapping send() calls.
   const inFlight = useRef(false);
@@ -64,8 +64,8 @@ export function useSendOperation(
     // Defensive: UI should prevent sending without a wallet (no history recorded).
     if (!isConnected || !address) {
       const failed: SendState = {
-        status: "failed",
-        error: "connect a wallet to sign",
+        status: 'failed',
+        error: 'connect a wallet to sign',
       };
       setState(failed);
       return failed;
@@ -77,10 +77,10 @@ export function useSendOperation(
       deps.addHistory({
         contractId: contract.id,
         chainId: contract.chainId,
-        type: "write",
+        type: 'write',
         fnName: fn.name,
         args: p.rawArgs,
-        status: "error",
+        status: 'error',
         error,
         txHash,
         from: address,
@@ -93,15 +93,15 @@ export function useSendOperation(
         try {
           await switchChainAsync({ chainId: contract.chainId });
         } catch {
-          const msg = "network switch rejected";
-          const failed: SendState = { status: "failed", error: msg };
+          const msg = 'network switch rejected';
+          const failed: SendState = { status: 'failed', error: msg };
           setState(failed);
           recordError(msg);
           return failed;
         }
       }
 
-      setState({ status: "wallet" });
+      setState({ status: 'wallet' });
 
       let hash: `0x${string}`;
       try {
@@ -116,35 +116,35 @@ export function useSendOperation(
         });
       } catch (e) {
         const err = e as { shortMessage?: string; message?: string };
-        const msg = err.shortMessage ?? err.message ?? "transaction failed";
-        const failed: SendState = { status: "failed", error: msg };
+        const msg = err.shortMessage ?? err.message ?? 'transaction failed';
+        const failed: SendState = { status: 'failed', error: msg };
         setState(failed);
         recordError(msg);
         return failed;
       }
 
-      setState({ status: "pending", hash });
+      setState({ status: 'pending', hash });
 
-      let receipt: { status: "success" | "reverted"; blockNumber: bigint };
+      let receipt: { status: 'success' | 'reverted'; blockNumber: bigint };
       try {
         receipt = (await deps.rpc
           .getClient(contract.chainId)
           .waitForTransactionReceipt({ hash })) as {
-          status: "success" | "reverted";
+          status: 'success' | 'reverted';
           blockNumber: bigint;
         };
       } catch (e) {
         const err = e as { shortMessage?: string; message?: string };
-        const msg = err.shortMessage ?? err.message ?? "transaction failed";
-        const failed: SendState = { status: "failed", error: msg, hash };
+        const msg = err.shortMessage ?? err.message ?? 'transaction failed';
+        const failed: SendState = { status: 'failed', error: msg, hash };
         setState(failed);
         recordError(msg, hash);
         return failed;
       }
 
-      if (receipt.status === "success") {
+      if (receipt.status === 'success') {
         const confirmed: SendState = {
-          status: "confirmed",
+          status: 'confirmed',
           hash,
           blockNumber: receipt.blockNumber,
         };
@@ -152,18 +152,18 @@ export function useSendOperation(
         deps.addHistory({
           contractId: contract.id,
           chainId: contract.chainId,
-          type: "write",
+          type: 'write',
           fnName: fn.name,
           args: p.rawArgs,
-          status: "ok",
+          status: 'ok',
           txHash: hash,
           result: `block ${receipt.blockNumber}`,
           from: address,
         });
         return confirmed;
       } else {
-        const msg = "transaction reverted on-chain";
-        const failed: SendState = { status: "failed", error: msg, hash };
+        const msg = 'transaction reverted on-chain';
+        const failed: SendState = { status: 'failed', error: msg, hash };
         setState(failed);
         recordError(msg, hash);
         return failed;

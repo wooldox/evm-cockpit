@@ -1,5 +1,5 @@
-"use client";
-import { create } from "zustand";
+'use client';
+import { create } from 'zustand';
 
 /**
  * A one-shot request to re-open the originating card for a history entry,
@@ -12,7 +12,7 @@ export type TRerunIntent = {
   fnName: string;
   argCount: number;
   args: Record<string, string>;
-  type: "read" | "simulate" | "write";
+  type: 'read' | 'simulate' | 'write';
 };
 
 export type RerunState = {

@@ -1,5 +1,5 @@
-import { useChainCatalog } from "@/entities/chain/model/catalogStore";
-import { buildStaticCatalog } from "@/entities/chain/model/catalog";
+import { useChainCatalog } from '@/entities/chain/model/catalogStore';
+import { buildStaticCatalog } from '@/entities/chain/model/catalog';
 
 /** Reset the chain catalog store to a clean static state for tests:
  *  custom: [] + entries/byId re-derived from a fresh static catalog so
@@ -11,6 +11,6 @@ export function resetCatalog(): void {
     custom: [],
     entries: fresh,
     byId: new Map(fresh.map((c) => [c.id, c])),
-    status: "static",
+    status: 'static',
   });
 }

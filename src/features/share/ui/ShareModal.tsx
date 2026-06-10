@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { Icon } from "@/shared/icons";
-import type { TContract } from "@/entities/contract/model/types";
+import { useEffect, useState } from 'react';
+import { Icon } from '@/shared/icons';
+import type { TContract } from '@/entities/contract/model/types';
 import {
   encodeContractShare,
   toSharePayload,
   MAX_SHARE_PAYLOAD_CHARS,
-} from "@/shared/lib/share/codec";
-import { downloadJson } from "@/shared/lib/tx/downloadUnsignedTx";
+} from '@/shared/lib/share/codec';
+import { downloadJson } from '@/shared/lib/tx/downloadUnsignedTx';
 import {
   Button,
   CopyBtn,
@@ -18,7 +18,7 @@ import {
   Muted,
   Spinner,
   useToast,
-} from "@/shared/ui";
+} from '@/shared/ui';
 
 export interface ShareModalProps {
   contract: TContract;
@@ -64,7 +64,7 @@ export function ShareModal({ contract, onClose }: ShareModalProps) {
       `${contract.name}.contract.json`,
       JSON.stringify(toSharePayload(contract), null, 2),
     );
-    toast({ kind: "success", title: "Contract exported", msg: contract.name });
+    toast({ kind: 'success', title: 'Contract exported', msg: contract.name });
   };
 
   return (
@@ -96,8 +96,8 @@ export function ShareModal({ contract, onClose }: ShareModalProps) {
             hint="Anyone with this link can import the contract."
           >
             <div className="flex items-center gap-1.5">
-              <Input mono readOnly value={shareUrl ?? ""} />
-              <CopyBtn value={shareUrl ?? ""} />
+              <Input mono readOnly value={shareUrl ?? ''} />
+              <CopyBtn value={shareUrl ?? ''} />
             </div>
           </Field>
         )}

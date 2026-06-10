@@ -1,6 +1,6 @@
-import type { AbiEvent } from "abitype";
-import type { TContract } from "@/entities/contract/model/types";
-import type { RpcProvider } from "@/shared/ports/rpc";
+import type { AbiEvent } from 'abitype';
+import type { TContract } from '@/entities/contract/model/types';
+import type { RpcProvider } from '@/shared/ports/rpc';
 
 export type TDecodedLog = {
   blockNumber: bigint;
@@ -70,14 +70,14 @@ export async function fetchEventLogs(
   },
 ): Promise<TEventLogsResult> {
   const { contract, event, fromBlock, toBlock } = params;
-  if (fromBlock > toBlock) throw new Error("invalid block range");
+  if (fromBlock > toBlock) throw new Error('invalid block range');
 
   // Up-front bound on planned windows: a wide+sparse range would otherwise issue
   // thousands of sequential getLogs calls without ever tripping MAX_LOGS.
   const plannedWindows = (toBlock - fromBlock + CHUNK_SIZE) / CHUNK_SIZE;
   if (plannedWindows > MAX_WINDOWS) {
     throw new Error(
-      "block range too large — narrow the range (max 2,000,000 blocks)",
+      'block range too large — narrow the range (max 2,000,000 blocks)',
     );
   }
 

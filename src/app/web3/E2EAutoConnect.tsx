@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useRef } from "react";
-import { useConnect } from "wagmi";
+import { useEffect, useRef } from 'react';
+import { useConnect } from 'wagmi';
 
 /**
  * E2E-only: auto-connect the mock wallet on mount so the smoke test starts in a

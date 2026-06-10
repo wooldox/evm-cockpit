@@ -1,4 +1,4 @@
-import { stringifyWithBigint } from "@/shared/lib/json/stringify";
+import { stringifyWithBigint } from '@/shared/lib/json/stringify';
 
 export type UnsignedTx = {
   chainId: number;
@@ -19,9 +19,9 @@ export function buildUnsignedTxJson(tx: UnsignedTx): string {
 
 /** Trigger a browser download of `json` as `filename` (Blob + object URL + temporary <a download> click + revoke). */
 export function downloadJson(filename: string, json: string): void {
-  const blob = new Blob([json], { type: "application/json" });
+  const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
+  const a = document.createElement('a');
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);

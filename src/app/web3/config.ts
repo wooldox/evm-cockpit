@@ -1,9 +1,9 @@
-import { getDefaultConfig } from "@rainbow-me/rainbowkit";
-import type { Chain, Transport } from "viem";
-import { SUPPORTED_VIEM_CHAINS } from "@/entities/chain/model/chains";
-import { createE2EConfig } from "./configE2E";
-import { IS_E2E } from "./e2e";
-import { dynamicHttp } from "./dynamicHttp";
+import { getDefaultConfig } from '@rainbow-me/rainbowkit';
+import type { Chain, Transport } from 'viem';
+import { SUPPORTED_VIEM_CHAINS } from '@/entities/chain/model/chains';
+import { createE2EConfig } from './configE2E';
+import { IS_E2E } from './e2e';
+import { dynamicHttp } from './dynamicHttp';
 
 // RainbowKit requires a non-empty tuple: readonly [Chain, ...Chain[]].
 // SUPPORTED_VIEM_CHAINS is now the FULL set of viem chains (curated 7 first,
@@ -33,10 +33,10 @@ const transports = Object.fromEntries(
 export const config = IS_E2E
   ? createE2EConfig(chains, transports)
   : getDefaultConfig({
-      appName: "EVM Cockpit",
+      appName: 'EVM Cockpit',
       projectId:
         process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ??
-        "cc-dev-placeholder",
+        'cc-dev-placeholder',
       chains,
       transports,
       ssr: false, // static export — client-only

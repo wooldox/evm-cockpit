@@ -1,5 +1,5 @@
-import { SUPPORTED_VIEM_CHAINS } from "./chains";
-import { useChainCatalog } from "./catalogStore";
+import { SUPPORTED_VIEM_CHAINS } from './chains';
+import { useChainCatalog } from './catalogStore';
 
 /** Block-explorer base URL for a chain, or undefined when unknown/unsupported.
  *  Prefers viem's built-in explorer, then falls back to the catalog entry. */

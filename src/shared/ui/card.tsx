@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { cx } from "@/shared/lib/cx";
+import type { ReactNode } from 'react';
+import { cx } from '@/shared/lib/cx';
 
 /* Card — elevated panel with optional head / body / foot. */
 export function Card({
@@ -12,7 +12,7 @@ export function Card({
   return (
     <div
       className={cx(
-        "overflow-clip rounded-md border border-border bg-elev-2",
+        'overflow-clip rounded-md border border-border bg-elev-2',
         className,
       )}
     >
@@ -31,7 +31,7 @@ export function CardHead({
   return (
     <div
       className={cx(
-        "flex items-center gap-2.5 border-b border-border px-3.5 py-2.5",
+        'flex items-center gap-2.5 border-b border-border px-3.5 py-2.5',
         className,
       )}
     >
@@ -48,7 +48,7 @@ export function CardTitle({
   className?: string;
 }) {
   return (
-    <span className={cx("text-sm font-semibold text-fg", className)}>
+    <span className={cx('text-sm font-semibold text-fg', className)}>
       {children}
     </span>
   );
@@ -63,7 +63,7 @@ export function CardBody({
 }) {
   // data-cc lets the compact-density rule in globals.css tighten padding.
   return (
-    <div data-cc="card-body" className={cx("p-3.5", className)}>
+    <div data-cc="card-body" className={cx('p-3.5', className)}>
       {children}
     </div>
   );
@@ -79,7 +79,7 @@ export function CardFoot({
   return (
     <div
       className={cx(
-        "border-t border-border bg-elev-1 px-3.5 py-2.5",
+        'border-t border-border bg-elev-1 px-3.5 py-2.5',
         className,
       )}
     >
@@ -97,7 +97,7 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <div className={cx("rounded-md border border-border bg-elev-2", className)}>
+    <div className={cx('rounded-md border border-border bg-elev-2', className)}>
       {children}
     </div>
   );

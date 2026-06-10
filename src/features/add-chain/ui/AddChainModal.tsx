@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { cx } from "@/shared/lib/cx";
-import { Button, Field, Input, Modal, Mono, useToast } from "@/shared/ui";
-import { useChainCatalog } from "@/entities/chain/model/catalogStore";
-import { CHAIN_COLORS, useAddChainForm } from "../model/useAddChainForm";
+import { cx } from '@/shared/lib/cx';
+import { Button, Field, Input, Modal, Mono, useToast } from '@/shared/ui';
+import { useChainCatalog } from '@/entities/chain/model/catalogStore';
+import { CHAIN_COLORS, useAddChainForm } from '../model/useAddChainForm';
 
 /** "Add custom chain" — adds a user-defined network to the catalog.
  *  NOTE: custom chains are not in the wagmi config — wallet operations only
@@ -26,8 +26,8 @@ export function AddChainModal({
     const entry = f.buildEntry();
     addCustomChain(entry);
     toast({
-      kind: "success",
-      title: "Custom chain added",
+      kind: 'success',
+      title: 'Custom chain added',
       msg: (
         <>
           {entry.name} · chain id <Mono>{entry.id}</Mono>
@@ -70,13 +70,13 @@ export function AddChainModal({
             tone={
               f.idStr
                 ? f.idValid && !f.idDup
-                  ? "valid"
-                  : "invalid"
-                : "default"
+                  ? 'valid'
+                  : 'invalid'
+                : 'default'
             }
             placeholder="1"
             value={f.idStr}
-            onChange={(e) => f.setIdStr(e.target.value.replace(/[^\d]/g, ""))}
+            onChange={(e) => f.setIdStr(e.target.value.replace(/[^\d]/g, ''))}
           />
         </Field>
         <div className="col-span-full">
@@ -84,7 +84,7 @@ export function AddChainModal({
             <Input
               mono
               aria-label="RPC URL"
-              tone={f.rpc ? (f.rpcValid ? "valid" : "invalid") : "default"}
+              tone={f.rpc ? (f.rpcValid ? 'valid' : 'invalid') : 'default'}
               placeholder="https://rpc.my-network.xyz"
               value={f.rpc}
               onChange={(e) => f.setRpc(e.target.value.trim())}
@@ -112,7 +112,7 @@ export function AddChainModal({
           <Input
             mono
             aria-label="Block explorer URL"
-            tone={f.explorer ? (f.explorerOk ? "valid" : "invalid") : "default"}
+            tone={f.explorer ? (f.explorerOk ? 'valid' : 'invalid') : 'default'}
             placeholder="https://explorer.my-network.xyz"
             value={f.explorer}
             onChange={(e) => f.setExplorer(e.target.value.trim())}
@@ -135,10 +135,10 @@ export function AddChainModal({
                     title={c}
                     onClick={() => f.setColor(c)}
                     className={cx(
-                      "size-7 cursor-pointer rounded-full border-2 transition-transform",
+                      'size-7 cursor-pointer rounded-full border-2 transition-transform',
                       f.color === c
-                        ? "scale-110 border-fg"
-                        : "border-transparent hover:scale-105",
+                        ? 'scale-110 border-fg'
+                        : 'border-transparent hover:scale-105',
                     )}
                     style={{ background: c }}
                   />

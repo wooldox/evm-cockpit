@@ -1,45 +1,45 @@
-"use client";
+'use client';
 
 import type {
   InputHTMLAttributes,
   TextareaHTMLAttributes,
   SelectHTMLAttributes,
   ReactNode,
-} from "react";
-import { tv, type VariantProps } from "tailwind-variants";
-import { Icon } from "@/shared/icons";
+} from 'react';
+import { tv, type VariantProps } from 'tailwind-variants';
+import { Icon } from '@/shared/icons';
 
 /* ---------- shared control styles ---------- */
 const control = tv({
   base: [
-    "w-full font-sans text-[13px] text-fg bg-elev-3 border rounded-sm outline-none",
-    "transition-[border-color,box-shadow,background-color] duration-[110ms]",
-    "placeholder:text-fg-4 hover:border-[var(--gray-500)]",
-    "disabled:opacity-55 disabled:cursor-not-allowed",
+    'w-full font-sans text-[13px] text-fg bg-elev-3 border rounded-sm outline-none',
+    'transition-[border-color,box-shadow,background-color] duration-[110ms]',
+    'placeholder:text-fg-4 hover:border-[var(--gray-500)]',
+    'disabled:opacity-55 disabled:cursor-not-allowed',
   ],
   variants: {
     tone: {
       default:
-        "border-border-strong focus:border-read focus:[box-shadow:0_0_0_3px_var(--read-bg)]",
-      invalid: "border-danger focus:[box-shadow:0_0_0_3px_var(--danger-bg)]",
+        'border-border-strong focus:border-read focus:[box-shadow:0_0_0_3px_var(--read-bg)]',
+      invalid: 'border-danger focus:[box-shadow:0_0_0_3px_var(--danger-bg)]',
       valid:
-        "border-success-border focus:border-read focus:[box-shadow:0_0_0_3px_var(--read-bg)]",
+        'border-success-border focus:border-read focus:[box-shadow:0_0_0_3px_var(--read-bg)]',
     },
-    mono: { true: "font-mono", false: "" },
+    mono: { true: 'font-mono', false: '' },
     as: {
-      input: "h-[34px] px-2.5",
+      input: 'h-[34px] px-2.5',
       // appearance-none kills the native caret (which sits flush against the
       // right edge and can't be padded) so we can pad the right and draw our
       // own chevron (see <Select/>) — consistent spacing across browsers.
       select:
-        "h-[34px] pl-2.5 pr-8 appearance-none cursor-pointer [&::-ms-expand]:hidden",
-      textarea: "min-h-[76px] px-2.5 py-2 leading-normal resize-y",
+        'h-[34px] pl-2.5 pr-8 appearance-none cursor-pointer [&::-ms-expand]:hidden',
+      textarea: 'min-h-[76px] px-2.5 py-2 leading-normal resize-y',
     },
   },
-  defaultVariants: { tone: "default", as: "input", mono: false },
+  defaultVariants: { tone: 'default', as: 'input', mono: false },
 });
 
-type ControlTone = VariantProps<typeof control>["tone"];
+type ControlTone = VariantProps<typeof control>['tone'];
 
 /* ---------- Field (label + hint/error wrapper) ---------- */
 export interface FieldProps {
@@ -62,7 +62,7 @@ export function Field({
   className,
 }: FieldProps) {
   return (
-    <div className={`flex flex-col gap-1.5 ${className ?? ""}`}>
+    <div className={`flex flex-col gap-1.5 ${className ?? ''}`}>
       {label != null && (
         <label className="flex items-center gap-1.5 text-xs font-medium text-fg-2">
           {label}
@@ -90,7 +90,7 @@ export function Field({
 /* ---------- Input ---------- */
 export interface InputProps extends Omit<
   InputHTMLAttributes<HTMLInputElement>,
-  "size"
+  'size'
 > {
   tone?: ControlTone;
   mono?: boolean;
@@ -98,7 +98,7 @@ export interface InputProps extends Omit<
 export function Input({ tone, mono, className, ...rest }: InputProps) {
   return (
     <input
-      className={control({ tone, mono, as: "input", className })}
+      className={control({ tone, mono, as: 'input', className })}
       {...rest}
     />
   );
@@ -112,7 +112,7 @@ export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
 export function Textarea({ tone, mono, className, ...rest }: TextareaProps) {
   return (
     <textarea
-      className={control({ tone, mono, as: "textarea", className })}
+      className={control({ tone, mono, as: 'textarea', className })}
       {...rest}
     />
   );
@@ -135,9 +135,9 @@ export function Select({
   ...rest
 }: SelectProps) {
   return (
-    <div className={`relative ${wrapClassName ?? "w-full"}`}>
+    <div className={`relative ${wrapClassName ?? 'w-full'}`}>
       <select
-        className={control({ tone, mono, as: "select", className })}
+        className={control({ tone, mono, as: 'select', className })}
         {...rest}
       >
         {children}
@@ -160,12 +160,12 @@ export function SearchInput({
   ...rest
 }: SearchInputProps) {
   return (
-    <div className={`relative flex flex-1 items-center ${wrapClassName ?? ""}`}>
+    <div className={`relative flex flex-1 items-center ${wrapClassName ?? ''}`}>
       <Icon.search
         size={14}
         className="pointer-events-none absolute left-2.5 text-fg-3"
       />
-      <Input className={`pl-[30px] ${className ?? ""}`} {...rest} />
+      <Input className={`pl-[30px] ${className ?? ''}`} {...rest} />
     </div>
   );
 }

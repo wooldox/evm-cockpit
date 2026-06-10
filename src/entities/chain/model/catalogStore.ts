@@ -1,18 +1,18 @@
-"use client";
-import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
-import { useShallow } from "zustand/react/shallow";
-import { idbStateStorage } from "@/entities/_shared/idbStateStorage";
+'use client';
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { useShallow } from 'zustand/react/shallow';
+import { idbStateStorage } from '@/entities/_shared/idbStateStorage';
 import {
   buildStaticCatalog,
   composeCatalog,
   mergeCatalog,
   type TCatalogChain,
-} from "./catalog";
-import { getChainDisplay, type TChainDisplay } from "./chains";
+} from './catalog';
+import { getChainDisplay, type TChainDisplay } from './chains';
 
 /** Community chain registry — sourced from chainid.network. */
-export const CHAINS_ENDPOINT = "https://chainid.network/chains.json";
+export const CHAINS_ENDPOINT = 'https://chainid.network/chains.json';
 
 const FETCH_TIMEOUT_MS = 10_000;
 
@@ -24,7 +24,7 @@ type CatalogState = {
   /** Derived: composeCatalog(base, custom). Never set directly. */
   entries: TCatalogChain[];
   byId: Map<number, TCatalogChain>;
-  status: "static" | "loading" | "extended" | "static-fallback";
+  status: 'static' | 'loading' | 'extended' | 'static-fallback';
   /** Fetch + merge the remote registry. One-shot: returns early once loading
    *  has started or completed successfully. On ANY failure the catalog stays
    *  static (status "static-fallback", entries untouched). */
@@ -57,7 +57,7 @@ function indexById(entries: TCatalogChain[]): Map<number, TCatalogChain> {
 function derive(
   base: TCatalogChain[],
   custom: TCatalogChain[],
-): Pick<CatalogState, "base" | "custom" | "entries" | "byId"> {
+): Pick<CatalogState, 'base' | 'custom' | 'entries' | 'byId'> {
   const entries = composeCatalog(base, custom);
   return { base, custom, entries, byId: indexById(entries) };
 }
@@ -68,11 +68,11 @@ export const useChainCatalog = create<CatalogState>()(
       const initial = buildStaticCatalog();
       return {
         ...derive(initial, []),
-        status: "static",
+        status: 'static',
         loadRemote: async (deps) => {
           const status = get().status;
-          if (status === "loading" || status === "extended") return;
-          set({ status: "loading" });
+          if (status === 'loading' || status === 'extended') return;
+          set({ status: 'loading' });
 
           const fetchJson = deps?.fetchJson ?? defaultFetchJson;
           try {
@@ -81,9 +81,9 @@ export const useChainCatalog = create<CatalogState>()(
               buildStaticCatalog(),
               Array.isArray(data) ? data : [],
             );
-            set({ ...derive(merged, get().custom), status: "extended" });
+            set({ ...derive(merged, get().custom), status: 'extended' });
           } catch {
-            set({ status: "static-fallback" });
+            set({ status: 'static-fallback' });
           }
         },
         addCustomChain: (entry) => {
@@ -94,8 +94,8 @@ export const useChainCatalog = create<CatalogState>()(
       };
     },
     {
-      name: "cc-chains",
-      storage: createJSONStorage(() => idbStateStorage("customChains")),
+      name: 'cc-chains',
+      storage: createJSONStorage(() => idbStateStorage('customChains')),
       // Hydration is triggered explicitly by CatalogLoader (persist.rehydrate)
       // rather than on import: this store is imported very widely (viem-rpc,
       // explorer, displays, selectors, top bar) including by suites and SSR

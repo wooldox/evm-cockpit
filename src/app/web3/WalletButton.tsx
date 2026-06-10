@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { Icon } from "@/shared/icons";
-import { Ident } from "@/shared/ui/copyable";
-import { trunc } from "@/shared/lib/format";
+import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { Icon } from '@/shared/icons';
+import { Ident } from '@/shared/ui/copyable';
+import { trunc } from '@/shared/lib/format';
 
 export function WalletButton() {
   return (
@@ -31,9 +31,9 @@ export function WalletButton() {
               className="inline-flex h-9 items-center gap-2 rounded-[11px] border-0 px-[15px] text-[13px] font-semibold text-white transition-[filter,box-shadow,transform] hover:brightness-110 active:translate-y-[0.5px]"
               style={{
                 background:
-                  "linear-gradient(135deg, var(--read) 0%, #7c5cff 55%, var(--write) 130%)",
+                  'linear-gradient(135deg, var(--read) 0%, #7c5cff 55%, var(--write) 130%)',
                 boxShadow:
-                  "0 2px 12px -2px color-mix(in oklab, var(--read) 50%, transparent)",
+                  '0 2px 12px -2px color-mix(in oklab, var(--read) 50%, transparent)',
               }}
             >
               <Icon.wallet size={15} /> Connect Wallet

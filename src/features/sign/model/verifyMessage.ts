@@ -1,5 +1,5 @@
-import { recoverMessageAddress } from "viem";
-import type { Address } from "viem";
+import { recoverMessageAddress } from 'viem';
+import type { Address } from 'viem';
 
 /**
  * Outcome of an off-chain personal_sign verification. Pure ecrecover —
@@ -25,7 +25,7 @@ export async function verifySignedMessage(args: {
   if (!SIGNATURE_RE.test(signature)) {
     return {
       ok: false,
-      error: "Malformed signature — expected a 65-byte 0x-hex string.",
+      error: 'Malformed signature — expected a 65-byte 0x-hex string.',
     };
   }
 
@@ -38,16 +38,16 @@ export async function verifySignedMessage(args: {
   } catch {
     return {
       ok: false,
-      error: "Could not recover a signer from this signature.",
+      error: 'Could not recover a signer from this signature.',
     };
   }
 
-  const expected = args.expectedSigner?.trim() ?? "";
+  const expected = args.expectedSigner?.trim() ?? '';
   if (expected && expected.toLowerCase() !== recovered.toLowerCase()) {
     return {
       ok: false,
       recovered,
-      error: "Recovered signer does not match the expected address.",
+      error: 'Recovered signer does not match the expected address.',
     };
   }
   return { ok: true, recovered };

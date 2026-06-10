@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useChainDisplay } from "@/entities/chain/model/catalogStore";
-import { addressUrl } from "@/entities/chain/model/explorer";
-import type { TContract } from "@/entities/contract/model/types";
-import { useContractsStore } from "@/entities/contract/model/store";
-import { Icon } from "@/shared/icons";
-import { trunc } from "@/shared/lib/format";
-import { Badge, Button, ChainBadge, useToast } from "@/shared/ui";
-import { Address, Copyable } from "@/shared/ui/copyable";
-import { ShareModal } from "@/features/share/ui/ShareModal";
-import { useAppShell } from "@/widgets/app-shell/AppShellProvider";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useChainDisplay } from '@/entities/chain/model/catalogStore';
+import { addressUrl } from '@/entities/chain/model/explorer';
+import type { TContract } from '@/entities/contract/model/types';
+import { useContractsStore } from '@/entities/contract/model/store';
+import { Icon } from '@/shared/icons';
+import { trunc } from '@/shared/lib/format';
+import { Badge, Button, ChainBadge, useToast } from '@/shared/ui';
+import { Address, Copyable } from '@/shared/ui/copyable';
+import { ShareModal } from '@/features/share/ui/ShareModal';
+import { useAppShell } from '@/widgets/app-shell/AppShellProvider';
 
 /* ── ContractHeader ─────────────────────────────────────── */
 export function ContractHeader({
@@ -43,7 +43,7 @@ export function ContractHeader({
   const handleRemove = () => {
     if (!window.confirm(`Remove ${contract.name}?`)) return;
     useContractsStore.getState().remove(contract.id);
-    toast({ kind: "success", title: "Contract removed", msg: contract.name });
+    toast({ kind: 'success', title: 'Contract removed', msg: contract.name });
     onRemoved();
   };
 

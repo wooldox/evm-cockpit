@@ -1,9 +1,9 @@
-import { createServer } from "node:net";
+import { createServer } from 'node:net';
 import {
   startAnvil,
   ensureMulticall3,
   type AnvilHandle,
-} from "../src/test/anvil";
+} from '../src/test/anvil';
 
 const ANVIL_PORT = 8545;
 const ANVIL_URL = `http://127.0.0.1:${ANVIL_PORT}`;
@@ -14,8 +14,8 @@ let handle: AnvilHandle | null = null;
 async function assertPortFree(port: number): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     const srv = createServer();
-    srv.once("error", (err: NodeJS.ErrnoException) => {
-      if (err.code === "EADDRINUSE") {
+    srv.once('error', (err: NodeJS.ErrnoException) => {
+      if (err.code === 'EADDRINUSE') {
         reject(
           new Error(
             `port ${port} is already in use — stop the process bound to it ` +
@@ -26,8 +26,8 @@ async function assertPortFree(port: number): Promise<void> {
         reject(err);
       }
     });
-    srv.once("listening", () => srv.close(() => resolve()));
-    srv.listen(port, "127.0.0.1");
+    srv.once('listening', () => srv.close(() => resolve()));
+    srv.listen(port, '127.0.0.1');
   });
 }
 

@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useShallow } from "zustand/react/shallow";
-import { cx } from "@/shared/lib/cx";
-import { Icon } from "@/shared/icons";
-import { Button, ChainGlyph, Eyebrow, Muted, Spinner } from "@/shared/ui";
-import { Input } from "@/shared/ui/field";
-import { ChainCombobox } from "@/shared/ui/chain-combobox";
-import { useSettingsStore } from "@/entities/settings/model/store";
-import { useChainCatalog } from "@/entities/chain/model/catalogStore";
-import { getChainDisplay } from "@/entities/chain/model/chains";
-import { testRpc, type RpcTestResult } from "../model/testRpc";
+import { useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import { cx } from '@/shared/lib/cx';
+import { Icon } from '@/shared/icons';
+import { Button, ChainGlyph, Eyebrow, Muted, Spinner } from '@/shared/ui';
+import { Input } from '@/shared/ui/field';
+import { ChainCombobox } from '@/shared/ui/chain-combobox';
+import { useSettingsStore } from '@/entities/settings/model/store';
+import { useChainCatalog } from '@/entities/chain/model/catalogStore';
+import { getChainDisplay } from '@/entities/chain/model/chains';
+import { testRpc, type RpcTestResult } from '../model/testRpc';
 
 // Lenient on purpose: custom RPCs are often local/private nodes
 // (http://127.0.0.1:8545), so allow any http(s) URL — same rule as add-chain.
 const URL_RE = /^https?:\/\/.+/i;
 
-type TestState = { state: "testing" } | ({ state: "done" } & RpcTestResult);
+type TestState = { state: 'testing' } | ({ state: 'done' } & RpcTestResult);
 
 type Deps = { testRpcFn?: typeof testRpc };
 
@@ -43,7 +43,7 @@ export function CustomRpcManager({
   );
   const entries = useChainCatalog((s) => s.entries);
 
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState('');
   const [chainId, setChainId] = useState<number>(currentChainId);
   const [tests, setTests] = useState<Record<number, TestState>>({});
 
@@ -52,25 +52,25 @@ export function CustomRpcManager({
 
   const rows = Object.entries(rpcOverrides)
     .map(([id, rpcUrl]) => ({ chainId: Number(id), url: rpcUrl }))
-    .filter((r) => r.url.trim() !== "")
+    .filter((r) => r.url.trim() !== '')
     .sort((a, b) =>
       display(a.chainId).name.localeCompare(display(b.chainId).name),
     );
 
-  const exists = (rpcOverrides[chainId] ?? "").trim() !== "";
+  const exists = (rpcOverrides[chainId] ?? '').trim() !== '';
   const urlValid = URL_RE.test(url.trim());
   const canAdd = urlValid && !exists;
 
   function onAdd(): void {
     if (!canAdd) return;
     setRpcOverride(chainId, url.trim());
-    setUrl("");
+    setUrl('');
   }
 
   async function runTest(r: { chainId: number; url: string }): Promise<void> {
-    setTests((t) => ({ ...t, [r.chainId]: { state: "testing" } }));
+    setTests((t) => ({ ...t, [r.chainId]: { state: 'testing' } }));
     const res = await runTestRpc(r.url);
-    setTests((t) => ({ ...t, [r.chainId]: { state: "done", ...res } }));
+    setTests((t) => ({ ...t, [r.chainId]: { state: 'done', ...res } }));
   }
 
   const selName = display(chainId).name;
@@ -88,7 +88,7 @@ export function CustomRpcManager({
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") onAdd();
+            if (e.key === 'Enter') onAdd();
           }}
         />
         <div className="w-[172px] flex-none">
@@ -157,15 +157,15 @@ export function CustomRpcManager({
                 {t && (
                   <span
                     className={cx(
-                      "flex flex-none items-center gap-[5px] text-[11px]",
-                      t.state === "testing"
-                        ? "text-fg-3"
+                      'flex flex-none items-center gap-[5px] text-[11px]',
+                      t.state === 'testing'
+                        ? 'text-fg-3'
                         : t.ok
-                          ? "text-success-fg"
-                          : "text-danger-fg",
+                          ? 'text-success-fg'
+                          : 'text-danger-fg',
                     )}
                   >
-                    {t.state === "testing" ? (
+                    {t.state === 'testing' ? (
                       <>
                         <Spinner size={12} /> testing…
                       </>
@@ -184,14 +184,14 @@ export function CustomRpcManager({
                   variant="subtle"
                   size="sm"
                   icon={
-                    t?.state === "testing" ? (
+                    t?.state === 'testing' ? (
                       <Spinner size={13} />
                     ) : (
                       <Icon.gas size={13} />
                     )
                   }
                   onClick={() => void runTest(r)}
-                  disabled={t?.state === "testing"}
+                  disabled={t?.state === 'testing'}
                 >
                   Test
                 </Button>

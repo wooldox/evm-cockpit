@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useRef, useState } from "react";
-import { useAccount, useChainId, useDeployContract } from "wagmi";
-import type { Abi, AbiParameter } from "abitype";
-import type { RpcProvider } from "@/shared/ports/rpc";
-import { viemRpc } from "@/app/web3/services";
-import { categorizeAbi } from "@/shared/lib/abi/categorize";
-import { paramSchema } from "@/shared/lib/values/paramSchema";
-import { toBaseUnits, type EthUnit } from "@/shared/lib/units/units";
+import { useRef, useState } from 'react';
+import { useAccount, useChainId, useDeployContract } from 'wagmi';
+import type { Abi, AbiParameter } from 'abitype';
+import type { RpcProvider } from '@/shared/ports/rpc';
+import { viemRpc } from '@/app/web3/services';
+import { categorizeAbi } from '@/shared/lib/abi/categorize';
+import { paramSchema } from '@/shared/lib/values/paramSchema';
+import { toBaseUnits, type EthUnit } from '@/shared/lib/units/units';
 
 export type DeployArtifact = {
   abi: Abi;
@@ -17,21 +17,21 @@ export type DeployArtifact = {
 };
 
 export type ArtifactState =
-  | { status: "empty" }
-  | { status: "invalid"; abiError?: string; bytecodeError?: string }
-  | { status: "ready"; artifact: DeployArtifact };
+  | { status: 'empty' }
+  | { status: 'invalid'; abiError?: string; bytecodeError?: string }
+  | { status: 'ready'; artifact: DeployArtifact };
 
 export type DeployState =
-  | { status: "idle" }
-  | { status: "wallet" } // awaiting signature in wallet
-  | { status: "pending"; hash: `0x${string}` }
+  | { status: 'idle' }
+  | { status: 'wallet' } // awaiting signature in wallet
+  | { status: 'pending'; hash: `0x${string}` }
   | {
-      status: "confirmed";
+      status: 'confirmed';
       hash: `0x${string}`;
       contractAddress: `0x${string}`;
       gasUsed: bigint;
     }
-  | { status: "failed"; error: string };
+  | { status: 'failed'; error: string };
 
 export type UseDeployResult = {
   artifact: ArtifactState;
@@ -60,12 +60,12 @@ const HEX_RE = /^0x[0-9a-fA-F]+$/;
 
 /** Pull a bytecode string from a Hardhat/Foundry artifact's `bytecode` field. */
 function readEmbeddedBytecode(bytecode: unknown): string | undefined {
-  if (typeof bytecode === "string") return bytecode;
+  if (typeof bytecode === 'string') return bytecode;
   if (
     bytecode !== null &&
-    typeof bytecode === "object" &&
-    "object" in bytecode &&
-    typeof (bytecode as { object: unknown }).object === "string"
+    typeof bytecode === 'object' &&
+    'object' in bytecode &&
+    typeof (bytecode as { object: unknown }).object === 'string'
   ) {
     return (bytecode as { object: string }).object;
   }
@@ -73,9 +73,9 @@ function readEmbeddedBytecode(bytecode: unknown): string | undefined {
 }
 
 export function useDeploy(deps: Deps = defaultDeps): UseDeployResult {
-  const [artifact, setArtifact] = useState<ArtifactState>({ status: "empty" });
+  const [artifact, setArtifact] = useState<ArtifactState>({ status: 'empty' });
   const [deployState, setDeployState] = useState<DeployState>({
-    status: "idle",
+    status: 'idle',
   });
   const [argErrors, setArgErrors] = useState<Record<string, string>>({});
   const [valueError, setValueError] = useState<string | undefined>(undefined);
@@ -91,15 +91,15 @@ export function useDeploy(deps: Deps = defaultDeps): UseDeployResult {
 
   function parseArtifact(abiRaw: string, bytecodeRaw: string): void {
     // A new artifact is a new world: drop any prior deploy result + errors.
-    setDeployState({ status: "idle" });
+    setDeployState({ status: 'idle' });
     setArgErrors({});
     setValueError(undefined);
 
     const abiTrimmed = abiRaw.trim();
     let bytecodeTrimmed = bytecodeRaw.trim();
 
-    if (abiTrimmed === "" && bytecodeTrimmed === "") {
-      setArtifact({ status: "empty" });
+    if (abiTrimmed === '' && bytecodeTrimmed === '') {
+      setArtifact({ status: 'empty' });
       return;
     }
 
@@ -108,14 +108,14 @@ export function useDeploy(deps: Deps = defaultDeps): UseDeployResult {
     let abi: Abi | undefined;
 
     // --- ABI ---
-    if (abiTrimmed === "") {
-      abiError = "ABI must be a JSON array (or an artifact object with .abi)";
+    if (abiTrimmed === '') {
+      abiError = 'ABI must be a JSON array (or an artifact object with .abi)';
     } else {
       let parsed: unknown;
       try {
         parsed = JSON.parse(abiTrimmed);
       } catch {
-        abiError = "invalid JSON";
+        abiError = 'invalid JSON';
       }
 
       if (abiError === undefined) {
@@ -123,14 +123,14 @@ export function useDeploy(deps: Deps = defaultDeps): UseDeployResult {
           abi = parsed as Abi;
         } else if (
           parsed !== null &&
-          typeof parsed === "object" &&
+          typeof parsed === 'object' &&
           Array.isArray((parsed as { abi?: unknown }).abi)
         ) {
           // Convenience: accept a full Hardhat/Foundry artifact object. Use its
           // `.abi`, and when no explicit bytecode was supplied, pull bytecode
           // from `.bytecode.object` (Foundry) or `.bytecode` (Hardhat string).
           abi = (parsed as { abi: Abi }).abi;
-          if (bytecodeTrimmed === "") {
+          if (bytecodeTrimmed === '') {
             const embedded = readEmbeddedBytecode(
               (parsed as { bytecode?: unknown }).bytecode,
             );
@@ -138,45 +138,45 @@ export function useDeploy(deps: Deps = defaultDeps): UseDeployResult {
           }
         } else {
           abiError =
-            "ABI must be a JSON array (or an artifact object with .abi)";
+            'ABI must be a JSON array (or an artifact object with .abi)';
         }
       }
 
       if (abiError === undefined && abi !== undefined && abi.length === 0) {
-        abiError = "ABI is empty";
+        abiError = 'ABI is empty';
         abi = undefined;
       }
     }
 
     // --- Bytecode (after the artifact-object fallback above) ---
-    if (bytecodeTrimmed === "") {
-      bytecodeError = "bytecode required";
+    if (bytecodeTrimmed === '') {
+      bytecodeError = 'bytecode required';
     } else if (
       !HEX_RE.test(bytecodeTrimmed) ||
       bytecodeTrimmed.length % 2 !== 0
     ) {
-      bytecodeError = "bytecode must be 0x-prefixed hex";
+      bytecodeError = 'bytecode must be 0x-prefixed hex';
     }
 
     if (abiError !== undefined || bytecodeError !== undefined) {
-      setArtifact({ status: "invalid", abiError, bytecodeError });
+      setArtifact({ status: 'invalid', abiError, bytecodeError });
       return;
     }
 
     const ctor = categorizeAbi(abi!).constructor;
     setArtifact({
-      status: "ready",
+      status: 'ready',
       artifact: {
         abi: abi!,
         bytecode: bytecodeTrimmed as `0x${string}`,
         constructorInputs: ctor?.inputs ?? [],
-        payable: ctor?.stateMutability === "payable",
+        payable: ctor?.stateMutability === 'payable',
       },
     });
   }
 
   function resetDeploy(): void {
-    setDeployState({ status: "idle" });
+    setDeployState({ status: 'idle' });
     setArgErrors({});
     setValueError(undefined);
   }
@@ -186,7 +186,7 @@ export function useDeploy(deps: Deps = defaultDeps): UseDeployResult {
     rawValue?: { amount: string; unit: EthUnit },
   ): Promise<DeployState> {
     // Defensive: UI gates this on a ready artifact.
-    if (artifact.status !== "ready") return deployState;
+    if (artifact.status !== 'ready') return deployState;
 
     // Ignore overlapping deploys while one is awaiting the wallet or pending.
     if (inFlight.current) return deployState;
@@ -196,8 +196,8 @@ export function useDeploy(deps: Deps = defaultDeps): UseDeployResult {
     // exist for an undeployed contract.
     if (!isConnected || !address) {
       const failed: DeployState = {
-        status: "failed",
-        error: "connect a wallet to deploy",
+        status: 'failed',
+        error: 'connect a wallet to deploy',
       };
       setDeployState(failed);
       return failed;
@@ -211,10 +211,10 @@ export function useDeploy(deps: Deps = defaultDeps): UseDeployResult {
     for (let i = 0; i < constructorInputs.length; i++) {
       const input = constructorInputs[i]!;
       const key = input.name ?? String(i);
-      const raw = rawArgs[key] ?? "";
+      const raw = rawArgs[key] ?? '';
       const parsed = paramSchema(input.type).safeParse(raw);
       if (!parsed.success) {
-        nextArgErrors[key] = parsed.error.issues[0]?.message ?? "invalid value";
+        nextArgErrors[key] = parsed.error.issues[0]?.message ?? 'invalid value';
       } else {
         parsedArgs.push(parsed.data);
       }
@@ -225,7 +225,7 @@ export function useDeploy(deps: Deps = defaultDeps): UseDeployResult {
     let nextValueError: string | undefined;
     if (payable && rawValue) {
       const amount = rawValue.amount.trim();
-      if (amount !== "" && amount !== "0") {
+      if (amount !== '' && amount !== '0') {
         try {
           value = toBaseUnits(amount, rawValue.unit);
         } catch (e) {
@@ -246,7 +246,7 @@ export function useDeploy(deps: Deps = defaultDeps): UseDeployResult {
     inFlight.current = true;
 
     try {
-      setDeployState({ status: "wallet" });
+      setDeployState({ status: 'wallet' });
 
       let hash: `0x${string}`;
       try {
@@ -258,16 +258,16 @@ export function useDeploy(deps: Deps = defaultDeps): UseDeployResult {
         });
       } catch (e) {
         const err = e as { shortMessage?: string; message?: string };
-        const msg = err.shortMessage ?? err.message ?? "deployment failed";
-        const failed: DeployState = { status: "failed", error: msg };
+        const msg = err.shortMessage ?? err.message ?? 'deployment failed';
+        const failed: DeployState = { status: 'failed', error: msg };
         setDeployState(failed);
         return failed;
       }
 
-      setDeployState({ status: "pending", hash });
+      setDeployState({ status: 'pending', hash });
 
       let receipt: {
-        status: "success" | "reverted";
+        status: 'success' | 'reverted';
         contractAddress: `0x${string}` | null | undefined;
         gasUsed: bigint;
       };
@@ -275,22 +275,22 @@ export function useDeploy(deps: Deps = defaultDeps): UseDeployResult {
         receipt = (await deps.rpc
           .getClient(walletChainId)
           .waitForTransactionReceipt({ hash })) as {
-          status: "success" | "reverted";
+          status: 'success' | 'reverted';
           contractAddress: `0x${string}` | null | undefined;
           gasUsed: bigint;
         };
       } catch (e) {
         const err = e as { shortMessage?: string; message?: string };
-        const msg = err.shortMessage ?? err.message ?? "deployment failed";
-        const failed: DeployState = { status: "failed", error: msg };
+        const msg = err.shortMessage ?? err.message ?? 'deployment failed';
+        const failed: DeployState = { status: 'failed', error: msg };
         setDeployState(failed);
         return failed;
       }
 
-      if (receipt.status === "reverted") {
+      if (receipt.status === 'reverted') {
         const failed: DeployState = {
-          status: "failed",
-          error: "deployment reverted on-chain",
+          status: 'failed',
+          error: 'deployment reverted on-chain',
         };
         setDeployState(failed);
         return failed;
@@ -298,15 +298,15 @@ export function useDeploy(deps: Deps = defaultDeps): UseDeployResult {
 
       if (!receipt.contractAddress) {
         const failed: DeployState = {
-          status: "failed",
-          error: "no contract address in receipt",
+          status: 'failed',
+          error: 'no contract address in receipt',
         };
         setDeployState(failed);
         return failed;
       }
 
       const confirmed: DeployState = {
-        status: "confirmed",
+        status: 'confirmed',
         hash,
         contractAddress: receipt.contractAddress,
         gasUsed: receipt.gasUsed,

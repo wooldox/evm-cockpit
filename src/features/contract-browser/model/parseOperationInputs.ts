@@ -1,6 +1,6 @@
-import type { AbiFunction } from "abitype";
-import { paramSchema } from "@/shared/lib/values/paramSchema";
-import { toBaseUnits, type EthUnit } from "@/shared/lib/units/units";
+import type { AbiFunction } from 'abitype';
+import { paramSchema } from '@/shared/lib/values/paramSchema';
+import { toBaseUnits, type EthUnit } from '@/shared/lib/units/units';
 
 export type ParsedInputs =
   | { ok: true; args: readonly unknown[]; value: bigint | undefined }
@@ -27,10 +27,10 @@ export function parseOperationInputs(
   for (let i = 0; i < fn.inputs.length; i++) {
     const input = fn.inputs[i]!;
     const key = input.name ?? String(i);
-    const raw = rawArgs[key] ?? "";
+    const raw = rawArgs[key] ?? '';
     const parsed = paramSchema(input.type).safeParse(raw);
     if (!parsed.success) {
-      argErrors[key] = parsed.error.issues[0]?.message ?? "invalid value";
+      argErrors[key] = parsed.error.issues[0]?.message ?? 'invalid value';
     } else {
       args.push(parsed.data);
     }
@@ -40,7 +40,7 @@ export function parseOperationInputs(
   let valueError: string | undefined;
   if (rawValue) {
     const amount = rawValue.amount.trim();
-    if (amount !== "" && amount !== "0") {
+    if (amount !== '' && amount !== '0') {
       try {
         value = toBaseUnits(amount, rawValue.unit);
       } catch (e) {

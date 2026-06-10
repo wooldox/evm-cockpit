@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useTheme } from "@/shared/lib/use-theme";
-import { Icon } from "@/shared/icons";
+import { useState } from 'react';
+import { useTheme } from '@/shared/lib/use-theme';
+import { Icon } from '@/shared/icons';
 import {
   ToastProvider,
   useToast,
@@ -38,11 +38,11 @@ import {
   Skeleton,
   ErrorBanner,
   Spinner,
-} from "@/shared/ui";
+} from '@/shared/ui';
 
 /* ---- helpers ---- */
-const ADDR = "0x4E6399F5A0d0D13De3De01b7B80d4adEFE2B225c4";
-const CHAIN_ETH = { name: "Ethereum", short: "ETH", color: "#627eea" };
+const ADDR = '0x4E6399F5A0d0D13De3De01b7B80d4adEFE2B225c4';
+const CHAIN_ETH = { name: 'Ethereum', short: 'ETH', color: '#627eea' };
 
 function Section({
   title,
@@ -69,7 +69,7 @@ function ToastButtons() {
       <Button
         variant="success"
         onClick={() =>
-          push({ kind: "success", title: "Transaction confirmed" })
+          push({ kind: 'success', title: 'Transaction confirmed' })
         }
       >
         Toast: success
@@ -77,7 +77,7 @@ function ToastButtons() {
       <Button
         variant="danger"
         onClick={() =>
-          push({ kind: "error", title: "Reverted", msg: "Out of gas" })
+          push({ kind: 'error', title: 'Reverted', msg: 'Out of gas' })
         }
       >
         Toast: error
@@ -85,7 +85,7 @@ function ToastButtons() {
       <Button
         variant="write"
         onClick={() =>
-          push({ kind: "write", title: "Pending", msg: "Waiting for wallet…" })
+          push({ kind: 'write', title: 'Pending', msg: 'Waiting for wallet…' })
         }
       >
         Toast: write
@@ -93,7 +93,7 @@ function ToastButtons() {
       <Button
         variant="read"
         onClick={() =>
-          push({ kind: "info", title: "Info", msg: "Read-only call" })
+          push({ kind: 'info', title: 'Info', msg: 'Read-only call' })
         }
       >
         Toast: info
@@ -106,13 +106,13 @@ function ToastButtons() {
 function Gallery() {
   const [, , toggleTheme] = useTheme();
   const [switchOn, setSwitchOn] = useState(false);
-  const [segVal, setSegVal] = useState<"abi" | "storage" | "events">("abi");
+  const [segVal, setSegVal] = useState<'abi' | 'storage' | 'events'>('abi');
   const [modalOpen, setModalOpen] = useState(false);
 
-  const segOptions: SegmentOption<"abi" | "storage" | "events">[] = [
-    { value: "abi", label: "ABI" },
-    { value: "storage", label: "Storage" },
-    { value: "events", label: "Events" },
+  const segOptions: SegmentOption<'abi' | 'storage' | 'events'>[] = [
+    { value: 'abi', label: 'ABI' },
+    { value: 'storage', label: 'Storage' },
+    { value: 'events', label: 'Events' },
   ];
 
   return (
@@ -142,14 +142,14 @@ function Gallery() {
           {/* All variants at md */}
           {(
             [
-              "neutral",
-              "ghost",
-              "subtle",
-              "primary",
-              "read",
-              "write",
-              "success",
-              "danger",
+              'neutral',
+              'ghost',
+              'subtle',
+              'primary',
+              'read',
+              'write',
+              'success',
+              'danger',
             ] as const
           ).map((v) => (
             <Button key={v} variant={v}>
@@ -277,7 +277,7 @@ function Gallery() {
           <div className="flex items-center gap-3">
             <Switch checked={switchOn} onChange={setSwitchOn} />
             <span className="text-[13px] text-fg-2">
-              {switchOn ? "On" : "Off"}
+              {switchOn ? 'On' : 'Off'}
             </span>
           </div>
           <Segment value={segVal} onChange={setSegVal} options={segOptions} />

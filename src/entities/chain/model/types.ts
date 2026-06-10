@@ -1,4 +1,4 @@
-import type { TChainId } from "@/entities/contract/model/types";
+import type { TChainId } from '@/entities/contract/model/types';
 
 export type TChainExplorer = { name: string; url: string };
 

@@ -1,8 +1,8 @@
-"use client";
-import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
-import { idbStateStorage } from "@/entities/_shared/idbStateStorage";
-import type { TContract } from "./types";
+'use client';
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { idbStateStorage } from '@/entities/_shared/idbStateStorage';
+import type { TContract } from './types';
 
 export type ContractsState = {
   contracts: TContract[];
@@ -28,8 +28,8 @@ export const useContractsStore = create<ContractsState>()(
       getById: (id) => get().contracts.find((c) => c.id === id),
     }),
     {
-      name: "cc-contracts",
-      storage: createJSONStorage(() => idbStateStorage("contracts")),
+      name: 'cc-contracts',
+      storage: createJSONStorage(() => idbStateStorage('contracts')),
     },
   ),
 );

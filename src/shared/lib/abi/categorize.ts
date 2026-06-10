@@ -1,8 +1,8 @@
-import type { Abi, AbiFunction } from "abitype";
-import type { TAbiCategories } from "@/entities/contract/model/types";
+import type { Abi, AbiFunction } from 'abitype';
+import type { TAbiCategories } from '@/entities/contract/model/types';
 
 const isReadable = (f: AbiFunction) =>
-  f.stateMutability === "view" || f.stateMutability === "pure";
+  f.stateMutability === 'view' || f.stateMutability === 'pure';
 
 export function categorizeAbi(abi: Abi): TAbiCategories {
   const result: TAbiCategories = {
@@ -18,7 +18,7 @@ export function categorizeAbi(abi: Abi): TAbiCategories {
 
   for (const item of abi) {
     switch (item.type) {
-      case "function": {
+      case 'function': {
         if (isReadable(item)) {
           if (item.inputs.length === 0) result.properties.push(item);
           else result.getters.push(item);
@@ -27,19 +27,19 @@ export function categorizeAbi(abi: Abi): TAbiCategories {
         }
         break;
       }
-      case "event":
+      case 'event':
         result.events.push(item);
         break;
-      case "error":
+      case 'error':
         result.errors.push(item);
         break;
-      case "constructor":
+      case 'constructor':
         result.constructor = item;
         break;
-      case "fallback":
+      case 'fallback':
         result.hasFallback = true;
         break;
-      case "receive":
+      case 'receive':
         result.hasReceive = true;
         break;
     }

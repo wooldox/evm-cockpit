@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import type { InputHTMLAttributes } from "react";
+import type { InputHTMLAttributes } from 'react';
 
 /**
  * Switch — peer-driven toggle. The track and thumb react to the hidden
@@ -16,7 +16,7 @@ export function Switch({
   onChange?: (next: boolean) => void;
 } & Omit<
   InputHTMLAttributes<HTMLInputElement>,
-  "checked" | "onChange" | "type"
+  'checked' | 'onChange' | 'type'
 >) {
   return (
     <label className="relative inline-block h-5 w-9 flex-none cursor-pointer">

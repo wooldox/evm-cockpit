@@ -3,5 +3,5 @@
 // the chain catalog in particular is imported very widely (viem-rpc, explorer,
 // chain displays, selectors, top bar), so without a global fake any suite that
 // transitively mutates it would raise an unhandled "indexedDB is not defined".
-import "fake-indexeddb/auto";
-import "@testing-library/jest-dom/vitest";
+import 'fake-indexeddb/auto';
+import '@testing-library/jest-dom/vitest';

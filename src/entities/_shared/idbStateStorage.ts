@@ -1,5 +1,5 @@
-import type { StateStorage } from "zustand/middleware";
-import { createIdbStorage } from "@/shared/adapters/idb-storage";
+import type { StateStorage } from 'zustand/middleware';
+import { createIdbStorage } from '@/shared/adapters/idb-storage';
 
 export function idbStateStorage(storeName: string): StateStorage {
   const s = createIdbStorage<string>(storeName);

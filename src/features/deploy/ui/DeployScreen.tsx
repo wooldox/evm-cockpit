@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAccount, useChainId } from "wagmi";
-import type { RpcProvider } from "@/shared/ports/rpc";
-import { useDeploy } from "@/features/deploy/model/useDeploy";
-import { useContractsStore } from "@/entities/contract/model/store";
-import type { TContract } from "@/entities/contract/model/types";
-import { getChainDisplay } from "@/entities/chain/model/chains";
-import { addressUrl, txUrl } from "@/entities/chain/model/explorer";
-import { trunc } from "@/shared/lib/format";
-import { type EthUnit } from "@/shared/lib/units/units";
-import { Icon } from "@/shared/icons";
+import { useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAccount, useChainId } from 'wagmi';
+import type { RpcProvider } from '@/shared/ports/rpc';
+import { useDeploy } from '@/features/deploy/model/useDeploy';
+import { useContractsStore } from '@/entities/contract/model/store';
+import type { TContract } from '@/entities/contract/model/types';
+import { getChainDisplay } from '@/entities/chain/model/chains';
+import { addressUrl, txUrl } from '@/entities/chain/model/explorer';
+import { trunc } from '@/shared/lib/format';
+import { type EthUnit } from '@/shared/lib/units/units';
+import { Icon } from '@/shared/icons';
 import {
   Badge,
   Button,
@@ -27,11 +27,11 @@ import {
   Spinner,
   Textarea,
   useToast,
-} from "@/shared/ui";
-import { Copyable, ExtLink } from "@/shared/ui/copyable";
-import { Field } from "@/shared/ui/field";
-import { ParamInput } from "@/features/contract-browser/ui/values";
-import { EthValueInput } from "@/features/contract-browser/ui/EthValueInput";
+} from '@/shared/ui';
+import { Copyable, ExtLink } from '@/shared/ui/copyable';
+import { Field } from '@/shared/ui/field';
+import { ParamInput } from '@/features/contract-browser/ui/values';
+import { EthValueInput } from '@/features/contract-browser/ui/EthValueInput';
 
 type Deps = { rpc: RpcProvider };
 
@@ -54,13 +54,13 @@ export function DeployScreen({ deps }: { deps?: Deps }) {
   const chain = getChainDisplay(walletChainId);
 
   // Raw textarea contents (the model parses them on every change).
-  const [abiRaw, setAbiRaw] = useState("");
-  const [bytecodeRaw, setBytecodeRaw] = useState("");
+  const [abiRaw, setAbiRaw] = useState('');
+  const [bytecodeRaw, setBytecodeRaw] = useState('');
 
   // Constructor arg + ETH value state, mirroring OperationCard.
   const [args, setArgs] = useState<Record<string, string>>({});
-  const [ethAmount, setEthAmount] = useState("");
-  const [ethUnit, setEthUnit] = useState<EthUnit>("ether");
+  const [ethAmount, setEthAmount] = useState('');
+  const [ethUnit, setEthUnit] = useState<EthUnit>('ether');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Synchronous guard: blocks a second click before the disabled state commits.
@@ -82,33 +82,33 @@ export function DeployScreen({ deps }: { deps?: Deps }) {
   async function onFile(e: React.ChangeEvent<HTMLInputElement>): Promise<void> {
     const file = e.target.files?.[0];
     // Reset the input so picking the same file twice re-fires onChange.
-    e.target.value = "";
+    e.target.value = '';
     if (!file) return;
     const text = await file.text();
     // Drop the bytecode textarea so any bytecode embedded in the artifact
     // object is used — unless the user later pastes an explicit one.
     setAbiRaw(text);
-    setBytecodeRaw("");
-    parseArtifact(text, "");
+    setBytecodeRaw('');
+    parseArtifact(text, '');
   }
 
-  const ready = artifact.status === "ready" ? artifact.artifact : null;
+  const ready = artifact.status === 'ready' ? artifact.artifact : null;
   const payable = ready?.payable ?? false;
 
-  const invalid = artifact.status === "invalid" ? artifact : null;
+  const invalid = artifact.status === 'invalid' ? artifact : null;
 
-  const confirmed = deployState.status === "confirmed" ? deployState : null;
-  const failed = deployState.status === "failed" ? deployState : null;
+  const confirmed = deployState.status === 'confirmed' ? deployState : null;
+  const failed = deployState.status === 'failed' ? deployState : null;
 
   const busy =
-    deployState.status === "wallet" || deployState.status === "pending";
+    deployState.status === 'wallet' || deployState.status === 'pending';
 
-  let deployLabel = "Deploy";
-  if (deployState.status === "wallet") deployLabel = "Confirm in wallet…";
-  else if (deployState.status === "pending") deployLabel = "Deploying…";
+  let deployLabel = 'Deploy';
+  if (deployState.status === 'wallet') deployLabel = 'Confirm in wallet…';
+  else if (deployState.status === 'pending') deployLabel = 'Deploying…';
 
   const deployDisabled = !ready || !isConnected || busy;
-  const deployTitle = !isConnected ? "Connect a wallet to deploy" : undefined;
+  const deployTitle = !isConnected ? 'Connect a wallet to deploy' : undefined;
 
   async function handleDeploy(): Promise<void> {
     if (!ready) return;
@@ -119,18 +119,18 @@ export function DeployScreen({ deps }: { deps?: Deps }) {
         args,
         payable ? { amount: ethAmount, unit: ethUnit } : undefined,
       );
-      if (final.status === "confirmed") {
+      if (final.status === 'confirmed') {
         toast({
-          kind: "success",
-          title: "Contract deployed",
+          kind: 'success',
+          title: 'Contract deployed',
           msg: (
             <>
               Deployed at <Mono>{trunc(final.contractAddress, 6)}</Mono>
             </>
           ),
         });
-      } else if (final.status === "failed") {
-        toast({ kind: "error", title: "Deployment failed", msg: final.error });
+      } else if (final.status === 'failed') {
+        toast({ kind: 'error', title: 'Deployment failed', msg: final.error });
       }
     } finally {
       deployBusyRef.current = false;
@@ -149,13 +149,13 @@ export function DeployScreen({ deps }: { deps?: Deps }) {
       chainId: walletChainId,
       address: confirmed.contractAddress,
       abi: ready.abi,
-      source: "manual",
+      source: 'manual',
       addedAt: Date.now(),
     };
     useContractsStore.getState().add(contract);
     toast({
-      kind: "success",
-      title: "Saved to contracts",
+      kind: 'success',
+      title: 'Saved to contracts',
       msg: (
         <>
           <Mono>{contract.name}</Mono> added to your contracts.
@@ -204,7 +204,7 @@ export function DeployScreen({ deps }: { deps?: Deps }) {
               <Textarea
                 mono
                 rows={6}
-                tone={invalid?.abiError ? "invalid" : "default"}
+                tone={invalid?.abiError ? 'invalid' : 'default'}
                 placeholder={ABI_PLACEHOLDER}
                 value={abiRaw}
                 onChange={(e) => onAbiChange(e.target.value)}
@@ -214,7 +214,7 @@ export function DeployScreen({ deps }: { deps?: Deps }) {
               <Textarea
                 mono
                 rows={4}
-                tone={invalid?.bytecodeError ? "invalid" : "default"}
+                tone={invalid?.bytecodeError ? 'invalid' : 'default'}
                 placeholder="0x60806040…"
                 value={bytecodeRaw}
                 onChange={(e) => onBytecodeChange(e.target.value)}
@@ -246,7 +246,7 @@ export function DeployScreen({ deps }: { deps?: Deps }) {
           <CardHead>
             <span className="h-[15px] w-[3px] rounded-[2px] bg-write" />
             <CardTitle>Constructor</CardTitle>
-            {ready && <MutTag state={payable ? "payable" : "nonpayable"} />}
+            {ready && <MutTag state={payable ? 'payable' : 'nonpayable'} />}
           </CardHead>
           <CardBody>
             <div className="mb-3.5 inline-flex items-center gap-[7px] rounded-sm border border-write-border bg-write-bg px-2.5 py-1.5 text-xs font-medium text-write-fg">
@@ -348,7 +348,7 @@ export function DeployScreen({ deps }: { deps?: Deps }) {
                     icon={<Icon.plus size={15} />}
                     onClick={handleSave}
                     disabled={saved}
-                    title={saved ? "saved" : undefined}
+                    title={saved ? 'saved' : undefined}
                   >
                     Save to contracts
                   </Button>

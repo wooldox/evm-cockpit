@@ -1,4 +1,4 @@
-import { Icon } from "@/shared/icons";
+import { Icon } from '@/shared/icons';
 
 export function Logo() {
   return (

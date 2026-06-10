@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useRef, useState } from "react";
-import type { AbiEvent } from "abitype";
-import type { TContract } from "@/entities/contract/model/types";
-import type { RpcProvider } from "@/shared/ports/rpc";
-import { viemRpc } from "@/app/web3/services";
-import { fetchEventLogs, type TEventLogsResult } from "./fetchEventLogs";
+import { useRef, useState } from 'react';
+import type { AbiEvent } from 'abitype';
+import type { TContract } from '@/entities/contract/model/types';
+import type { RpcProvider } from '@/shared/ports/rpc';
+import { viemRpc } from '@/app/web3/services';
+import { fetchEventLogs, type TEventLogsResult } from './fetchEventLogs';
 
 export type EventLogsState =
-  | { status: "idle" }
-  | { status: "loading" }
-  | { status: "done"; result: TEventLogsResult }
-  | { status: "error"; error: string };
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'done'; result: TEventLogsResult }
+  | { status: 'error'; error: string };
 
 export type DefaultRange = { from: string; to: string };
 
@@ -40,7 +40,7 @@ export function useEventLogs(
   contract: TContract,
   deps: Deps = defaultDeps,
 ): UseEventLogsResult {
-  const [state, setState] = useState<EventLogsState>({ status: "idle" });
+  const [state, setState] = useState<EventLogsState>({ status: 'idle' });
   const [defaultRange, setDefaultRange] = useState<{
     from: string;
     to: string;
@@ -52,7 +52,7 @@ export function useEventLogs(
   function reset(): void {
     callId.current += 1;
     // defaultRange is range metadata (not result state) — keep it.
-    setState({ status: "idle" });
+    setState({ status: 'idle' });
   }
 
   async function loadDefaultRange(): Promise<DefaultRange | null> {
@@ -65,7 +65,7 @@ export function useEventLogs(
       // A newer fetchLogs()/reset() ran during the await — bail without setState.
       if (callId.current !== mySnapshot) return null;
       const from = latest > DEFAULT_LOOKBACK ? latest - DEFAULT_LOOKBACK : 0n;
-      const range: DefaultRange = { from: from.toString(), to: "latest" };
+      const range: DefaultRange = { from: from.toString(), to: 'latest' };
       setDefaultRange(range);
       return range;
     } catch (e) {
@@ -74,8 +74,8 @@ export function useEventLogs(
       if (callId.current !== mySnapshot) return null;
       const err = e as { shortMessage?: string; message?: string };
       const message =
-        err.shortMessage ?? err.message ?? "failed to load block range";
-      setState({ status: "error", error: message });
+        err.shortMessage ?? err.message ?? 'failed to load block range';
+      setState({ status: 'error', error: message });
       return null;
     }
   }
@@ -95,7 +95,7 @@ export function useEventLogs(
     // Only plain decimal block numbers — reject hex/negative/exotic forms that
     // BigInt() would otherwise accept (e.g. "0x1f", "-5").
     if (!/^\d+$/.test(fromTrimmed)) {
-      setState({ status: "error", error: "invalid from block" });
+      setState({ status: 'error', error: 'invalid from block' });
       return;
     }
 
@@ -103,28 +103,28 @@ export function useEventLogs(
     try {
       fromBlock = BigInt(fromTrimmed);
     } catch {
-      setState({ status: "error", error: "invalid from block" });
+      setState({ status: 'error', error: 'invalid from block' });
       return;
     }
 
-    setState({ status: "loading" });
+    setState({ status: 'loading' });
 
     try {
       const client = deps.rpc.getClient(contract.chainId);
 
       let toBlock: bigint;
-      if (toTrimmed === "" || toTrimmed.toLowerCase() === "latest") {
+      if (toTrimmed === '' || toTrimmed.toLowerCase() === 'latest') {
         toBlock = await client.getBlockNumber();
       } else if (!/^\d+$/.test(toTrimmed)) {
         if (callId.current !== myCallId) return;
-        setState({ status: "error", error: "invalid to block" });
+        setState({ status: 'error', error: 'invalid to block' });
         return;
       } else {
         try {
           toBlock = BigInt(toTrimmed);
         } catch {
           if (callId.current !== myCallId) return;
-          setState({ status: "error", error: "invalid to block" });
+          setState({ status: 'error', error: 'invalid to block' });
           return;
         }
       }
@@ -136,12 +136,12 @@ export function useEventLogs(
 
       // Staleness guard: a newer fetchLogs()/reset() ran during the await.
       if (callId.current !== myCallId) return;
-      setState({ status: "done", result });
+      setState({ status: 'done', result });
     } catch (e) {
       if (callId.current !== myCallId) return;
       const err = e as { shortMessage?: string; message?: string };
-      const message = err.shortMessage ?? err.message ?? "failed to load logs";
-      setState({ status: "error", error: message });
+      const message = err.shortMessage ?? err.message ?? 'failed to load logs';
+      setState({ status: 'error', error: message });
     }
   }
 

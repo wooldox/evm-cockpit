@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import type { AbiFunction } from "abitype";
-import type { TContract } from "@/entities/contract/model/types";
-import type { TRerunIntent } from "@/entities/rerun/model/store";
-import { useGetterCall } from "@/features/contract-browser/model/useGetterCall";
-import { getBrowserSections } from "@/features/contract-browser/model/effectiveAbi";
-import { Icon } from "@/shared/icons";
-import { cx } from "@/shared/lib/cx";
-import { stringifyWithBigint } from "@/shared/lib/json/stringify";
-import { Button, Muted, MutTag, Spinner } from "@/shared/ui";
-import { CopyBtn } from "@/shared/ui/copyable";
-import { ParamInput, TypedValue } from "./values";
-import { SectionHead } from "./PropertiesSection";
+import { useState } from 'react';
+import type { AbiFunction } from 'abitype';
+import type { TContract } from '@/entities/contract/model/types';
+import type { TRerunIntent } from '@/entities/rerun/model/store';
+import { useGetterCall } from '@/features/contract-browser/model/useGetterCall';
+import { getBrowserSections } from '@/features/contract-browser/model/effectiveAbi';
+import { Icon } from '@/shared/icons';
+import { cx } from '@/shared/lib/cx';
+import { stringifyWithBigint } from '@/shared/lib/json/stringify';
+import { Button, Muted, MutTag, Spinner } from '@/shared/ui';
+import { CopyBtn } from '@/shared/ui/copyable';
+import { ParamInput, TypedValue } from './values';
+import { SectionHead } from './PropertiesSection';
 
 /* ── FnCard ─────────────────────────────────────────────── */
 export function FnCard({
@@ -23,7 +23,7 @@ export function FnCard({
   badge,
   children,
 }: {
-  tone: "read" | "write";
+  tone: 'read' | 'write';
   open: boolean;
   onToggle: () => void;
   fn: AbiFunction;
@@ -33,8 +33,8 @@ export function FnCard({
   return (
     <div
       className={cx(
-        "overflow-clip rounded-md border border-l-2 border-border bg-elev-2 transition-colors",
-        tone === "read" ? "border-l-read" : "border-l-write",
+        'overflow-clip rounded-md border border-l-2 border-border bg-elev-2 transition-colors',
+        tone === 'read' ? 'border-l-read' : 'border-l-write',
       )}
     >
       <button
@@ -46,8 +46,8 @@ export function FnCard({
         <Icon.chevR
           size={15}
           className={cx(
-            "flex-none text-fg-3 transition-transform duration-[170ms]",
-            open && "rotate-90",
+            'flex-none text-fg-3 transition-transform duration-[170ms]',
+            open && 'rotate-90',
           )}
         />
         <span className="flex min-w-0 flex-1 items-baseline gap-[7px]">
@@ -57,8 +57,8 @@ export function FnCard({
           <span className="overflow-hidden text-ellipsis whitespace-nowrap font-mono text-xs text-fg-3">
             (
             {fn.inputs
-              .map((i) => `${i.type}${i.name ? ` ${i.name}` : ""}`)
-              .join(", ")}
+              .map((i) => `${i.type}${i.name ? ` ${i.name}` : ''}`)
+              .join(', ')}
             )
           </span>
         </span>
@@ -94,7 +94,7 @@ function GetterCard({
     fn,
   );
 
-  const outType = fn.outputs[0]?.type ?? "";
+  const outType = fn.outputs[0]?.type ?? '';
 
   const handleCall = () => {
     void call(args);
@@ -106,7 +106,7 @@ function GetterCard({
       open={open}
       onToggle={() => setOpen((v) => !v)}
       fn={fn}
-      badge={<MutTag state={fn.stateMutability as "view" | "pure"} />}
+      badge={<MutTag state={fn.stateMutability as 'view' | 'pure'} />}
     >
       <div className="flex flex-col gap-3">
         {fn.inputs.map((p, i) => {
@@ -126,21 +126,21 @@ function GetterCard({
           <Button
             variant="read"
             size="sm"
-            icon={status === "loading" ? <Spinner /> : <Icon.play size={13} />}
+            icon={status === 'loading' ? <Spinner /> : <Icon.play size={13} />}
             onClick={handleCall}
-            disabled={status === "loading"}
+            disabled={status === 'loading'}
           >
-            {status === "loading" ? "Calling…" : "Call"}
+            {status === 'loading' ? 'Calling…' : 'Call'}
           </Button>
           <Muted className="text-xs">free · eth_call · no gas</Muted>
         </div>
       </div>
 
-      {status === "done" && (
+      {status === 'done' && (
         <div className="relative mt-3 rounded-sm border border-border bg-inset font-mono text-[13px]">
           <div className="flex items-center justify-between gap-2 border-b border-border py-1.5 pl-3 pr-2">
             <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.05em] text-fg-3">
-              Result · {fn.outputs.map((o) => o.type).join(", ")}
+              Result · {fn.outputs.map((o) => o.type).join(', ')}
             </span>
             <CopyBtn value={stringifyWithBigint(result)} />
           </div>
@@ -154,7 +154,7 @@ function GetterCard({
         </div>
       )}
 
-      {status === "error" && (
+      {status === 'error' && (
         <p className="mt-2 font-mono text-[12px] text-danger-fg">{error}</p>
       )}
     </FnCard>
@@ -182,7 +182,7 @@ export function GettersSection({
   // limitation: we match on name + argCount (inputs.length), so two overloads
   // with the same arity are indistinguishable — the FIRST such match wins.
   const matchTarget =
-    rerun && rerun.type === "read"
+    rerun && rerun.type === 'read'
       ? fns.find(
           (f) => f.name === rerun.fnName && f.inputs.length === rerun.argCount,
         )
@@ -198,7 +198,7 @@ export function GettersSection({
       <div className="flex flex-col gap-2">
         {fns.map((f) => {
           // Use full signature as key to handle overloads
-          const key = `${f.name}(${f.inputs.map((i) => i.type).join(",")})`;
+          const key = `${f.name}(${f.inputs.map((i) => i.type).join(',')})`;
           const isTarget = f === matchTarget;
           return (
             <GetterCard

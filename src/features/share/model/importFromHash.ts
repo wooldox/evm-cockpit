@@ -1,8 +1,8 @@
-import type { Abi } from "abitype";
-import type { TContract, TAddress } from "@/entities/contract/model/types";
-import { decodeContractShare } from "@/shared/lib/share/codec";
+import type { Abi } from 'abitype';
+import type { TContract, TAddress } from '@/entities/contract/model/types';
+import { decodeContractShare } from '@/shared/lib/share/codec';
 
-const IMPORT_PREFIX = "#import=";
+const IMPORT_PREFIX = '#import=';
 
 export type ImportResult =
   | { ok: true; contract: TContract; deduped: boolean }

@@ -1,8 +1,8 @@
-import { openDB, type IDBPDatabase } from "idb";
-import type { Storage } from "@/shared/ports/storage";
+import { openDB, type IDBPDatabase } from 'idb';
+import type { Storage } from '@/shared/ports/storage';
 
-const DB_NAME = "evm-cockpit";
-const STORES = ["contracts", "settings", "customChains", "history"] as const;
+const DB_NAME = 'evm-cockpit';
+const STORES = ['contracts', 'settings', 'customChains', 'history'] as const;
 let dbp: Promise<IDBPDatabase> | null = null;
 function db() {
   return (dbp ??= openDB(DB_NAME, 1, {

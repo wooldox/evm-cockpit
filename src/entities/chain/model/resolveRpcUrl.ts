@@ -1,4 +1,4 @@
-import { DEFAULT_RPC_URLS } from "./chains";
+import { DEFAULT_RPC_URLS } from './chains';
 
 /**
  * Resolve the RPC URL for a chain.

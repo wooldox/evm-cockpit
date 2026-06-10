@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import type { AbiParameter } from "abitype";
-import type { JSX } from "react";
-import { SUPPORTED_VIEM_CHAINS } from "@/entities/chain/model/chains";
-import { fmtBig, trunc } from "@/shared/lib/format";
-import { stringifyWithBigint } from "@/shared/lib/json/stringify";
-import { cx } from "@/shared/lib/cx";
-import { Field, Input } from "@/shared/ui/field";
-import { Address, Copyable, CopyBtn } from "@/shared/ui/copyable";
+import type { AbiParameter } from 'abitype';
+import type { JSX } from 'react';
+import { SUPPORTED_VIEM_CHAINS } from '@/entities/chain/model/chains';
+import { fmtBig, trunc } from '@/shared/lib/format';
+import { stringifyWithBigint } from '@/shared/lib/json/stringify';
+import { cx } from '@/shared/lib/cx';
+import { Field, Input } from '@/shared/ui/field';
+import { Address, Copyable, CopyBtn } from '@/shared/ui/copyable';
 
 /* ─── helpers ─────────────────────────────────────────────── */
 
@@ -20,15 +20,15 @@ function isIntType(type: string): boolean {
 function placeholderFor(type: string): string {
   // Array / tuple checks must come BEFORE the bare-type checks so that
   // e.g. "uint256[]" doesn't accidentally match isIntType.
-  if (type.endsWith("]") || type.startsWith("tuple")) {
+  if (type.endsWith(']') || type.startsWith('tuple')) {
     return 'JSON, e.g. ["…", …]';
   }
-  if (type === "address") return "0x0000000000000000000000000000000000000000";
-  if (type === "bool") return "true | false";
-  if (/^bytes/.test(type)) return "0x…";
-  if (type === "string") return "…";
-  if (isIntType(type)) return "0";
-  return "…";
+  if (type === 'address') return '0x0000000000000000000000000000000000000000';
+  if (type === 'bool') return 'true | false';
+  if (/^bytes/.test(type)) return '0x…';
+  if (type === 'string') return '…';
+  if (isIntType(type)) return '0';
+  return '…';
 }
 
 /* ─── ParamInput ──────────────────────────────────────────── */
@@ -46,16 +46,16 @@ export function ParamInput({
   onChange: (v: string) => void;
   autoFocus?: boolean;
 }): JSX.Element {
-  const label = "name" in param && param.name ? param.name : "arg";
+  const label = 'name' in param && param.name ? param.name : 'arg';
   const ph = placeholderFor(param.type);
   // TODO(nicety): unit toggle for uint amounts
   return (
     <Field label={label} type={param.type} error={error}>
       <Input
         mono
-        tone={error ? "invalid" : "default"}
+        tone={error ? 'invalid' : 'default'}
         placeholder={ph}
-        value={value ?? ""}
+        value={value ?? ''}
         autoFocus={autoFocus}
         onChange={(e) => onChange(e.target.value)}
       />
@@ -75,19 +75,19 @@ export function TypedValue({
   chainId?: number;
 }): JSX.Element {
   /* ── bool ── */
-  if (type === "bool" || value === true || value === false) {
-    const v = value === true || value === "true" || String(value) === "true";
+  if (type === 'bool' || value === true || value === false) {
+    const v = value === true || value === 'true' || String(value) === 'true';
     return (
       <span
-        className={cx("font-mono", v ? "text-success-fg" : "text-danger-fg")}
+        className={cx('font-mono', v ? 'text-success-fg' : 'text-danger-fg')}
       >
-        {v ? "✓ true" : "✗ false"}
+        {v ? '✓ true' : '✗ false'}
       </span>
     );
   }
 
   /* ── address ── */
-  if (type === "address" && typeof value === "string") {
+  if (type === 'address' && typeof value === 'string') {
     let explorerUrl: string | undefined;
     if (chainId != null) {
       const chain = SUPPORTED_VIEM_CHAINS.find((c) => c.id === chainId);
@@ -98,9 +98,9 @@ export function TypedValue({
   }
 
   /* ── bigint / int types ── */
-  if (typeof value === "bigint" || isIntType(type)) {
+  if (typeof value === 'bigint' || isIntType(type)) {
     const formatted = fmtBig(value as string | number | bigint);
-    const raw = typeof value === "bigint" ? value.toString() : String(value);
+    const raw = typeof value === 'bigint' ? value.toString() : String(value);
     const long = raw.length > 12;
     return (
       <span className="inline-flex items-center gap-[7px]">
@@ -118,7 +118,7 @@ export function TypedValue({
   }
 
   /* ── string ── */
-  if (type === "string") {
+  if (type === 'string') {
     return (
       <span className="font-mono text-success-fg">
         &quot;{String(value)}&quot;
@@ -127,7 +127,7 @@ export function TypedValue({
   }
 
   /* ── arrays / tuples / objects ── */
-  if (typeof value === "object" && value !== null) {
+  if (typeof value === 'object' && value !== null) {
     const json = stringifyWithBigint(value, 2);
     const compact = stringifyWithBigint(value);
     return (

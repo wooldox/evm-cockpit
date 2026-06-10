@@ -1,59 +1,59 @@
-import "fake-indexeddb/auto";
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import React from "react";
-import { useHistoryStore } from "@/entities/history/model/store";
-import { useContractsStore } from "@/entities/contract/model/store";
-import { useRerunStore } from "@/entities/rerun/model/store";
-import { txUrl } from "@/entities/chain/model/explorer";
-import { erc20Abi } from "@/shared/lib/abi/fixtures";
-import type { TContract } from "@/entities/contract/model/types";
-import type { THistoryEntry } from "@/entities/history/model/types";
-import { HistoryView } from "./HistoryView";
+import 'fake-indexeddb/auto';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import React from 'react';
+import { useHistoryStore } from '@/entities/history/model/store';
+import { useContractsStore } from '@/entities/contract/model/store';
+import { useRerunStore } from '@/entities/rerun/model/store';
+import { txUrl } from '@/entities/chain/model/explorer';
+import { erc20Abi } from '@/shared/lib/abi/fixtures';
+import type { TContract } from '@/entities/contract/model/types';
+import type { THistoryEntry } from '@/entities/history/model/types';
+import { HistoryView } from './HistoryView';
 
 /* ── next/navigation mock ───────────────────────────────── */
 const pushMock = vi.fn();
-vi.mock("next/navigation", () => ({
+vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: pushMock }),
 }));
 
-const ADDR_A = "0x1234567890123456789012345678901234567890" as const;
-const ADDR_B = "0xabcabcabcabcabcabcabcabcabcabcabcabcabca" as const;
+const ADDR_A = '0x1234567890123456789012345678901234567890' as const;
+const ADDR_B = '0xabcabcabcabcabcabcabcabcabcabcabcabcabca' as const;
 const HASH =
-  "0x1111111111111111111111111111111111111111111111111111111111111111" as const;
+  '0x1111111111111111111111111111111111111111111111111111111111111111' as const;
 
 const contractA: TContract = {
-  id: "a",
-  name: "USD Coin",
+  id: 'a',
+  name: 'USD Coin',
   chainId: 1,
   address: ADDR_A,
   abi: erc20Abi,
-  source: "sourcify",
+  source: 'sourcify',
   addedAt: 0,
 };
 
 const contractB: TContract = {
-  id: "b",
-  name: "Wrapped Ether",
+  id: 'b',
+  name: 'Wrapped Ether',
   chainId: 1,
   address: ADDR_B,
   abi: erc20Abi,
-  source: "sourcify",
+  source: 'sourcify',
   addedAt: 0,
 };
 
-const DELETED_ID = "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef";
+const DELETED_ID = '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef';
 
 function entry(over: Partial<THistoryEntry>): THistoryEntry {
   return {
     id: Math.random().toString(36).slice(2),
-    contractId: "a",
+    contractId: 'a',
     chainId: 1,
-    type: "read",
-    fnName: "balanceOf",
+    type: 'read',
+    fnName: 'balanceOf',
     args: {},
-    status: "ok",
+    status: 'ok',
     timestamp: 1_700_000_000_000,
     ...over,
   };
@@ -72,154 +72,154 @@ beforeEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("HistoryView", () => {
-  it("renders read-ok row: type badge, fn, contract name, status", () => {
-    seed([entry({ type: "read", status: "ok", result: "1,000" })]);
+describe('HistoryView', () => {
+  it('renders read-ok row: type badge, fn, contract name, status', () => {
+    seed([entry({ type: 'read', status: 'ok', result: '1,000' })]);
     render(<HistoryView />);
 
-    expect(screen.getByText("read")).toBeInTheDocument();
-    expect(screen.getByText("balanceOf()")).toBeInTheDocument();
+    expect(screen.getByText('read')).toBeInTheDocument();
+    expect(screen.getByText('balanceOf()')).toBeInTheDocument();
     // "USD Coin" appears in both the filter <option> and the row cell.
-    expect(screen.getAllByText("USD Coin").length).toBeGreaterThan(0);
-    expect(screen.getByText("✓ ok")).toBeInTheDocument();
+    expect(screen.getAllByText('USD Coin').length).toBeGreaterThan(0);
+    expect(screen.getByText('✓ ok')).toBeInTheDocument();
   });
 
-  it("renders simulate-error row with truncated message + full title attr", () => {
-    const msg = "execution reverted: InsufficientBalance(1, 2)";
+  it('renders simulate-error row with truncated message + full title attr', () => {
+    const msg = 'execution reverted: InsufficientBalance(1, 2)';
     seed([
       entry({
-        type: "simulate",
-        status: "error",
-        fnName: "transfer",
+        type: 'simulate',
+        status: 'error',
+        fnName: 'transfer',
         error: msg,
       }),
     ]);
     render(<HistoryView />);
 
-    expect(screen.getByText("simulate")).toBeInTheDocument();
+    expect(screen.getByText('simulate')).toBeInTheDocument();
     const statusCell = screen.getByText(/^error/);
-    expect(statusCell).toHaveAttribute("title", msg);
+    expect(statusCell).toHaveAttribute('title', msg);
   });
 
-  it("renders write-ok row with explorer tx link", () => {
+  it('renders write-ok row with explorer tx link', () => {
     seed([
       entry({
-        type: "write",
-        status: "ok",
-        fnName: "transfer",
+        type: 'write',
+        status: 'ok',
+        fnName: 'transfer',
         txHash: HASH,
       }),
     ]);
     render(<HistoryView />);
 
-    expect(screen.getByText("write")).toBeInTheDocument();
-    const link = screen.getByRole("link");
-    expect(link).toHaveAttribute("href", txUrl(1, HASH));
+    expect(screen.getByText('write')).toBeInTheDocument();
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('href', txUrl(1, HASH));
   });
 
-  it("filters rows by contract", async () => {
+  it('filters rows by contract', async () => {
     const user = userEvent.setup();
     seed(
       [
-        entry({ contractId: "a", fnName: "balanceOf" }),
-        entry({ contractId: "b", fnName: "allowance" }),
+        entry({ contractId: 'a', fnName: 'balanceOf' }),
+        entry({ contractId: 'b', fnName: 'allowance' }),
       ],
       [contractA, contractB],
     );
     render(<HistoryView />);
 
-    expect(screen.getByText("balanceOf()")).toBeInTheDocument();
-    expect(screen.getByText("allowance()")).toBeInTheDocument();
+    expect(screen.getByText('balanceOf()')).toBeInTheDocument();
+    expect(screen.getByText('allowance()')).toBeInTheDocument();
 
     await user.selectOptions(
-      screen.getByLabelText("Filter by contract"),
-      "Wrapped Ether",
+      screen.getByLabelText('Filter by contract'),
+      'Wrapped Ether',
     );
 
-    expect(screen.queryByText("balanceOf()")).not.toBeInTheDocument();
-    expect(screen.getByText("allowance()")).toBeInTheDocument();
+    expect(screen.queryByText('balanceOf()')).not.toBeInTheDocument();
+    expect(screen.getByText('allowance()')).toBeInTheDocument();
   });
 
-  it("shows truncated contractId for a deleted contract", () => {
+  it('shows truncated contractId for a deleted contract', () => {
     seed([entry({ contractId: DELETED_ID })], []);
     render(<HistoryView />);
 
     expect(screen.getByText(/^0xdead/)).toBeInTheDocument();
   });
 
-  it("Clear empties history when confirmed", async () => {
+  it('Clear empties history when confirmed', async () => {
     const user = userEvent.setup();
-    vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
     seed([entry({})]);
     render(<HistoryView />);
 
-    await user.click(screen.getByRole("button", { name: /Clear/ }));
+    await user.click(screen.getByRole('button', { name: /Clear/ }));
 
     expect(useHistoryStore.getState().entries).toHaveLength(0);
   });
 
-  it("shows the empty state when there is no history", () => {
+  it('shows the empty state when there is no history', () => {
     seed([]);
     render(<HistoryView />);
 
-    expect(screen.getByText("No history yet")).toBeInTheDocument();
+    expect(screen.getByText('No history yet')).toBeInTheDocument();
   });
 
-  it("type filter narrows rows to the selected type", async () => {
+  it('type filter narrows rows to the selected type', async () => {
     const user = userEvent.setup();
     seed([
-      entry({ type: "read", fnName: "balanceOf" }),
-      entry({ type: "write", fnName: "transfer" }),
+      entry({ type: 'read', fnName: 'balanceOf' }),
+      entry({ type: 'write', fnName: 'transfer' }),
     ]);
     render(<HistoryView />);
 
-    expect(screen.getByText("balanceOf()")).toBeInTheDocument();
-    expect(screen.getByText("transfer()")).toBeInTheDocument();
+    expect(screen.getByText('balanceOf()')).toBeInTheDocument();
+    expect(screen.getByText('transfer()')).toBeInTheDocument();
 
-    await user.click(screen.getByRole("tab", { name: "Writes" }));
+    await user.click(screen.getByRole('tab', { name: 'Writes' }));
 
-    expect(screen.queryByText("balanceOf()")).not.toBeInTheDocument();
-    expect(screen.getByText("transfer()")).toBeInTheDocument();
+    expect(screen.queryByText('balanceOf()')).not.toBeInTheDocument();
+    expect(screen.getByText('transfer()')).toBeInTheDocument();
   });
 
-  it("Re-run sets the intent and navigates to the contract browser", async () => {
+  it('Re-run sets the intent and navigates to the contract browser', async () => {
     const user = userEvent.setup();
     seed([
       entry({
-        contractId: "a",
-        type: "read",
-        fnName: "balanceOf",
-        args: { owner: "0xdead" },
+        contractId: 'a',
+        type: 'read',
+        fnName: 'balanceOf',
+        args: { owner: '0xdead' },
       }),
     ]);
     render(<HistoryView />);
 
-    await user.click(screen.getByRole("button", { name: /Re-run/ }));
+    await user.click(screen.getByRole('button', { name: /Re-run/ }));
 
     expect(useRerunStore.getState().intent).toEqual({
-      contractId: "a",
-      fnName: "balanceOf",
+      contractId: 'a',
+      fnName: 'balanceOf',
       argCount: 1,
-      args: { owner: "0xdead" },
-      type: "read",
+      args: { owner: '0xdead' },
+      type: 'read',
     });
-    expect(pushMock).toHaveBeenCalledWith("/?c=a");
+    expect(pushMock).toHaveBeenCalledWith('/?c=a');
   });
 
-  it("Re-run is disabled with a title when the contract was deleted", () => {
+  it('Re-run is disabled with a title when the contract was deleted', () => {
     seed([entry({ contractId: DELETED_ID })], []);
     render(<HistoryView />);
 
-    const btn = screen.getByRole("button", { name: /Re-run/ });
+    const btn = screen.getByRole('button', { name: /Re-run/ });
     expect(btn).toBeDisabled();
-    expect(btn).toHaveAttribute("title", "contract no longer saved");
+    expect(btn).toHaveAttribute('title', 'contract no longer saved');
   });
 
-  it("initialContractId preselects the contract filter on first render", () => {
+  it('initialContractId preselects the contract filter on first render', () => {
     seed(
       [
-        entry({ contractId: "a", fnName: "balanceOf" }),
-        entry({ contractId: "b", fnName: "allowance" }),
+        entry({ contractId: 'a', fnName: 'balanceOf' }),
+        entry({ contractId: 'b', fnName: 'allowance' }),
       ],
       [contractA, contractB],
     );
@@ -227,21 +227,21 @@ describe("HistoryView", () => {
     render(<HistoryView initialContractId="b" />);
 
     // Rows filtered to contract B from the first render — no effects.
-    expect(screen.queryByText("balanceOf()")).not.toBeInTheDocument();
-    expect(screen.getByText("allowance()")).toBeInTheDocument();
+    expect(screen.queryByText('balanceOf()')).not.toBeInTheDocument();
+    expect(screen.getByText('allowance()')).toBeInTheDocument();
     // Select reflects the preselected contract.
     expect(
-      (screen.getByLabelText("Filter by contract") as HTMLSelectElement).value,
-    ).toBe("b");
+      (screen.getByLabelText('Filter by contract') as HTMLSelectElement).value,
+    ).toBe('b');
   });
 
   it("initialContractId falls back to 'all' when the contract is unknown", () => {
-    seed([entry({ contractId: "a", fnName: "balanceOf" })], [contractA]);
+    seed([entry({ contractId: 'a', fnName: 'balanceOf' })], [contractA]);
     render(<HistoryView initialContractId="does-not-exist" />);
 
-    expect(screen.getByText("balanceOf()")).toBeInTheDocument();
+    expect(screen.getByText('balanceOf()')).toBeInTheDocument();
     expect(
-      (screen.getByLabelText("Filter by contract") as HTMLSelectElement).value,
-    ).toBe("all");
+      (screen.getByLabelText('Filter by contract') as HTMLSelectElement).value,
+    ).toBe('all');
   });
 });

@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useRef, useState } from "react";
-import { isAddress } from "viem";
-import { cx } from "@/shared/lib/cx";
-import { Icon } from "@/shared/icons";
+import { useRef, useState } from 'react';
+import { isAddress } from 'viem';
+import { cx } from '@/shared/lib/cx';
+import { Icon } from '@/shared/icons';
 import {
   Address,
   Button,
@@ -15,28 +15,28 @@ import {
   Muted,
   Spinner,
   Textarea,
-} from "@/shared/ui";
-import { Field, Input } from "@/shared/ui/field";
+} from '@/shared/ui';
+import { Field, Input } from '@/shared/ui/field';
 import {
   SIGNATURE_RE,
   verifySignedMessage,
   type TVerifyResult,
-} from "../model/verifyMessage";
+} from '../model/verifyMessage';
 
 // A real, valid example pair: EXAMPLE_MESSAGE signed by the canonical dev
 // account 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 (anvil #0) — so the
 // "Paste example" shortcut verifies green end-to-end.
 const EXAMPLE_MESSAGE =
-  "I authorize this session for app.evmcockpit.xyz\nNonce: 8f2a01";
+  'I authorize this session for app.evmcockpit.xyz\nNonce: 8f2a01';
 const EXAMPLE_SIGNATURE =
-  "0x2ca94ae4d0269c6bb15e4d9ff45bbcf464f2550f4f9c5bdac10409f8d4af8166030b69c3f481ec1c23ac97e3d6cc33e70989c0e7edceb3eff5be847d99209a691c";
+  '0x2ca94ae4d0269c6bb15e4d9ff45bbcf464f2550f4f9c5bdac10409f8d4af8166030b69c3f481ec1c23ac97e3d6cc33e70989c0e7edceb3eff5be847d99209a691c';
 
 /** The reverse of signing: recover a signer from a message + signature.
  *  Read-only (no gas, no wallet) — styled with the read (blue) accent. */
 export function VerifyMessageCard() {
-  const [msg, setMsg] = useState("");
-  const [sig, setSig] = useState("");
-  const [signer, setSigner] = useState("");
+  const [msg, setMsg] = useState('');
+  const [sig, setSig] = useState('');
+  const [signer, setSigner] = useState('');
   const [result, setResult] = useState<TVerifyResult | null>(null);
   const [verifying, setVerifying] = useState(false);
   const busyRef = useRef(false);
@@ -67,20 +67,20 @@ export function VerifyMessageCard() {
   function fillExample(): void {
     setMsg(EXAMPLE_MESSAGE);
     setSig(EXAMPLE_SIGNATURE);
-    setSigner("");
+    setSigner('');
     setResult(null);
   }
 
   const headline = result?.ok
     ? signerTrim
-      ? "Signature valid · signer matches"
-      : "Valid signature"
-    : "Verification failed";
+      ? 'Signature valid · signer matches'
+      : 'Valid signature'
+    : 'Verification failed';
 
   let verifyTitle: string | undefined;
   if (!msg.trim() || !sig.trim())
-    verifyTitle = "Paste a message and its signature";
-  else if (!signerFormatOk) verifyTitle = "Fix the expected signer address";
+    verifyTitle = 'Paste a message and its signature';
+  else if (!signerFormatOk) verifyTitle = 'Fix the expected signer address';
 
   return (
     <Card>
@@ -120,7 +120,7 @@ export function VerifyMessageCard() {
           type="65-byte hex"
           error={
             sig && !sigFormatOk
-              ? "Must be a 0x hex signature (≥ 65 bytes)"
+              ? 'Must be a 0x hex signature (≥ 65 bytes)'
               : undefined
           }
         >
@@ -128,7 +128,7 @@ export function VerifyMessageCard() {
             mono
             rows={2}
             aria-label="Signature"
-            tone={sig ? (sigFormatOk ? "valid" : "invalid") : "default"}
+            tone={sig ? (sigFormatOk ? 'valid' : 'invalid') : 'default'}
             placeholder="0x…"
             value={sig}
             onChange={(e) => {
@@ -141,12 +141,12 @@ export function VerifyMessageCard() {
         <Field
           label="Expected signer"
           hint="Optional — compare the recovered address against a known signer."
-          error={!signerFormatOk ? "Not a valid address" : undefined}
+          error={!signerFormatOk ? 'Not a valid address' : undefined}
         >
           <Input
             mono
             aria-label="Expected signer"
-            tone={!signerFormatOk ? "invalid" : "default"}
+            tone={!signerFormatOk ? 'invalid' : 'default'}
             placeholder="0x0000…0000"
             value={signer}
             onChange={(e) => {
@@ -172,20 +172,20 @@ export function VerifyMessageCard() {
         {result && (
           <div
             className={cx(
-              "overflow-clip rounded-sm border",
-              result.ok ? "border-success-border" : "border-danger-border",
+              'overflow-clip rounded-sm border',
+              result.ok ? 'border-success-border' : 'border-danger-border',
             )}
           >
             <div
               className={cx(
-                "flex items-center gap-[11px] px-3.5 py-3",
-                result.ok ? "bg-success-bg" : "bg-danger-bg",
+                'flex items-center gap-[11px] px-3.5 py-3',
+                result.ok ? 'bg-success-bg' : 'bg-danger-bg',
               )}
             >
               <span
                 className={cx(
-                  "grid size-[30px] flex-none place-items-center rounded-full [&_svg]:size-[17px]",
-                  result.ok ? "bg-success text-white" : "bg-danger text-white",
+                  'grid size-[30px] flex-none place-items-center rounded-full [&_svg]:size-[17px]',
+                  result.ok ? 'bg-success text-white' : 'bg-danger text-white',
                 )}
               >
                 {result.ok ? <Icon.checkCircle /> : <Icon.xCircle />}
@@ -193,15 +193,15 @@ export function VerifyMessageCard() {
               <div className="flex-1">
                 <div
                   className={cx(
-                    "text-sm font-semibold",
-                    result.ok ? "text-success-fg" : "text-danger-fg",
+                    'text-sm font-semibold',
+                    result.ok ? 'text-success-fg' : 'text-danger-fg',
                   )}
                 >
                   {headline}
                 </div>
                 <div className="text-xs text-fg-3">
                   {result.ok
-                    ? "The signature was produced by the recovered account."
+                    ? 'The signature was produced by the recovered account.'
                     : result.error}
                 </div>
               </div>

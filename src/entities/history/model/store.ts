@@ -1,8 +1,8 @@
-"use client";
-import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
-import { idbStateStorage } from "@/entities/_shared/idbStateStorage";
-import type { THistoryEntry } from "./types";
+'use client';
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { idbStateStorage } from '@/entities/_shared/idbStateStorage';
+import type { THistoryEntry } from './types';
 
 export const MAX_ENTRIES = 300;
 
@@ -32,14 +32,14 @@ export const useHistoryStore = create<HistoryState>()(
         })),
     }),
     {
-      name: "cc-history",
-      storage: createJSONStorage(() => idbStateStorage("history")),
+      name: 'cc-history',
+      storage: createJSONStorage(() => idbStateStorage('history')),
     },
   ),
 );
 
 /** Fills id + timestamp, then records the entry. Injected as a dep by feature hooks. */
-export function record(partial: Omit<THistoryEntry, "id" | "timestamp">): void {
+export function record(partial: Omit<THistoryEntry, 'id' | 'timestamp'>): void {
   useHistoryStore.getState().add({
     ...partial,
     id: crypto.randomUUID(),

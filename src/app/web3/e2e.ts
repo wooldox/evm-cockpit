@@ -1,4 +1,4 @@
-import type { Address } from "viem";
+import type { Address } from 'viem';
 
 /**
  * Anvil's first well-known prefunded account (deterministic). Used as the mock
@@ -7,7 +7,7 @@ import type { Address } from "viem";
  * the app bundle.
  */
 export const ANVIL_ACCOUNT_0: Address =
-  "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+  '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
 
 /** True only in the inlined-at-build-time E2E build. */
-export const IS_E2E = process.env.NEXT_PUBLIC_E2E === "1";
+export const IS_E2E = process.env.NEXT_PUBLIC_E2E === '1';

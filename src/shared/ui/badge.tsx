@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { tv, type VariantProps } from "tailwind-variants";
+import type { ReactNode } from 'react';
+import { tv, type VariantProps } from 'tailwind-variants';
 
 /** Minimal chain descriptor used by ChainGlyph and ChainBadge. */
 export interface Chain {
@@ -38,18 +38,18 @@ export function ChainGlyph({
    Badge
    ============================================================ */
 export const badge = tv({
-  base: "inline-flex items-center gap-[5px] leading-none rounded-full border whitespace-nowrap font-medium",
+  base: 'inline-flex items-center gap-[5px] leading-none rounded-full border whitespace-nowrap font-medium',
   variants: {
     variant: {
-      neutral: "bg-neutral-bg border-neutral-border text-fg-2",
-      read: "bg-read-bg border-read-border text-read-fg",
-      write: "bg-write-bg border-write-border text-write-fg",
-      success: "bg-success-bg border-success-border text-success-fg",
-      danger: "bg-danger-bg border-danger-border text-danger-fg",
+      neutral: 'bg-neutral-bg border-neutral-border text-fg-2',
+      read: 'bg-read-bg border-read-border text-read-fg',
+      write: 'bg-write-bg border-write-border text-write-fg',
+      success: 'bg-success-bg border-success-border text-success-fg',
+      danger: 'bg-danger-bg border-danger-border text-danger-fg',
     },
-    size: { sm: "text-[11px] px-[7px] py-0.5", md: "text-xs px-2 py-[3px]" },
+    size: { sm: 'text-[11px] px-[7px] py-0.5', md: 'text-xs px-2 py-[3px]' },
   },
-  defaultVariants: { variant: "neutral", size: "md" },
+  defaultVariants: { variant: 'neutral', size: 'md' },
 });
 
 export interface BadgeProps extends VariantProps<typeof badge> {
@@ -70,22 +70,22 @@ export function Badge({ variant, size, dot, children, className }: BadgeProps) {
    MutTag — state-mutability chip (view / pure / nonpayable / payable)
    ============================================================ */
 export const mutTag = tv({
-  base: "font-mono text-[10.5px] font-medium tracking-[0.02em] px-1.5 py-0.5 rounded-xs lowercase border",
+  base: 'font-mono text-[10.5px] font-medium tracking-[0.02em] px-1.5 py-0.5 rounded-xs lowercase border',
   variants: {
     state: {
-      view: "bg-read-bg text-read-fg border-read-border",
-      pure: "bg-neutral-bg text-fg-3 border-neutral-border",
-      nonpayable: "bg-write-bg text-write-fg border-write-border",
-      payable: "bg-write-bg-strong text-write-fg border-write-border",
+      view: 'bg-read-bg text-read-fg border-read-border',
+      pure: 'bg-neutral-bg text-fg-3 border-neutral-border',
+      nonpayable: 'bg-write-bg text-write-fg border-write-border',
+      payable: 'bg-write-bg-strong text-write-fg border-write-border',
     },
   },
-  defaultVariants: { state: "view" },
+  defaultVariants: { state: 'view' },
 });
 
 export function MutTag({
   state,
 }: {
-  state: "view" | "pure" | "nonpayable" | "payable";
+  state: 'view' | 'pure' | 'nonpayable' | 'payable';
 }) {
   return <span className={mutTag({ state })}>{state}</span>;
 }
@@ -105,8 +105,8 @@ export function ChainBadge({
     <span
       className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-elev-3 font-medium text-fg-2 ${
         sm
-          ? "py-0.5 pl-[3px] pr-2 text-[11px]"
-          : "py-[3px] pl-1 pr-[9px] text-xs"
+          ? 'py-0.5 pl-[3px] pr-2 text-[11px]'
+          : 'py-[3px] pl-1 pr-[9px] text-xs'
       }`}
     >
       <ChainGlyph chain={chain} size={sm ? 14 : 16} />

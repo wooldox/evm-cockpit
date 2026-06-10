@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useChainCatalog } from "@/entities/chain/model/catalogStore";
-import type { TCatalogChain } from "@/entities/chain/model/catalog";
+import { useState } from 'react';
+import { useChainCatalog } from '@/entities/chain/model/catalogStore';
+import type { TCatalogChain } from '@/entities/chain/model/catalog';
 
 /** Accent swatches for custom chains (from the design). */
 export const CHAIN_COLORS = [
-  "#627eea",
-  "#0052ff",
-  "#28a0f0",
-  "#ff0420",
-  "#8247e5",
-  "#f3ba2f",
-  "#e84142",
-  "#22c55e",
+  '#627eea',
+  '#0052ff',
+  '#28a0f0',
+  '#ff0420',
+  '#8247e5',
+  '#f3ba2f',
+  '#e84142',
+  '#22c55e',
 ] as const;
 
 /** Normalize an explorer input to a full base URL: trim, prepend https://
@@ -22,15 +22,15 @@ function normalizeExplorer(raw: string): string | undefined {
   const s = raw.trim();
   if (!s) return undefined;
   const url = /^https?:\/\//i.test(s) ? s : `https://${s}`;
-  return url.endsWith("/") ? url.slice(0, -1) : url;
+  return url.endsWith('/') ? url.slice(0, -1) : url;
 }
 
 export function useAddChainForm() {
-  const [name, setName] = useState("");
-  const [idStr, setIdStr] = useState("");
-  const [rpc, setRpc] = useState("");
-  const [symbol, setSymbol] = useState("");
-  const [explorer, setExplorer] = useState("");
+  const [name, setName] = useState('');
+  const [idStr, setIdStr] = useState('');
+  const [rpc, setRpc] = useState('');
+  const [symbol, setSymbol] = useState('');
+  const [explorer, setExplorer] = useState('');
   const [color, setColor] = useState<string>(CHAIN_COLORS[0]);
   // Reactive: a chain added elsewhere mid-edit must flip the dup check.
   const byId = useChainCatalog((s) => s.byId);
@@ -56,7 +56,7 @@ export function useAddChainForm() {
     try {
       const u = new URL(candidate);
       return (
-        (u.protocol === "http:" || u.protocol === "https:") &&
+        (u.protocol === 'http:' || u.protocol === 'https:') &&
         Boolean(u.hostname)
       );
     } catch {
@@ -65,11 +65,11 @@ export function useAddChainForm() {
   })();
 
   let idError: string | undefined;
-  if (idStr && !idValid) idError = "Must be a positive integer";
-  else if (idDup) idError = "This chain ID already exists";
-  const rpcError = rpc && !rpcValid ? "Must start with http(s)://" : undefined;
+  if (idStr && !idValid) idError = 'Must be a positive integer';
+  else if (idDup) idError = 'This chain ID already exists';
+  const rpcError = rpc && !rpcValid ? 'Must start with http(s)://' : undefined;
   const explorerError =
-    explorer.trim() && !explorerOk ? "Not a valid URL" : undefined;
+    explorer.trim() && !explorerOk ? 'Not a valid URL' : undefined;
 
   const canSave =
     Boolean(name.trim()) &&
@@ -80,7 +80,7 @@ export function useAddChainForm() {
     Boolean(symbol.trim());
 
   /** The character previewed in the accent glyph. */
-  const glyphChar = (symbol.trim() || name.trim() || "N")
+  const glyphChar = (symbol.trim() || name.trim() || 'N')
     .charAt(0)
     .toUpperCase();
 
@@ -93,7 +93,7 @@ export function useAddChainForm() {
       color,
       rpcUrls: [rpc.trim()],
       nativeSymbol: sym.toUpperCase(),
-      source: "custom",
+      source: 'custom',
     };
     const explorerUrl = normalizeExplorer(explorer);
     if (explorerUrl) entry.explorerUrl = explorerUrl;

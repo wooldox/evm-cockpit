@@ -1,25 +1,25 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import React from "react";
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import React from 'react';
 import {
   BaseError,
   ContractFunctionRevertedError,
   HttpRequestError,
   encodeErrorResult,
   type PublicClient,
-} from "viem";
-import { ToastProvider } from "@/shared/ui";
-import { erc20Abi } from "@/shared/lib/abi/fixtures";
-import type { TContract } from "@/entities/contract/model/types";
-import type { RpcProvider } from "@/shared/ports/rpc";
-import type { THistoryEntry } from "@/entities/history/model/types";
-import { OperationsSection } from "./OperationsSection";
+} from 'viem';
+import { ToastProvider } from '@/shared/ui';
+import { erc20Abi } from '@/shared/lib/abi/fixtures';
+import type { TContract } from '@/entities/contract/model/types';
+import type { RpcProvider } from '@/shared/ports/rpc';
+import type { THistoryEntry } from '@/entities/history/model/types';
+import { OperationsSection } from './OperationsSection';
 
-const ADDR = "0x1234567890123456789012345678901234567890" as const;
-const ACCOUNT = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd" as const;
+const ADDR = '0x1234567890123456789012345678901234567890' as const;
+const ACCOUNT = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as const;
 const HASH =
-  "0x1111111111111111111111111111111111111111111111111111111111111111" as const;
+  '0x1111111111111111111111111111111111111111111111111111111111111111' as const;
 
 /* ── controllable wagmi stubs ───────────────────────────── */
 let accountStub: {
@@ -30,19 +30,19 @@ let accountStub: {
 let switchChainAsync: ReturnType<typeof vi.fn>;
 let writeContractAsync: ReturnType<typeof vi.fn>;
 
-vi.mock("wagmi", () => ({
+vi.mock('wagmi', () => ({
   useAccount: () => accountStub,
   useSwitchChain: () => ({ switchChainAsync }),
   useWriteContract: () => ({ writeContractAsync }),
 }));
 
 const baseContract: TContract = {
-  id: "test1",
-  name: "USD Coin",
+  id: 'test1',
+  name: 'USD Coin',
   chainId: 1,
   address: ADDR,
   abi: erc20Abi,
-  source: "manual",
+  source: 'manual',
   addedAt: 0,
 };
 
@@ -66,14 +66,14 @@ function makeFakeClient(overrides?: Partial<FakeClient>): FakeClient {
     getTransactionCount: vi.fn().mockResolvedValue(7),
     waitForTransactionReceipt: vi
       .fn()
-      .mockResolvedValue({ status: "success", blockNumber: 99n }),
+      .mockResolvedValue({ status: 'success', blockNumber: 99n }),
     ...overrides,
   };
 }
 
 function makeDeps(client: FakeClient): {
   rpc: RpcProvider;
-  addHistory: (e: Omit<THistoryEntry, "id" | "timestamp">) => void;
+  addHistory: (e: Omit<THistoryEntry, 'id' | 'timestamp'>) => void;
 } {
   return {
     rpc: {
@@ -86,7 +86,7 @@ function makeDeps(client: FakeClient): {
 function renderSection(
   client: FakeClient,
   contract: TContract = baseContract,
-  q = "",
+  q = '',
 ) {
   const deps = makeDeps(client);
   const utils = render(
@@ -99,7 +99,7 @@ function renderSection(
 
 /** Expand a write fn card by clicking its header button. */
 async function expand(user: ReturnType<typeof userEvent.setup>, name: RegExp) {
-  const btn = await screen.findByRole("button", { name });
+  const btn = await screen.findByRole('button', { name });
   await user.click(btn);
 }
 
@@ -109,54 +109,54 @@ beforeEach(() => {
   writeContractAsync = vi.fn().mockResolvedValue(HASH);
 });
 
-describe("OperationsSection", () => {
-  it("renders EthValueInput for payable fn but not for nonpayable", async () => {
+describe('OperationsSection', () => {
+  it('renders EthValueInput for payable fn but not for nonpayable', async () => {
     const user = userEvent.setup();
     renderSection(makeFakeClient());
 
     await expand(user, /^deposit/);
-    expect(screen.getByText("ETH value")).toBeInTheDocument();
+    expect(screen.getByText('ETH value')).toBeInTheDocument();
 
     await expand(user, /^transfer/);
     // transfer is nonpayable — its card has no ETH value field.
     // Only one "ETH value" label total (from deposit).
-    expect(screen.getAllByText("ETH value")).toHaveLength(1);
+    expect(screen.getAllByText('ETH value')).toHaveLength(1);
   });
 
-  it("simulate success → Will succeed + Est. gas + Sign enabled", async () => {
+  it('simulate success → Will succeed + Est. gas + Sign enabled', async () => {
     const user = userEvent.setup();
     renderSection(makeFakeClient());
 
     await expand(user, /^transfer/);
     await user.type(
-      screen.getByPlaceholderText("0x0000000000000000000000000000000000000000"),
+      screen.getByPlaceholderText('0x0000000000000000000000000000000000000000'),
       ACCOUNT,
     );
-    await user.type(screen.getByPlaceholderText("0"), "100");
+    await user.type(screen.getByPlaceholderText('0'), '100');
 
-    await user.click(screen.getByRole("button", { name: /^Simulate$/ }));
+    await user.click(screen.getByRole('button', { name: /^Simulate$/ }));
 
-    await screen.findByText("Will succeed");
-    expect(screen.getByText("Est. gas")).toBeInTheDocument();
-    expect(screen.getByText("21,000")).toBeInTheDocument();
+    await screen.findByText('Will succeed');
+    expect(screen.getByText('Est. gas')).toBeInTheDocument();
+    expect(screen.getByText('21,000')).toBeInTheDocument();
 
-    const sign = screen.getByRole("button", { name: /Sign & Send/ });
+    const sign = screen.getByRole('button', { name: /Sign & Send/ });
     expect(sign).toBeEnabled();
   });
 
-  it("simulate revert → Will revert + reason + Sign disabled + lock note", async () => {
+  it('simulate revert → Will revert + reason + Sign disabled + lock note', async () => {
     const user = userEvent.setup();
     const data = encodeErrorResult({
       abi: erc20Abi,
-      errorName: "InsufficientBalance",
+      errorName: 'InsufficientBalance',
       args: [1n, 2n],
     });
     const reverted = new ContractFunctionRevertedError({
       abi: erc20Abi,
       data,
-      functionName: "transfer",
+      functionName: 'transfer',
     });
-    const wrapped = new BaseError("wrapper", { cause: reverted });
+    const wrapped = new BaseError('wrapper', { cause: reverted });
     renderSection(
       makeFakeClient({
         simulateContract: vi.fn().mockRejectedValue(wrapped),
@@ -165,66 +165,66 @@ describe("OperationsSection", () => {
 
     await expand(user, /^transfer/);
     await user.type(
-      screen.getByPlaceholderText("0x0000000000000000000000000000000000000000"),
+      screen.getByPlaceholderText('0x0000000000000000000000000000000000000000'),
       ACCOUNT,
     );
-    await user.type(screen.getByPlaceholderText("0"), "100");
-    await user.click(screen.getByRole("button", { name: /^Simulate$/ }));
+    await user.type(screen.getByPlaceholderText('0'), '100');
+    await user.click(screen.getByRole('button', { name: /^Simulate$/ }));
 
-    await screen.findByText("Will revert");
+    await screen.findByText('Will revert');
     expect(screen.getByText(/InsufficientBalance/)).toBeInTheDocument();
     expect(
       screen.getByText(/Sign blocked while revert is predicted/),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Sign & Send/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Sign & Send/ })).toBeDisabled();
   });
 
-  it("rpc-kind failure → inline error, no verdict", async () => {
+  it('rpc-kind failure → inline error, no verdict', async () => {
     const user = userEvent.setup();
     renderSection(
       makeFakeClient({
         simulateContract: vi
           .fn()
           .mockRejectedValue(
-            new HttpRequestError({ url: "https://x", status: 500 }),
+            new HttpRequestError({ url: 'https://x', status: 500 }),
           ),
       }),
     );
 
     await expand(user, /^transfer/);
     await user.type(
-      screen.getByPlaceholderText("0x0000000000000000000000000000000000000000"),
+      screen.getByPlaceholderText('0x0000000000000000000000000000000000000000'),
       ACCOUNT,
     );
-    await user.type(screen.getByPlaceholderText("0"), "100");
-    await user.click(screen.getByRole("button", { name: /^Simulate$/ }));
+    await user.type(screen.getByPlaceholderText('0'), '100');
+    await user.click(screen.getByRole('button', { name: /^Simulate$/ }));
 
     await screen.findByText(/simulation could not run/);
-    expect(screen.queryByText("Will revert")).not.toBeInTheDocument();
-    expect(screen.queryByText("Will succeed")).not.toBeInTheDocument();
+    expect(screen.queryByText('Will revert')).not.toBeInTheDocument();
+    expect(screen.queryByText('Will succeed')).not.toBeInTheDocument();
   });
 
-  it("editing an arg after a successful sim hides the verdict", async () => {
+  it('editing an arg after a successful sim hides the verdict', async () => {
     const user = userEvent.setup();
     renderSection(makeFakeClient());
 
     await expand(user, /^transfer/);
     const toInput = screen.getByPlaceholderText(
-      "0x0000000000000000000000000000000000000000",
+      '0x0000000000000000000000000000000000000000',
     );
     await user.type(toInput, ACCOUNT);
-    await user.type(screen.getByPlaceholderText("0"), "100");
-    await user.click(screen.getByRole("button", { name: /^Simulate$/ }));
-    await screen.findByText("Will succeed");
+    await user.type(screen.getByPlaceholderText('0'), '100');
+    await user.click(screen.getByRole('button', { name: /^Simulate$/ }));
+    await screen.findByText('Will succeed');
 
     // Any edit invalidates the stale sim.
-    await user.type(toInput, "0");
+    await user.type(toInput, '0');
     await waitFor(() =>
-      expect(screen.queryByText("Will succeed")).not.toBeInTheDocument(),
+      expect(screen.queryByText('Will succeed')).not.toBeInTheDocument(),
     );
   });
 
-  it("disconnected wallet → Sign disabled with connect title", async () => {
+  it('disconnected wallet → Sign disabled with connect title', async () => {
     accountStub = {
       address: undefined,
       chainId: undefined,
@@ -235,38 +235,38 @@ describe("OperationsSection", () => {
 
     await expand(user, /^transfer/);
     await user.type(
-      screen.getByPlaceholderText("0x0000000000000000000000000000000000000000"),
+      screen.getByPlaceholderText('0x0000000000000000000000000000000000000000'),
       ACCOUNT,
     );
-    await user.type(screen.getByPlaceholderText("0"), "100");
-    await user.click(screen.getByRole("button", { name: /^Simulate$/ }));
-    await screen.findByText("Will succeed");
+    await user.type(screen.getByPlaceholderText('0'), '100');
+    await user.click(screen.getByRole('button', { name: /^Simulate$/ }));
+    await screen.findByText('Will succeed');
 
-    const sign = screen.getByRole("button", { name: /Sign & Send/ });
+    const sign = screen.getByRole('button', { name: /Sign & Send/ });
     expect(sign).toBeDisabled();
-    expect(sign).toHaveAttribute("title", "Connect a wallet to sign");
+    expect(sign).toHaveAttribute('title', 'Connect a wallet to sign');
   });
 
-  it("successful send → writeContractAsync gets parsed args+value+gas, inline confirmed", async () => {
+  it('successful send → writeContractAsync gets parsed args+value+gas, inline confirmed', async () => {
     const user = userEvent.setup();
     renderSection(makeFakeClient());
 
     await expand(user, /^transfer/);
     await user.type(
-      screen.getByPlaceholderText("0x0000000000000000000000000000000000000000"),
+      screen.getByPlaceholderText('0x0000000000000000000000000000000000000000'),
       ACCOUNT,
     );
-    await user.type(screen.getByPlaceholderText("0"), "1");
-    await user.click(screen.getByRole("button", { name: /^Simulate$/ }));
-    await screen.findByText("Will succeed");
+    await user.type(screen.getByPlaceholderText('0'), '1');
+    await user.click(screen.getByRole('button', { name: /^Simulate$/ }));
+    await screen.findByText('Will succeed');
 
-    await user.click(screen.getByRole("button", { name: /Sign & Send/ }));
+    await user.click(screen.getByRole('button', { name: /Sign & Send/ }));
 
     await screen.findByText(/Confirmed in block 99/);
     expect(writeContractAsync).toHaveBeenCalledWith(
       expect.objectContaining({
         address: ADDR,
-        functionName: "transfer",
+        functionName: 'transfer',
         args: [ACCOUNT, 1n],
         gas: 21000n,
         chainId: 1,
@@ -274,7 +274,7 @@ describe("OperationsSection", () => {
     );
   });
 
-  it("double-click Sign & Send → writeContractAsync once, one Sending toast", async () => {
+  it('double-click Sign & Send → writeContractAsync once, one Sending toast', async () => {
     // writeContractAsync parks on a deferred so the first send stays in-flight
     // while the second click lands.
     let resolveWrite: (h: `0x${string}`) => void = () => {};
@@ -288,14 +288,14 @@ describe("OperationsSection", () => {
 
     await expand(user, /^transfer/);
     await user.type(
-      screen.getByPlaceholderText("0x0000000000000000000000000000000000000000"),
+      screen.getByPlaceholderText('0x0000000000000000000000000000000000000000'),
       ACCOUNT,
     );
-    await user.type(screen.getByPlaceholderText("0"), "1");
-    await user.click(screen.getByRole("button", { name: /^Simulate$/ }));
-    await screen.findByText("Will succeed");
+    await user.type(screen.getByPlaceholderText('0'), '1');
+    await user.click(screen.getByRole('button', { name: /^Simulate$/ }));
+    await screen.findByText('Will succeed');
 
-    const sign = screen.getByRole("button", { name: /Sign & Send/ });
+    const sign = screen.getByRole('button', { name: /Sign & Send/ });
     // Two rapid clicks before the first send resolves.
     await user.click(sign);
     await user.click(sign);
@@ -309,45 +309,45 @@ describe("OperationsSection", () => {
     expect(writeContractAsync).toHaveBeenCalledTimes(1);
   });
 
-  it("payable send → writeContractAsync gets value in wei (1 ether)", async () => {
+  it('payable send → writeContractAsync gets value in wei (1 ether)', async () => {
     const user = userEvent.setup();
     renderSection(makeFakeClient());
 
     await expand(user, /^deposit/);
     // Default unit is ether; "1" ⇒ 1000000000000000000 wei.
-    await user.type(screen.getByPlaceholderText("0.0"), "1");
-    await user.click(screen.getByRole("button", { name: /^Simulate$/ }));
-    await screen.findByText("Will succeed");
+    await user.type(screen.getByPlaceholderText('0.0'), '1');
+    await user.click(screen.getByRole('button', { name: /^Simulate$/ }));
+    await screen.findByText('Will succeed');
 
-    await user.click(screen.getByRole("button", { name: /Sign & Send/ }));
+    await user.click(screen.getByRole('button', { name: /Sign & Send/ }));
 
     await screen.findByText(/Confirmed in block 99/);
     expect(writeContractAsync).toHaveBeenCalledWith(
       expect.objectContaining({
-        functionName: "deposit",
+        functionName: 'deposit',
         value: 1000000000000000000n,
       }),
     );
   });
 
-  it("toggling the unit after a successful sim hides the verdict", async () => {
+  it('toggling the unit after a successful sim hides the verdict', async () => {
     const user = userEvent.setup();
     renderSection(makeFakeClient());
 
     await expand(user, /^deposit/);
-    await user.type(screen.getByPlaceholderText("0.0"), "1");
-    await user.click(screen.getByRole("button", { name: /^Simulate$/ }));
-    await screen.findByText("Will succeed");
+    await user.type(screen.getByPlaceholderText('0.0'), '1');
+    await user.click(screen.getByRole('button', { name: /^Simulate$/ }));
+    await screen.findByText('Will succeed');
 
     // Switching the unit invalidates the stale sim.
-    await user.click(screen.getByRole("button", { name: "wei" }));
+    await user.click(screen.getByRole('button', { name: 'wei' }));
     await waitFor(() =>
-      expect(screen.queryByText("Will succeed")).not.toBeInTheDocument(),
+      expect(screen.queryByText('Will succeed')).not.toBeInTheDocument(),
     );
   });
 
-  it("changing the wallet account after a sim hides the verdict; re-sim restores it", async () => {
-    const OTHER = "0x9999999999999999999999999999999999999999" as `0x${string}`;
+  it('changing the wallet account after a sim hides the verdict; re-sim restores it', async () => {
+    const OTHER = '0x9999999999999999999999999999999999999999' as `0x${string}`;
     const user = userEvent.setup();
     // Sim runs with account A (ACCOUNT, set in beforeEach).
     const client = makeFakeClient();
@@ -355,12 +355,12 @@ describe("OperationsSection", () => {
 
     await expand(user, /^transfer/);
     await user.type(
-      screen.getByPlaceholderText("0x0000000000000000000000000000000000000000"),
+      screen.getByPlaceholderText('0x0000000000000000000000000000000000000000'),
       ACCOUNT,
     );
-    await user.type(screen.getByPlaceholderText("0"), "100");
-    await user.click(screen.getByRole("button", { name: /^Simulate$/ }));
-    await screen.findByText("Will succeed");
+    await user.type(screen.getByPlaceholderText('0'), '100');
+    await user.click(screen.getByRole('button', { name: /^Simulate$/ }));
+    await screen.findByText('Will succeed');
 
     // First sim ran with account A.
     expect(client.simulateContract).toHaveBeenLastCalledWith(
@@ -376,22 +376,22 @@ describe("OperationsSection", () => {
     );
 
     // Verdict gone, staleness notice shown, Sign & Send absent.
-    expect(screen.queryByText("Will succeed")).not.toBeInTheDocument();
+    expect(screen.queryByText('Will succeed')).not.toBeInTheDocument();
     expect(
       screen.getByText(/wallet changed — re-simulate/),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /Sign & Send/ }),
+      screen.queryByRole('button', { name: /Sign & Send/ }),
     ).not.toBeInTheDocument();
 
     // Re-simulate: the sim now runs with B, so the verdict is valid again.
-    await user.click(screen.getByRole("button", { name: /^Simulate$/ }));
-    await screen.findByText("Will succeed");
+    await user.click(screen.getByRole('button', { name: /^Simulate$/ }));
+    await screen.findByText('Will succeed');
     expect(
       screen.queryByText(/wallet changed — re-simulate/),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Sign & Send/ }),
+      screen.getByRole('button', { name: /Sign & Send/ }),
     ).toBeInTheDocument();
 
     // The re-sim used the NEW signer (B), not just recovering the UI.
@@ -400,18 +400,18 @@ describe("OperationsSection", () => {
     );
   });
 
-  it("disconnecting the wallet after a sim hides the verdict (stale)", async () => {
+  it('disconnecting the wallet after a sim hides the verdict (stale)', async () => {
     const user = userEvent.setup();
     const { rerender, deps } = renderSection(makeFakeClient());
 
     await expand(user, /^transfer/);
     await user.type(
-      screen.getByPlaceholderText("0x0000000000000000000000000000000000000000"),
+      screen.getByPlaceholderText('0x0000000000000000000000000000000000000000'),
       ACCOUNT,
     );
-    await user.type(screen.getByPlaceholderText("0"), "100");
-    await user.click(screen.getByRole("button", { name: /^Simulate$/ }));
-    await screen.findByText("Will succeed");
+    await user.type(screen.getByPlaceholderText('0'), '100');
+    await user.click(screen.getByRole('button', { name: /^Simulate$/ }));
+    await screen.findByText('Will succeed');
 
     // Disconnect → address undefined, which differs from the sim's account.
     accountStub = {
@@ -425,117 +425,117 @@ describe("OperationsSection", () => {
       </ToastProvider>,
     );
 
-    expect(screen.queryByText("Will succeed")).not.toBeInTheDocument();
+    expect(screen.queryByText('Will succeed')).not.toBeInTheDocument();
     expect(
       screen.getByText(/wallet changed — re-simulate/),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /Sign & Send/ }),
+      screen.queryByRole('button', { name: /Sign & Send/ }),
     ).not.toBeInTheDocument();
   });
 
   /* ── Execute (skip-simulation) ─────────────────────────── */
-  it("Execute reveals the raw-transaction panel without a verdict header", async () => {
+  it('Execute reveals the raw-transaction panel without a verdict header', async () => {
     const user = userEvent.setup();
     renderSection(makeFakeClient());
 
     await expand(user, /^transfer/);
     await user.type(
-      screen.getByPlaceholderText("0x0000000000000000000000000000000000000000"),
+      screen.getByPlaceholderText('0x0000000000000000000000000000000000000000'),
       ACCOUNT,
     );
-    await user.type(screen.getByPlaceholderText("0"), "100");
+    await user.type(screen.getByPlaceholderText('0'), '100');
 
-    await user.click(screen.getByRole("button", { name: /^Execute$/ }));
+    await user.click(screen.getByRole('button', { name: /^Execute$/ }));
 
     // Raw-tx panel appears with its eyebrow + calldata field.
-    expect(screen.getByText("Raw transaction")).toBeInTheDocument();
-    expect(screen.getByText("Data (calldata)")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Sign & Send/ })).toBeEnabled();
+    expect(screen.getByText('Raw transaction')).toBeInTheDocument();
+    expect(screen.getByText('Data (calldata)')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Sign & Send/ })).toBeEnabled();
 
     // No verdict header / gas metric — Execute skips the dry-run.
-    expect(screen.queryByText("Will succeed")).not.toBeInTheDocument();
-    expect(screen.queryByText("Will revert")).not.toBeInTheDocument();
-    expect(screen.queryByText("Est. gas")).not.toBeInTheDocument();
+    expect(screen.queryByText('Will succeed')).not.toBeInTheDocument();
+    expect(screen.queryByText('Will revert')).not.toBeInTheDocument();
+    expect(screen.queryByText('Est. gas')).not.toBeInTheDocument();
   });
 
-  it("Execute with invalid args shows the field error and no panel", async () => {
+  it('Execute with invalid args shows the field error and no panel', async () => {
     const user = userEvent.setup();
     renderSection(makeFakeClient());
 
     await expand(user, /^transfer/);
     await user.type(
-      screen.getByPlaceholderText("0x0000000000000000000000000000000000000000"),
-      "not-an-address",
+      screen.getByPlaceholderText('0x0000000000000000000000000000000000000000'),
+      'not-an-address',
     );
-    await user.type(screen.getByPlaceholderText("0"), "100");
+    await user.type(screen.getByPlaceholderText('0'), '100');
 
-    await user.click(screen.getByRole("button", { name: /^Execute$/ }));
+    await user.click(screen.getByRole('button', { name: /^Execute$/ }));
 
     // No raw-tx panel; the arg error is surfaced.
-    expect(screen.queryByText("Raw transaction")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Sign & Send/ })).toBeNull();
+    expect(screen.queryByText('Raw transaction')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Sign & Send/ })).toBeNull();
   });
 
-  it("editing an arg after Execute clears the raw-tx panel", async () => {
+  it('editing an arg after Execute clears the raw-tx panel', async () => {
     const user = userEvent.setup();
     renderSection(makeFakeClient());
 
     await expand(user, /^transfer/);
     const toInput = screen.getByPlaceholderText(
-      "0x0000000000000000000000000000000000000000",
+      '0x0000000000000000000000000000000000000000',
     );
     await user.type(toInput, ACCOUNT);
-    await user.type(screen.getByPlaceholderText("0"), "100");
-    await user.click(screen.getByRole("button", { name: /^Execute$/ }));
-    expect(screen.getByText("Raw transaction")).toBeInTheDocument();
+    await user.type(screen.getByPlaceholderText('0'), '100');
+    await user.click(screen.getByRole('button', { name: /^Execute$/ }));
+    expect(screen.getByText('Raw transaction')).toBeInTheDocument();
 
-    await user.type(toInput, "0");
+    await user.type(toInput, '0');
     await waitFor(() =>
-      expect(screen.queryByText("Raw transaction")).not.toBeInTheDocument(),
+      expect(screen.queryByText('Raw transaction')).not.toBeInTheDocument(),
     );
   });
 
-  it("Simulate after Execute replaces the panel with a verdict (mutual exclusion)", async () => {
+  it('Simulate after Execute replaces the panel with a verdict (mutual exclusion)', async () => {
     const user = userEvent.setup();
     renderSection(makeFakeClient());
 
     await expand(user, /^transfer/);
     await user.type(
-      screen.getByPlaceholderText("0x0000000000000000000000000000000000000000"),
+      screen.getByPlaceholderText('0x0000000000000000000000000000000000000000'),
       ACCOUNT,
     );
-    await user.type(screen.getByPlaceholderText("0"), "100");
+    await user.type(screen.getByPlaceholderText('0'), '100');
 
-    await user.click(screen.getByRole("button", { name: /^Execute$/ }));
-    expect(screen.getByText("Raw transaction")).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^Execute$/ }));
+    expect(screen.getByText('Raw transaction')).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /^Simulate$/ }));
-    await screen.findByText("Will succeed");
+    await user.click(screen.getByRole('button', { name: /^Simulate$/ }));
+    await screen.findByText('Will succeed');
     // The verdict's raw-tx panel is the only one — but the plain exec panel
     // (no verdict header) is gone; the success shell now owns the panel.
-    expect(screen.getByText("Est. gas")).toBeInTheDocument();
+    expect(screen.getByText('Est. gas')).toBeInTheDocument();
   });
 
-  it("Sign & Send from the Execute panel calls send with the parsed args (no gas)", async () => {
+  it('Sign & Send from the Execute panel calls send with the parsed args (no gas)', async () => {
     const user = userEvent.setup();
     renderSection(makeFakeClient());
 
     await expand(user, /^transfer/);
     await user.type(
-      screen.getByPlaceholderText("0x0000000000000000000000000000000000000000"),
+      screen.getByPlaceholderText('0x0000000000000000000000000000000000000000'),
       ACCOUNT,
     );
-    await user.type(screen.getByPlaceholderText("0"), "1");
+    await user.type(screen.getByPlaceholderText('0'), '1');
 
-    await user.click(screen.getByRole("button", { name: /^Execute$/ }));
-    await user.click(screen.getByRole("button", { name: /Sign & Send/ }));
+    await user.click(screen.getByRole('button', { name: /^Execute$/ }));
+    await user.click(screen.getByRole('button', { name: /Sign & Send/ }));
 
     await screen.findByText(/Confirmed in block 99/);
     expect(writeContractAsync).toHaveBeenCalledWith(
       expect.objectContaining({
         address: ADDR,
-        functionName: "transfer",
+        functionName: 'transfer',
         args: [ACCOUNT, 1n],
         gas: undefined,
         chainId: 1,
@@ -543,12 +543,12 @@ describe("OperationsSection", () => {
     );
   });
 
-  it("download click triggers a json download named <fn>-tx.json", async () => {
-    const createObjectURL = vi.fn().mockReturnValue("blob:fake");
+  it('download click triggers a json download named <fn>-tx.json', async () => {
+    const createObjectURL = vi.fn().mockReturnValue('blob:fake');
     const revokeObjectURL = vi.fn();
-    vi.stubGlobal("URL", { createObjectURL, revokeObjectURL });
+    vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
     const clickSpy = vi
-      .spyOn(HTMLAnchorElement.prototype, "click")
+      .spyOn(HTMLAnchorElement.prototype, 'click')
       .mockImplementation(() => {});
 
     const user = userEvent.setup();
@@ -556,18 +556,18 @@ describe("OperationsSection", () => {
 
     await expand(user, /^transfer/);
     await user.type(
-      screen.getByPlaceholderText("0x0000000000000000000000000000000000000000"),
+      screen.getByPlaceholderText('0x0000000000000000000000000000000000000000'),
       ACCOUNT,
     );
-    await user.type(screen.getByPlaceholderText("0"), "1");
-    await user.click(screen.getByRole("button", { name: /^Simulate$/ }));
-    await screen.findByText("Will succeed");
+    await user.type(screen.getByPlaceholderText('0'), '1');
+    await user.click(screen.getByRole('button', { name: /^Simulate$/ }));
+    await screen.findByText('Will succeed');
 
-    await user.click(screen.getByRole("button", { name: /Download/ }));
+    await user.click(screen.getByRole('button', { name: /Download/ }));
 
     expect(createObjectURL).toHaveBeenCalledOnce();
     const anchor = clickSpy.mock.instances[0] as HTMLAnchorElement;
-    expect(anchor.download).toBe("transfer-tx.json");
+    expect(anchor.download).toBe('transfer-tx.json');
 
     clickSpy.mockRestore();
     vi.unstubAllGlobals();

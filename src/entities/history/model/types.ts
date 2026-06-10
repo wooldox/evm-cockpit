@@ -1,4 +1,4 @@
-export type THistoryType = "read" | "simulate" | "write";
+export type THistoryType = 'read' | 'simulate' | 'write';
 export type THistoryEntry = {
   id: string;
   contractId: string;
@@ -7,7 +7,7 @@ export type THistoryEntry = {
   fnName: string;
   /** Raw input strings as typed (re-runnable later). */
   args: Record<string, string>;
-  status: "ok" | "error";
+  status: 'ok' | 'error';
   /** stringifyWithBigint'd result (reads) or sim summary — NEVER raw bigint (persisted as JSON). */
   result?: string;
   txHash?: `0x${string}`;

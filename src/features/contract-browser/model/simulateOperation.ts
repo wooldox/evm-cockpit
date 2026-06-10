@@ -1,9 +1,9 @@
-import { encodeFunctionData, type Abi } from "viem";
-import type { AbiFunction } from "abitype";
-import type { TContract } from "@/entities/contract/model/types";
-import type { RpcProvider } from "@/shared/ports/rpc";
-import { classifyWriteError } from "@/shared/lib/errors/classifyWriteError";
-import { getEffectiveAbi } from "./effectiveAbi";
+import { encodeFunctionData, type Abi } from 'viem';
+import type { AbiFunction } from 'abitype';
+import type { TContract } from '@/entities/contract/model/types';
+import type { RpcProvider } from '@/shared/ports/rpc';
+import { classifyWriteError } from '@/shared/lib/errors/classifyWriteError';
+import { getEffectiveAbi } from './effectiveAbi';
 
 export type TSimOk = {
   ok: true;
@@ -12,7 +12,7 @@ export type TSimOk = {
   fees?: { maxFeePerGas: bigint; maxPriorityFeePerGas: bigint };
   nonce?: number;
 };
-export type TSimFail = { ok: false; kind: "revert" | "rpc"; message: string };
+export type TSimFail = { ok: false; kind: 'revert' | 'rpc'; message: string };
 export type TSimResult = TSimOk | TSimFail;
 
 /**
@@ -40,7 +40,7 @@ export async function simulateOperation(
   } catch (e) {
     return {
       ok: false,
-      kind: "rpc",
+      kind: 'rpc',
       message: e instanceof Error ? e.message : String(e),
     };
   }
@@ -69,7 +69,7 @@ export async function simulateOperation(
   }
 
   // Best-effort extras: each independently optional.
-  let fees: TSimOk["fees"];
+  let fees: TSimOk['fees'];
   try {
     // Typed loosely: on legacy chains these EIP-1559 fields may be absent at
     // runtime, so we guard before constructing the fees object.

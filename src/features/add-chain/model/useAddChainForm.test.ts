@@ -1,21 +1,21 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
-import { resetCatalog as resetStore } from "@/entities/chain/model/testing/resetCatalog";
-import { CHAIN_COLORS, useAddChainForm } from "./useAddChainForm";
+import { describe, it, expect, beforeEach } from 'vitest';
+import { renderHook, act } from '@testing-library/react';
+import { resetCatalog as resetStore } from '@/entities/chain/model/testing/resetCatalog';
+import { CHAIN_COLORS, useAddChainForm } from './useAddChainForm';
 
 function fillValid(r: { current: ReturnType<typeof useAddChainForm> }) {
   act(() => {
-    r.current.setName("Testlandia");
-    r.current.setIdStr("999777");
-    r.current.setRpc("http://127.0.0.1:9999");
-    r.current.setSymbol("tld");
+    r.current.setName('Testlandia');
+    r.current.setIdStr('999777');
+    r.current.setRpc('http://127.0.0.1:9999');
+    r.current.setSymbol('tld');
   });
 }
 
-describe("useAddChainForm", () => {
+describe('useAddChainForm', () => {
   beforeEach(resetStore);
 
-  it("starts invalid (canSave false) and accepts a complete valid form", () => {
+  it('starts invalid (canSave false) and accepts a complete valid form', () => {
     const { result } = renderHook(() => useAddChainForm());
     expect(result.current.canSave).toBe(false);
     fillValid(result);
@@ -24,104 +24,104 @@ describe("useAddChainForm", () => {
     expect(result.current.canSave).toBe(true);
   });
 
-  it("rejects non-positive / non-integer ids", () => {
+  it('rejects non-positive / non-integer ids', () => {
     const { result } = renderHook(() => useAddChainForm());
     fillValid(result);
-    act(() => result.current.setIdStr("0"));
+    act(() => result.current.setIdStr('0'));
     expect(result.current.idError).toMatch(/positive integer/i);
     expect(result.current.canSave).toBe(false);
   });
 
-  it("rejects an unsafe-integer id (80-digit)", () => {
+  it('rejects an unsafe-integer id (80-digit)', () => {
     const { result } = renderHook(() => useAddChainForm());
     fillValid(result);
-    act(() => result.current.setIdStr("9".repeat(80)));
+    act(() => result.current.setIdStr('9'.repeat(80)));
     expect(result.current.idError).toMatch(/positive integer/i);
     expect(result.current.canSave).toBe(false);
   });
 
-  it("flags an id that already exists in the catalog (mainnet)", () => {
+  it('flags an id that already exists in the catalog (mainnet)', () => {
     const { result } = renderHook(() => useAddChainForm());
     fillValid(result);
-    act(() => result.current.setIdStr("1"));
+    act(() => result.current.setIdStr('1'));
     expect(result.current.idError).toMatch(/already exists/i);
     expect(result.current.canSave).toBe(false);
   });
 
-  it("requires an http(s) RPC URL", () => {
+  it('requires an http(s) RPC URL', () => {
     const { result } = renderHook(() => useAddChainForm());
     fillValid(result);
-    act(() => result.current.setRpc("wss://rpc.nope.xyz"));
+    act(() => result.current.setRpc('wss://rpc.nope.xyz'));
     expect(result.current.rpcError).toMatch(/http/i);
     expect(result.current.canSave).toBe(false);
   });
 
-  it("flags a non-URL explorer and blocks save", () => {
+  it('flags a non-URL explorer and blocks save', () => {
     const { result } = renderHook(() => useAddChainForm());
     fillValid(result);
-    act(() => result.current.setExplorer("ftp://x"));
+    act(() => result.current.setExplorer('ftp://x'));
     expect(result.current.explorerError).toMatch(/not a valid url/i);
     expect(result.current.explorerOk).toBe(false);
     expect(result.current.canSave).toBe(false);
   });
 
-  it("accepts a schemeless explorer host (normalizes to https)", () => {
+  it('accepts a schemeless explorer host (normalizes to https)', () => {
     const { result } = renderHook(() => useAddChainForm());
     fillValid(result);
-    act(() => result.current.setExplorer("scan.test.xyz/"));
+    act(() => result.current.setExplorer('scan.test.xyz/'));
     expect(result.current.explorerError).toBeUndefined();
     expect(result.current.explorerOk).toBe(true);
     expect(result.current.canSave).toBe(true);
     expect(result.current.buildEntry().explorerUrl).toBe(
-      "https://scan.test.xyz",
+      'https://scan.test.xyz',
     );
   });
 
-  it("buildEntry derives short/nativeSymbol/explorerUrl and source custom", () => {
+  it('buildEntry derives short/nativeSymbol/explorerUrl and source custom', () => {
     const { result } = renderHook(() => useAddChainForm());
     fillValid(result);
     act(() => {
-      result.current.setExplorer("scan.testlandia.xyz/");
+      result.current.setExplorer('scan.testlandia.xyz/');
       result.current.setColor(CHAIN_COLORS[3]!);
     });
     expect(result.current.buildEntry()).toEqual({
       id: 999777,
-      name: "Testlandia",
-      short: "TLD",
+      name: 'Testlandia',
+      short: 'TLD',
       color: CHAIN_COLORS[3],
-      rpcUrls: ["http://127.0.0.1:9999"],
-      explorerUrl: "https://scan.testlandia.xyz",
-      nativeSymbol: "TLD",
-      source: "custom",
+      rpcUrls: ['http://127.0.0.1:9999'],
+      explorerUrl: 'https://scan.testlandia.xyz',
+      nativeSymbol: 'TLD',
+      source: 'custom',
     });
   });
 
-  it("buildEntry omits explorerUrl when the field is empty", () => {
+  it('buildEntry omits explorerUrl when the field is empty', () => {
     const { result } = renderHook(() => useAddChainForm());
     fillValid(result);
     expect(result.current.buildEntry().explorerUrl).toBeUndefined();
   });
 
-  it("preserves an explicit scheme on the explorer URL", () => {
+  it('preserves an explicit scheme on the explorer URL', () => {
     const { result } = renderHook(() => useAddChainForm());
     fillValid(result);
-    act(() => result.current.setExplorer("http://local.scan/"));
-    expect(result.current.buildEntry().explorerUrl).toBe("http://local.scan");
+    act(() => result.current.setExplorer('http://local.scan/'));
+    expect(result.current.buildEntry().explorerUrl).toBe('http://local.scan');
   });
 
-  it("falls back to the name for short when symbol is name-derived", () => {
+  it('falls back to the name for short when symbol is name-derived', () => {
     const { result } = renderHook(() => useAddChainForm());
     fillValid(result);
-    act(() => result.current.setSymbol("verylongsymbol"));
-    expect(result.current.buildEntry().short).toBe("VERYL"); // slice(0,5)
+    act(() => result.current.setSymbol('verylongsymbol'));
+    expect(result.current.buildEntry().short).toBe('VERYL'); // slice(0,5)
   });
 
-  it("previews the glyph char from symbol, then name, then N", () => {
+  it('previews the glyph char from symbol, then name, then N', () => {
     const { result } = renderHook(() => useAddChainForm());
-    expect(result.current.glyphChar).toBe("N");
-    act(() => result.current.setName("optimism"));
-    expect(result.current.glyphChar).toBe("O");
-    act(() => result.current.setSymbol("eth"));
-    expect(result.current.glyphChar).toBe("E");
+    expect(result.current.glyphChar).toBe('N');
+    act(() => result.current.setName('optimism'));
+    expect(result.current.glyphChar).toBe('O');
+    act(() => result.current.setSymbol('eth'));
+    expect(result.current.glyphChar).toBe('E');
   });
 });

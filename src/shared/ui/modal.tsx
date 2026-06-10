@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { startTransition, useEffect, useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
-import { Icon } from "@/shared/icons";
-import { cx } from "@/shared/lib/cx";
+import { startTransition, useEffect, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { Icon } from '@/shared/icons';
+import { cx } from '@/shared/lib/cx';
 
 /* XBtn — small dismiss control reused by Modal and Toast. */
 export function XBtn({
   onClick,
   size = 17,
   className,
-  label = "Close",
+  label = 'Close',
 }: {
   onClick?: () => void;
   size?: number;
@@ -23,8 +23,8 @@ export function XBtn({
       aria-label={label}
       onClick={onClick}
       className={cx(
-        "grid size-7 place-items-center rounded-sm border-0 bg-transparent text-fg-3",
-        "cursor-pointer transition-colors hover:bg-elev-3 hover:text-fg",
+        'grid size-7 place-items-center rounded-sm border-0 bg-transparent text-fg-3',
+        'cursor-pointer transition-colors hover:bg-elev-3 hover:text-fg',
         className,
       )}
     >
@@ -47,9 +47,9 @@ export function Modal({ title, onClose, children, footer, lg }: ModalProps) {
     startTransition(() => setMounted(true));
   }, []);
   useEffect(() => {
-    const h = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
+    const h = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
   }, [onClose]);
 
   if (!mounted) return null;
@@ -65,9 +65,9 @@ export function Modal({ title, onClose, children, footer, lg }: ModalProps) {
         aria-labelledby="cc-modal-title"
         onMouseDown={(e) => e.stopPropagation()}
         className={cx(
-          "flex max-h-[88vh] w-full flex-col rounded-lg border border-border-strong bg-elev-2",
-          "shadow-[var(--shadow-lg)] animate-pop-in",
-          lg ? "max-w-[720px]" : "max-w-[560px]",
+          'flex max-h-[88vh] w-full flex-col rounded-lg border border-border-strong bg-elev-2',
+          'shadow-[var(--shadow-lg)] animate-pop-in',
+          lg ? 'max-w-[720px]' : 'max-w-[560px]',
         )}
       >
         <div className="flex items-center gap-3 border-b border-border px-[18px] py-4">

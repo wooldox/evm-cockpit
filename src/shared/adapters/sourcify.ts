@@ -1,7 +1,7 @@
-import type { Abi } from "abitype";
-import type { AbiSource, AbiFetchResult } from "@/shared/ports/abi-source";
+import type { Abi } from 'abitype';
+import type { AbiSource, AbiFetchResult } from '@/shared/ports/abi-source';
 
-const BASE = "https://repo.sourcify.dev/contracts/full_match";
+const BASE = 'https://repo.sourcify.dev/contracts/full_match';
 
 export function createSourcifyAbiSource(): AbiSource {
   return {
@@ -20,10 +20,10 @@ export function createSourcifyAbiSource(): AbiSource {
         if (!abi) {
           return {
             ok: false,
-            error: "Sourcify metadata missing output.abi array",
+            error: 'Sourcify metadata missing output.abi array',
           };
         }
-        return { ok: true, abi, source: "sourcify" };
+        return { ok: true, abi, source: 'sourcify' };
       } catch (err) {
         return {
           ok: false,
@@ -37,11 +37,11 @@ export function createSourcifyAbiSource(): AbiSource {
 function extractAbi(metadata: unknown): Abi | null {
   if (
     metadata !== null &&
-    typeof metadata === "object" &&
-    "output" in metadata &&
+    typeof metadata === 'object' &&
+    'output' in metadata &&
     metadata.output !== null &&
-    typeof metadata.output === "object" &&
-    "abi" in metadata.output &&
+    typeof metadata.output === 'object' &&
+    'abi' in metadata.output &&
     Array.isArray((metadata.output as { abi: unknown }).abi)
   ) {
     return (metadata.output as { abi: Abi }).abi;

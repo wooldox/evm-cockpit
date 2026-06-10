@@ -1,26 +1,26 @@
-import { describe, it, expect, vi } from "vitest";
-import type { PublicClient } from "viem";
-import type { Abi, AbiEvent } from "abitype";
+import { describe, it, expect, vi } from 'vitest';
+import type { PublicClient } from 'viem';
+import type { Abi, AbiEvent } from 'abitype';
 import {
   fetchEventLogs,
   MAX_LOGS,
   CHUNK_SIZE,
   MAX_WINDOWS,
-} from "./fetchEventLogs";
-import { erc20Abi } from "@/shared/lib/abi/fixtures";
-import type { TContract } from "@/entities/contract/model/types";
-import type { RpcProvider } from "@/shared/ports/rpc";
+} from './fetchEventLogs';
+import { erc20Abi } from '@/shared/lib/abi/fixtures';
+import type { TContract } from '@/entities/contract/model/types';
+import type { RpcProvider } from '@/shared/ports/rpc';
 
-const ADDR = "0x1234567890123456789012345678901234567890" as const;
+const ADDR = '0x1234567890123456789012345678901234567890' as const;
 
 function makeContract(overrides?: Partial<TContract>): TContract {
   return {
-    id: "test-id",
-    name: "TestToken",
+    id: 'test-id',
+    name: 'TestToken',
     chainId: 1,
     address: ADDR,
     abi: erc20Abi,
-    source: "manual",
+    source: 'manual',
     addedAt: 0,
     ...overrides,
   };
@@ -28,17 +28,17 @@ function makeContract(overrides?: Partial<TContract>): TContract {
 
 // Transfer(address indexed from, address indexed to, uint256 value)
 const transferEvent = erc20Abi.find(
-  (x) => x.type === "event" && x.name === "Transfer",
+  (x) => x.type === 'event' && x.name === 'Transfer',
 ) as AbiEvent;
 
 // Local fixture: an event with unnamed inputs (viem returns positional args).
 const unnamedAbi: Abi = [
   {
-    type: "event",
-    name: "Ping",
+    type: 'event',
+    name: 'Ping',
     inputs: [
-      { name: "", type: "uint256", indexed: false },
-      { name: "", type: "address", indexed: false },
+      { name: '', type: 'uint256', indexed: false },
+      { name: '', type: 'address', indexed: false },
     ],
     anonymous: false,
   },
@@ -55,7 +55,7 @@ type RawLog = {
 function rawLog(blockNumber: bigint, logIndex: number): RawLog {
   return {
     blockNumber,
-    transactionHash: `0x${"a".repeat(64)}` as `0x${string}`,
+    transactionHash: `0x${'a'.repeat(64)}` as `0x${string}`,
     logIndex,
     args: { from: ADDR, to: ADDR, value: 1n },
   };
@@ -66,8 +66,8 @@ function makeRpc(getLogs: ReturnType<typeof vi.fn>): RpcProvider {
   return { getClient: vi.fn().mockReturnValue(client) };
 }
 
-describe("fetchEventLogs", () => {
-  it("single window happy path: maps logs, ascending, chunks=1", async () => {
+describe('fetchEventLogs', () => {
+  it('single window happy path: maps logs, ascending, chunks=1', async () => {
     const getLogs = vi.fn().mockResolvedValue([rawLog(10n, 0), rawLog(11n, 1)]);
     const res = await fetchEventLogs(
       { rpc: makeRpc(getLogs) },
@@ -84,13 +84,13 @@ describe("fetchEventLogs", () => {
     expect(res.logs).toEqual([
       {
         blockNumber: 10n,
-        txHash: `0x${"a".repeat(64)}`,
+        txHash: `0x${'a'.repeat(64)}`,
         logIndex: 0,
         args: { from: ADDR, to: ADDR, value: 1n },
       },
       {
         blockNumber: 11n,
-        txHash: `0x${"a".repeat(64)}`,
+        txHash: `0x${'a'.repeat(64)}`,
         logIndex: 1,
         args: { from: ADDR, to: ADDR, value: 1n },
       },
@@ -103,7 +103,7 @@ describe("fetchEventLogs", () => {
     });
   });
 
-  it("multi-window: splits range > CHUNK_SIZE into inclusive non-overlapping sub-ranges", async () => {
+  it('multi-window: splits range > CHUNK_SIZE into inclusive non-overlapping sub-ranges', async () => {
     const getLogs = vi.fn().mockResolvedValue([]);
     const from = 0n;
     const to = CHUNK_SIZE * 2n + 5n; // → 3 windows
@@ -133,9 +133,9 @@ describe("fetchEventLogs", () => {
     }
   });
 
-  it("bisect: a window rejecting once is split and retried; logs complete, chunks counts retries", async () => {
+  it('bisect: a window rejecting once is split and retried; logs complete, chunks counts retries', async () => {
     // Window is 1000 blocks (> floor). First call rejects, the two halves succeed.
-    const err = new Error("query returned more than 10000 results");
+    const err = new Error('query returned more than 10000 results');
     const getLogs = vi
       .fn()
       .mockRejectedValueOnce(err)
@@ -165,8 +165,8 @@ describe("fetchEventLogs", () => {
     ]);
   });
 
-  it("bisect floor: a window ≤ 256 blocks still failing rethrows the original error", async () => {
-    const err = new Error("node unavailable");
+  it('bisect floor: a window ≤ 256 blocks still failing rethrows the original error', async () => {
+    const err = new Error('node unavailable');
     const getLogs = vi.fn().mockRejectedValue(err);
     await expect(
       fetchEventLogs(
@@ -183,7 +183,7 @@ describe("fetchEventLogs", () => {
     expect(getLogs).toHaveBeenCalledTimes(1);
   });
 
-  it("cap: stops at MAX_LOGS, truncated, later windows not fetched", async () => {
+  it('cap: stops at MAX_LOGS, truncated, later windows not fetched', async () => {
     const tooMany = Array.from({ length: MAX_LOGS + 50 }, (_, i) =>
       rawLog(BigInt(i), i),
     );
@@ -219,11 +219,11 @@ describe("fetchEventLogs", () => {
           toBlock: 5n,
         },
       ),
-    ).rejects.toThrow("invalid block range");
+    ).rejects.toThrow('invalid block range');
     expect(getLogs).not.toHaveBeenCalled();
   });
 
-  it("rejects a range exceeding MAX_WINDOWS up-front; getLogs never called", async () => {
+  it('rejects a range exceeding MAX_WINDOWS up-front; getLogs never called', async () => {
     const getLogs = vi.fn();
     // MAX_WINDOWS+1 windows: from 0, span = (MAX_WINDOWS+1)*CHUNK_SIZE blocks.
     const toBlock = (MAX_WINDOWS + 1n) * CHUNK_SIZE - 1n;
@@ -238,12 +238,12 @@ describe("fetchEventLogs", () => {
         },
       ),
     ).rejects.toThrow(
-      "block range too large — narrow the range (max 2,000,000 blocks)",
+      'block range too large — narrow the range (max 2,000,000 blocks)',
     );
     expect(getLogs).not.toHaveBeenCalled();
   });
 
-  it("accepts a range of exactly MAX_WINDOWS windows", async () => {
+  it('accepts a range of exactly MAX_WINDOWS windows', async () => {
     const getLogs = vi.fn().mockResolvedValue([]);
     // Exactly MAX_WINDOWS windows: span = MAX_WINDOWS*CHUNK_SIZE blocks.
     const toBlock = MAX_WINDOWS * CHUNK_SIZE - 1n;
@@ -266,7 +266,7 @@ describe("fetchEventLogs", () => {
     const getLogs = vi.fn().mockResolvedValue([
       {
         blockNumber: 7n,
-        transactionHash: `0x${"b".repeat(64)}`,
+        transactionHash: `0x${'b'.repeat(64)}`,
         logIndex: 3,
         args: [42n, ADDR],
       },
@@ -284,9 +284,9 @@ describe("fetchEventLogs", () => {
     expect(res.logs).toEqual([
       {
         blockNumber: 7n,
-        txHash: `0x${"b".repeat(64)}`,
+        txHash: `0x${'b'.repeat(64)}`,
         logIndex: 3,
-        args: { "0": 42n, "1": ADDR },
+        args: { '0': 42n, '1': ADDR },
       },
     ]);
   });

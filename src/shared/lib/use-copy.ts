@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useCallback, useState } from "react";
+import { useCallback, useState } from 'react';
 
 /** Copy-to-clipboard with a transient "copied" flag for button affordances. */
 export function useCopy(timeout = 1100): [boolean, (text: unknown) => void] {

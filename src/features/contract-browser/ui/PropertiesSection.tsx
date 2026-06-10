@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import type { TContract } from "@/entities/contract/model/types";
-import { getBrowserSections } from "@/features/contract-browser/model/effectiveAbi";
-import { useProperties } from "@/features/contract-browser/model/useProperties";
-import { Icon } from "@/shared/icons";
-import { cx } from "@/shared/lib/cx";
+import type { TContract } from '@/entities/contract/model/types';
+import { getBrowserSections } from '@/features/contract-browser/model/effectiveAbi';
+import { useProperties } from '@/features/contract-browser/model/useProperties';
+import { Icon } from '@/shared/icons';
+import { cx } from '@/shared/lib/cx';
 import {
   Badge,
   Button,
@@ -13,16 +13,16 @@ import {
   Panel,
   Skeleton,
   Spinner,
-} from "@/shared/ui";
-import { TypedValue } from "./values";
+} from '@/shared/ui';
+import { TypedValue } from './values';
 
 /* ── Rail + SectionHead (local to this file; also used in GettersSection/ContractBrowser) ── */
-function Rail({ tone }: { tone: "read" | "write" }) {
+function Rail({ tone }: { tone: 'read' | 'write' }) {
   return (
     <span
       className={cx(
-        "h-[15px] w-[3px] rounded-[2px]",
-        tone === "read" ? "bg-read" : "bg-write",
+        'h-[15px] w-[3px] rounded-[2px]',
+        tone === 'read' ? 'bg-read' : 'bg-write',
       )}
     />
   );
@@ -35,7 +35,7 @@ export function SectionHead({
   note,
   action,
 }: {
-  tone: "read" | "write";
+  tone: 'read' | 'write';
   title: string;
   count: number;
   note?: string;
@@ -71,19 +71,19 @@ function PropRow({
   name: string;
   outType: string;
   value: unknown;
-  status: "ok" | "error" | undefined;
+  status: 'ok' | 'error' | undefined;
   error: string | undefined;
   isLoading: boolean;
   last: boolean;
   chainId: number;
 }) {
-  const border = last ? "" : "border-b border-border";
+  const border = last ? '' : 'border-b border-border';
   return (
     <div className="group contents">
       <div
         data-cc="kv-cell"
         className={cx(
-          "flex min-w-0 items-center gap-2 px-3.5 py-[9px] font-mono text-[13px] text-fg-2 group-hover:bg-elev-3",
+          'flex min-w-0 items-center gap-2 px-3.5 py-[9px] font-mono text-[13px] text-fg-2 group-hover:bg-elev-3',
           border,
         )}
       >
@@ -93,15 +93,15 @@ function PropRow({
       <div
         data-cc="kv-cell"
         className={cx(
-          "flex min-w-0 items-center gap-2 px-3.5 py-[9px] group-hover:bg-elev-3",
+          'flex min-w-0 items-center gap-2 px-3.5 py-[9px] group-hover:bg-elev-3',
           border,
         )}
       >
         {isLoading ? (
           <Skeleton width={120 + ((name.length * 6) % 140)} />
-        ) : status === "ok" ? (
+        ) : status === 'ok' ? (
           <TypedValue type={outType} value={value} />
-        ) : status === "error" ? (
+        ) : status === 'error' ? (
           <span className="font-mono text-[12px] text-danger-fg">{error}</span>
         ) : null}
       </div>
@@ -173,7 +173,7 @@ export function PropertiesSection({
           <div className="grid grid-cols-[minmax(160px,280px)_1fr]">
             {isLoading
               ? skeletonFns.map((fn, i) => {
-                  const outType = fn.outputs[0]?.type ?? "";
+                  const outType = fn.outputs[0]?.type ?? '';
                   return (
                     <PropRow
                       key={`${fn.name}()`}
@@ -189,15 +189,15 @@ export function PropertiesSection({
                   );
                 })
               : filtered.map((row, i) => {
-                  const outType = row.fn.outputs[0]?.type ?? "";
+                  const outType = row.fn.outputs[0]?.type ?? '';
                   return (
                     <PropRow
                       key={`${row.fn.name}()`}
                       name={row.fn.name}
                       outType={outType}
-                      value={row.status === "ok" ? row.value : undefined}
+                      value={row.status === 'ok' ? row.value : undefined}
                       status={row.status}
-                      error={row.status === "error" ? row.error : undefined}
+                      error={row.status === 'error' ? row.error : undefined}
                       isLoading={false}
                       last={i === filtered.length - 1}
                       chainId={contract.chainId}

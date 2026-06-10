@@ -1,6 +1,6 @@
-import type { SVGProps, ReactNode } from "react";
+import type { SVGProps, ReactNode } from 'react';
 
-export interface IconProps extends Omit<SVGProps<SVGSVGElement>, "ref"> {
+export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'ref'> {
   size?: number;
 }
 

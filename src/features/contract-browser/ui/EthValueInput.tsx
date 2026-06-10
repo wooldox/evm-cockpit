@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import type { JSX } from "react";
-import type { EthUnit } from "@/shared/lib/units/units";
-import { cx } from "@/shared/lib/cx";
-import { Field, Input } from "@/shared/ui/field";
+import type { JSX } from 'react';
+import type { EthUnit } from '@/shared/lib/units/units';
+import { cx } from '@/shared/lib/cx';
+import { Field, Input } from '@/shared/ui/field';
 
 /** Display label → EthUnit. "ETH" maps to viem's "ether". */
 const UNITS: ReadonlyArray<{ label: string; unit: EthUnit }> = [
-  { label: "ETH", unit: "ether" },
-  { label: "gwei", unit: "gwei" },
-  { label: "wei", unit: "wei" },
+  { label: 'ETH', unit: 'ether' },
+  { label: 'gwei', unit: 'gwei' },
+  { label: 'wei', unit: 'wei' },
 ];
 
 /**
@@ -31,13 +31,13 @@ export function EthValueInput({
   return (
     <Field
       label="ETH value"
-      type={`payable · ${unit === "ether" ? "ETH" : unit}`}
+      type={`payable · ${unit === 'ether' ? 'ETH' : unit}`}
       error={error}
     >
       <div className="relative flex items-center">
         <Input
           mono
-          tone={error ? "invalid" : "default"}
+          tone={error ? 'invalid' : 'default'}
           className="pr-[110px]"
           placeholder="0.0"
           value={amount}
@@ -54,8 +54,8 @@ export function EthValueInput({
                   aria-pressed={active}
                   onClick={() => onChange(amount, u.unit)}
                   className={cx(
-                    "rounded-[3px] px-[7px] py-0.5 font-mono text-[11px]",
-                    active ? "bg-elev-4 text-fg" : "text-fg-3",
+                    'rounded-[3px] px-[7px] py-0.5 font-mono text-[11px]',
+                    active ? 'bg-elev-4 text-fg' : 'text-fg-3',
                   )}
                 >
                   {u.label}

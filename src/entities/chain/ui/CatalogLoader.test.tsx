@@ -1,23 +1,23 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { render } from "@testing-library/react";
-import { CatalogLoader } from "./CatalogLoader";
-import { useChainCatalog } from "../model/catalogStore";
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { render } from '@testing-library/react';
+import { CatalogLoader } from './CatalogLoader';
+import { useChainCatalog } from '../model/catalogStore';
 
 afterEach(() => vi.restoreAllMocks());
 
-describe("CatalogLoader", () => {
-  it("renders nothing", () => {
+describe('CatalogLoader', () => {
+  it('renders nothing', () => {
     const spy = vi
-      .spyOn(useChainCatalog.getState(), "loadRemote")
+      .spyOn(useChainCatalog.getState(), 'loadRemote')
       .mockResolvedValue(undefined);
     const { container } = render(<CatalogLoader />);
     expect(container.firstChild).toBeNull();
     expect(spy).toHaveBeenCalled();
   });
 
-  it("calls loadRemote exactly once even under a double mount", () => {
+  it('calls loadRemote exactly once even under a double mount', () => {
     const spy = vi
-      .spyOn(useChainCatalog.getState(), "loadRemote")
+      .spyOn(useChainCatalog.getState(), 'loadRemote')
       .mockResolvedValue(undefined);
     render(<CatalogLoader />);
     render(<CatalogLoader />);
@@ -28,9 +28,9 @@ describe("CatalogLoader", () => {
     expect(spy).toHaveBeenCalled();
   });
 
-  it("a single instance re-rendered does not double-fire", () => {
+  it('a single instance re-rendered does not double-fire', () => {
     const spy = vi
-      .spyOn(useChainCatalog.getState(), "loadRemote")
+      .spyOn(useChainCatalog.getState(), 'loadRemote')
       .mockResolvedValue(undefined);
     const { rerender } = render(<CatalogLoader />);
     rerender(<CatalogLoader />);

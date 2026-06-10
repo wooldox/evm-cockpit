@@ -1,28 +1,28 @@
-"use client";
+'use client';
 
-import { useRef, useState } from "react";
-import { useAccount } from "wagmi";
-import { encodeFunctionData } from "viem";
-import type { AbiFunction } from "abitype";
-import type { TContract } from "@/entities/contract/model/types";
-import type { RpcProvider } from "@/shared/ports/rpc";
-import type { THistoryEntry } from "@/entities/history/model/types";
-import type { TRerunIntent } from "@/entities/rerun/model/store";
+import { useRef, useState } from 'react';
+import { useAccount } from 'wagmi';
+import { encodeFunctionData } from 'viem';
+import type { AbiFunction } from 'abitype';
+import type { TContract } from '@/entities/contract/model/types';
+import type { RpcProvider } from '@/shared/ports/rpc';
+import type { THistoryEntry } from '@/entities/history/model/types';
+import type { TRerunIntent } from '@/entities/rerun/model/store';
 import {
   getBrowserSections,
   getEffectiveAbi,
-} from "@/features/contract-browser/model/effectiveAbi";
-import { parseOperationInputs } from "@/features/contract-browser/model/parseOperationInputs";
-import { useSimulation } from "@/features/contract-browser/model/useSimulation";
-import { useSendOperation } from "@/features/contract-browser/model/useSendOperation";
-import { useChainDisplay } from "@/entities/chain/model/catalogStore";
-import { Icon } from "@/shared/icons";
-import { trunc } from "@/shared/lib/format";
-import { fromBaseUnits, type EthUnit } from "@/shared/lib/units/units";
+} from '@/features/contract-browser/model/effectiveAbi';
+import { parseOperationInputs } from '@/features/contract-browser/model/parseOperationInputs';
+import { useSimulation } from '@/features/contract-browser/model/useSimulation';
+import { useSendOperation } from '@/features/contract-browser/model/useSendOperation';
+import { useChainDisplay } from '@/entities/chain/model/catalogStore';
+import { Icon } from '@/shared/icons';
+import { trunc } from '@/shared/lib/format';
+import { fromBaseUnits, type EthUnit } from '@/shared/lib/units/units';
 import {
   buildUnsignedTxJson,
   downloadJson,
-} from "@/shared/lib/tx/downloadUnsignedTx";
+} from '@/shared/lib/tx/downloadUnsignedTx';
 import {
   Button,
   Eyebrow,
@@ -38,17 +38,17 @@ import {
   TxField,
   TxGrid,
   useToast,
-} from "@/shared/ui";
-import { Field } from "@/shared/ui/field";
-import { FnCard } from "./GettersSection";
-import { ParamInput } from "./values";
-import { EthValueInput } from "./EthValueInput";
-import { SectionHead } from "./PropertiesSection";
+} from '@/shared/ui';
+import { Field } from '@/shared/ui/field';
+import { FnCard } from './GettersSection';
+import { ParamInput } from './values';
+import { EthValueInput } from './EthValueInput';
+import { SectionHead } from './PropertiesSection';
 
 /** Dependency seam mirroring useSimulation/useSendOperation deps for tests. */
 type OpDeps = {
   rpc: RpcProvider;
-  addHistory: (e: Omit<THistoryEntry, "id" | "timestamp">) => void;
+  addHistory: (e: Omit<THistoryEntry, 'id' | 'timestamp'>) => void;
 };
 
 /** Execute (skip-simulation) state: parsed inputs + calldata encoded from them. */
@@ -77,8 +77,8 @@ function OperationCard({
   // simulation (no verdict is carried over), so writes are never auto-executed.
   const [open, setOpen] = useState(defaultOpen ?? false);
   const [args, setArgs] = useState<Record<string, string>>(initialArgs ?? {});
-  const [ethAmount, setEthAmount] = useState("");
-  const [ethUnit, setEthUnit] = useState<EthUnit>("ether");
+  const [ethAmount, setEthAmount] = useState('');
+  const [ethUnit, setEthUnit] = useState<EthUnit>('ether');
   // Execute (skip-simulation) state. Holds the parsed args/value and the
   // calldata encoded FROM those exact args, so the raw-tx panel renders — and
   // Sign & Send sends — what was validated/displayed (no sim round-trip).
@@ -103,7 +103,7 @@ function OperationCard({
   // "Switch to X & Send" label instead of the static "Chain <id>" fallback.
   const chainName = useChainDisplay(contract.chainId).name;
 
-  const payable = fn.stateMutability === "payable";
+  const payable = fn.stateMutability === 'payable';
 
   /** Clear exec state + its field errors (mutual exclusion / re-edit). */
   function clearExec(): void {
@@ -167,8 +167,8 @@ function OperationCard({
     });
   }
 
-  const loading = sim.state.status === "loading";
-  const done = sim.state.status === "done" ? sim.state : null;
+  const loading = sim.state.status === 'loading';
+  const done = sim.state.status === 'done' ? sim.state : null;
   // The verdict is signer-specific (gas/revert depend on the from-account). If
   // the connected account changed since the sim ran, the verdict is stale and
   // must not stay actionable — hide it and prompt a re-simulate. Strict equality
@@ -179,7 +179,7 @@ function OperationCard({
 
   const sendState = sender.state;
   const sendBusy =
-    sendState.status === "wallet" || sendState.status === "pending";
+    sendState.status === 'wallet' || sendState.status === 'pending';
 
   async function handleSend(): Promise<void> {
     // Source the send inputs from whichever path is active: a passing sim
@@ -204,9 +204,9 @@ function OperationCard({
     sendBusyRef.current = true;
     try {
       toast({
-        kind: "write",
+        kind: 'write',
         title: `Sending ${fn.name}()`,
-        msg: "Awaiting signature in wallet…",
+        msg: 'Awaiting signature in wallet…',
       });
       const final = await sender.send({
         args: src.args,
@@ -214,20 +214,20 @@ function OperationCard({
         gas: src.gas,
         rawArgs: args,
       });
-      if (final.status === "confirmed") {
+      if (final.status === 'confirmed') {
         toast({
-          kind: "success",
-          title: "Transaction confirmed",
+          kind: 'success',
+          title: 'Transaction confirmed',
           msg: (
             <>
-              <Mono>{trunc(final.hash, 6)}</Mono> · block{" "}
+              <Mono>{trunc(final.hash, 6)}</Mono> · block{' '}
               {final.blockNumber.toString()}
             </>
           ),
         });
-      } else if (final.status === "failed") {
+      } else if (final.status === 'failed') {
         toast({
-          kind: "error",
+          kind: 'error',
           title: `${fn.name}() failed`,
           msg: final.error,
         });
@@ -254,8 +254,8 @@ function OperationCard({
       }),
     );
     toast({
-      kind: "success",
-      title: "Transaction downloaded",
+      kind: 'success',
+      title: 'Transaction downloaded',
       msg: (
         <>
           Unsigned tx saved as <Mono>{fn.name}-tx.json</Mono> — for offline /
@@ -278,8 +278,8 @@ function OperationCard({
       }),
     );
     toast({
-      kind: "success",
-      title: "Transaction downloaded",
+      kind: 'success',
+      title: 'Transaction downloaded',
       msg: (
         <>
           Unsigned tx saved as <Mono>{fn.name}-tx.json</Mono> — for offline /
@@ -293,18 +293,18 @@ function OperationCard({
 
   /* Sign & Send button: label, disabled state and title. */
   const signDisabled = !result?.ok || !isConnected || sendBusy;
-  let signLabel = "Sign & Send";
-  if (sendState.status === "wallet") signLabel = "Confirm in wallet…";
-  else if (sendState.status === "pending") signLabel = "Pending…";
+  let signLabel = 'Sign & Send';
+  if (sendState.status === 'wallet') signLabel = 'Confirm in wallet…';
+  else if (sendState.status === 'pending') signLabel = 'Pending…';
   else if (wrongChain && result?.ok)
     signLabel = `Switch to ${chainName} & Send`;
 
   let signTitle: string | undefined;
-  if (!result?.ok) signTitle = "Disabled — simulation predicts revert";
-  else if (!isConnected) signTitle = "Connect a wallet to sign";
-  else if (!sendBusy) signTitle = "Sign and broadcast";
+  if (!result?.ok) signTitle = 'Disabled — simulation predicts revert';
+  else if (!isConnected) signTitle = 'Connect a wallet to sign';
+  else if (!sendBusy) signTitle = 'Sign and broadcast';
 
-  const fromValue = address ? trunc(address, 6) : "— connect wallet —";
+  const fromValue = address ? trunc(address, 6) : '— connect wallet —';
 
   return (
     <FnCard
@@ -312,7 +312,7 @@ function OperationCard({
       open={open}
       onToggle={() => setOpen((v) => !v)}
       fn={fn}
-      badge={<MutTag state={fn.stateMutability as "nonpayable" | "payable"} />}
+      badge={<MutTag state={fn.stateMutability as 'nonpayable' | 'payable'} />}
     >
       <div className="mb-3.5 inline-flex items-center gap-[7px] rounded-sm border border-write-border bg-write-bg px-2.5 py-1.5 text-xs font-medium text-write-fg">
         <Icon.bolt size={13} /> Sends a transaction · costs gas · irreversible
@@ -360,7 +360,7 @@ function OperationCard({
           onClick={onSimulate}
           disabled={loading}
         >
-          {loading ? "Simulating…" : "Simulate"}
+          {loading ? 'Simulating…' : 'Simulate'}
         </Button>
         <Muted className="text-xs">dry-run before you sign — recommended</Muted>
       </div>
@@ -378,7 +378,7 @@ function OperationCard({
       )}
 
       {/* RPC-kind failure: not a revert verdict — inline danger + retry hint. */}
-      {done && result && !result.ok && result.kind === "rpc" && (
+      {done && result && !result.ok && result.kind === 'rpc' && (
         <div className="flex flex-col gap-1">
           <p className="font-mono text-[12px] text-danger-fg">
             {result.message}
@@ -390,7 +390,7 @@ function OperationCard({
       )}
 
       {/* Revert verdict: blocked sign, no raw-tx detail. */}
-      {done && result && !result.ok && result.kind === "revert" && (
+      {done && result && !result.ok && result.kind === 'revert' && (
         <SimShell status="revert">
           <SimStatus
             status="revert"
@@ -428,15 +428,15 @@ function OperationCard({
               <TxField label="To" value={trunc(contract.address, 6)} />
               <TxField
                 label="Nonce"
-                value={result.nonce !== undefined ? result.nonce : "—"}
+                value={result.nonce !== undefined ? result.nonce : '—'}
               />
               <TxField label="Gas limit" value={result.gas.toString()} />
               <TxField
                 label="Max fee"
                 value={
                   result.fees
-                    ? `${fromBaseUnits(result.fees.maxFeePerGas, "gwei")} gwei`
-                    : "—"
+                    ? `${fromBaseUnits(result.fees.maxFeePerGas, 'gwei')} gwei`
+                    : '—'
                 }
               />
               <TxField
@@ -445,9 +445,9 @@ function OperationCard({
                   result.fees
                     ? `${fromBaseUnits(
                         result.fees.maxPriorityFeePerGas,
-                        "gwei",
+                        'gwei',
                       )} gwei`
-                    : "—"
+                    : '—'
                 }
               />
             </TxGrid>
@@ -530,12 +530,12 @@ function OperationCard({
   function renderExecButtons() {
     const signDisabledExec = !isConnected || sendBusy;
     let titleExec: string | undefined;
-    if (!isConnected) titleExec = "Connect a wallet to sign";
-    else if (!sendBusy) titleExec = "Sign and broadcast";
+    if (!isConnected) titleExec = 'Connect a wallet to sign';
+    else if (!sendBusy) titleExec = 'Sign and broadcast';
 
-    let labelExec = "Sign & Send";
-    if (sendState.status === "wallet") labelExec = "Confirm in wallet…";
-    else if (sendState.status === "pending") labelExec = "Pending…";
+    let labelExec = 'Sign & Send';
+    if (sendState.status === 'wallet') labelExec = 'Confirm in wallet…';
+    else if (sendState.status === 'pending') labelExec = 'Pending…';
     else if (wrongChain) labelExec = `Switch to ${chainName} & Send`;
 
     return (
@@ -562,22 +562,22 @@ function OperationCard({
 
   /* ── inline tx lifecycle status (under buttons, success shell only) ── */
   function renderSendStatus() {
-    if (sendState.status === "pending") {
+    if (sendState.status === 'pending') {
       return (
         <p className="font-mono text-[12px] text-write-fg">
           Transaction submitted · {trunc(sendState.hash, 6)}
         </p>
       );
     }
-    if (sendState.status === "confirmed") {
+    if (sendState.status === 'confirmed') {
       return (
         <p className="font-mono text-[12px] text-success-fg">
-          Confirmed in block {sendState.blockNumber.toString()} ·{" "}
+          Confirmed in block {sendState.blockNumber.toString()} ·{' '}
           {trunc(sendState.hash, 6)}
         </p>
       );
     }
-    if (sendState.status === "failed") {
+    if (sendState.status === 'failed') {
       return (
         <p className="font-mono text-[12px] text-danger-fg">
           {sendState.error}
@@ -611,7 +611,7 @@ export function OperationsSection({
   // Overload limitation: we match on name + argCount (inputs.length), so two
   // overloads with the same arity are indistinguishable — the FIRST match wins.
   const matchTarget =
-    rerun && (rerun.type === "write" || rerun.type === "simulate")
+    rerun && (rerun.type === 'write' || rerun.type === 'simulate')
       ? fns.find(
           (f) => f.name === rerun.fnName && f.inputs.length === rerun.argCount,
         )
@@ -628,7 +628,7 @@ export function OperationsSection({
       <div className="flex flex-col gap-2">
         {fns.map((f) => {
           // Full signature as key so overloads stay distinct.
-          const key = `${f.name}(${f.inputs.map((i) => i.type).join(",")})`;
+          const key = `${f.name}(${f.inputs.map((i) => i.type).join(',')})`;
           const isTarget = f === matchTarget;
           return (
             <OperationCard

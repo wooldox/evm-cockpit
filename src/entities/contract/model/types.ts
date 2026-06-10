@@ -4,15 +4,15 @@ import type {
   AbiEvent,
   AbiError,
   AbiConstructor,
-} from "abitype";
+} from 'abitype';
 
 export type TAddress = `0x${string}`;
 export type TChainId = number;
 export type TUid = string;
 
-export type TAbiSource = "manual" | "sourcify" | "etherscan";
+export type TAbiSource = 'manual' | 'sourcify' | 'etherscan';
 
-export type TProxyKind = "eip1967" | "beacon";
+export type TProxyKind = 'eip1967' | 'beacon';
 
 export type TProxyInfo = {
   kind: TProxyKind;
@@ -31,7 +31,7 @@ export type TContract = {
   addedAt: number;
 };
 
-export type TContractWithoutId = Omit<TContract, "id" | "addedAt">;
+export type TContractWithoutId = Omit<TContract, 'id' | 'addedAt'>;
 
 /** Result of splitting an ABI into the app's surfaces. */
 export type TAbiCategories = {

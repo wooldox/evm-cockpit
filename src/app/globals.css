@@ -18,7 +18,7 @@
    - Fonts reference next/font's --font-geist-sans / --font-geist-mono.
    ============================================================ */
 
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* Tell Tailwind that dark mode is driven by the data-theme attribute,
    so `dark:` variants (if you reach for them) match [data-theme="dark"]. */
@@ -31,10 +31,10 @@
 @theme inline {
   /* fonts come from next/font (see layout.tsx) */
   --font-sans:
-    var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI",
+    var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI',
     sans-serif;
   --font-mono:
-    var(--font-geist-mono), ui-monospace, "SF Mono", "JetBrains Mono", monospace;
+    var(--font-geist-mono), ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;
 
   /* surfaces */
   --color-surface: var(--bg);
@@ -142,7 +142,7 @@
 
 /* DARK (default) */
 :root,
-[data-theme="dark"] {
+[data-theme='dark'] {
   --bg: var(--gray-950);
   --bg-elev-1: #0d1014;
   --bg-elev-2: #13161c;
@@ -201,7 +201,7 @@
 }
 
 /* LIGHT */
-[data-theme="light"] {
+[data-theme='light'] {
   --bg: #fbfcfd;
   --bg-elev-1: #f5f7fa;
   --bg-elev-2: #ffffff;
@@ -280,7 +280,7 @@
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
-    font-feature-settings: "cv11", "ss01";
+    font-feature-settings: 'cv11', 'ss01';
   }
 
   /* custom scrollbars */
@@ -315,7 +315,7 @@
   font-variant-numeric: tabular-nums;
 }
 @utility font-zero {
-  font-feature-settings: "zero" 1;
+  font-feature-settings: 'zero' 1;
   letter-spacing: -0.01em;
 }
 
@@ -359,24 +359,24 @@
    [data-density="compact"] on the app root; elements opt in with
    data-cc="…" so the utilities stay otherwise untouched.
    ============================================================ */
-[data-density="compact"] [data-cc="cb-body"] {
+[data-density='compact'] [data-cc='cb-body'] {
   gap: 20px;
 }
-[data-density="compact"] [data-cc="fn-head"] {
+[data-density='compact'] [data-cc='fn-head'] {
   padding: 8px 12px;
 }
-[data-density="compact"] [data-cc="fn-body"] {
+[data-density='compact'] [data-cc='fn-body'] {
   padding: 9px 12px 11px;
 }
-[data-density="compact"] [data-cc="kv-cell"] {
+[data-density='compact'] [data-cc='kv-cell'] {
   padding: 6px 12px;
 }
-[data-density="compact"] [data-cc="card-body"] {
+[data-density='compact'] [data-cc='card-body'] {
   padding: 11px;
 }
-[data-density="compact"] [data-cc="screen-pad"] {
+[data-density='compact'] [data-cc='screen-pad'] {
   padding-top: 18px;
 }
-[data-density="compact"] [data-cc="ch-head"] {
+[data-density='compact'] [data-cc='ch-head'] {
   padding: 16px 24px 14px;
 }

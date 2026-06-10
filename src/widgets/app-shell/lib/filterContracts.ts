@@ -7,7 +7,7 @@ export type SidebarContract = {
 };
 export type ChainGroup = { chainId: number; contracts: SidebarContract[] };
 export type FilterOpts = {
-  scope: "all" | "current";
+  scope: 'all' | 'current';
   query: string;
   currentChainId: number;
 };
@@ -17,7 +17,7 @@ export function filterAndGroup(
 ): ChainGroup[] {
   const { scope, query, currentChainId } = opts;
   const scoped =
-    scope === "current"
+    scope === 'current'
       ? contracts.filter((c) => c.chainId === currentChainId)
       : contracts;
   const q = query.trim().toLowerCase();

@@ -1,5 +1,5 @@
-import { z } from "zod";
-import type { TContract } from "@/entities/contract/model/types";
+import { z } from 'zod';
+import type { TContract } from '@/entities/contract/model/types';
 
 export const SHARE_VERSION = 1;
 
@@ -14,10 +14,10 @@ export const sharePayloadSchema = z.object({
   chainId: z.number().int().positive(),
   address: evmAddress,
   abi: z.array(z.unknown()).min(1), // structural ABI validation is viem's job at use time
-  source: z.enum(["manual", "sourcify", "etherscan"]),
+  source: z.enum(['manual', 'sourcify', 'etherscan']),
   proxy: z
     .object({
-      kind: z.enum(["eip1967", "beacon"]),
+      kind: z.enum(['eip1967', 'beacon']),
       implAddress: evmAddress,
       implAbi: z.array(z.unknown()).optional(),
     })
@@ -59,23 +59,23 @@ export function toSharePayload(c: TContract): TSharePayload {
 function bytesToBase64Url(bytes: Uint8Array): string {
   // Build the binary string in chunks so a huge ABI can't blow the call stack
   // via String.fromCharCode(...spread).
-  let binary = "";
+  let binary = '';
   const chunkSize = 0x8000;
   for (let i = 0; i < bytes.length; i += chunkSize) {
     const chunk = bytes.subarray(i, i + chunkSize);
     binary += String.fromCharCode(...chunk);
   }
   return btoa(binary)
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
 }
 
 /** Decode a URL-safe base64 string back into raw bytes. */
 function base64UrlToBytes(s: string): Uint8Array<ArrayBuffer> {
   const base64 =
-    s.replace(/-/g, "+").replace(/_/g, "/") +
-    "=".repeat((4 - (s.length % 4)) % 4);
+    s.replace(/-/g, '+').replace(/_/g, '/') +
+    '='.repeat((4 - (s.length % 4)) % 4);
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) {
@@ -100,7 +100,7 @@ function streamOf(
 async function deflate(json: string): Promise<Uint8Array> {
   const input = new TextEncoder().encode(json);
   const stream = streamOf(input).pipeThrough(
-    new CompressionStream("deflate-raw"),
+    new CompressionStream('deflate-raw'),
   );
   const buf = await new Response(stream).arrayBuffer();
   return new Uint8Array(buf);
@@ -110,7 +110,7 @@ const MAX_DECOMPRESSED_BYTES = 2_000_000;
 
 async function inflate(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
   const stream = streamOf(bytes).pipeThrough(
-    new DecompressionStream("deflate-raw"),
+    new DecompressionStream('deflate-raw'),
   );
   const reader = stream.getReader();
   const chunks: Uint8Array[] = [];
@@ -126,7 +126,7 @@ async function inflate(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
       total += chunk.byteLength;
       if (total > MAX_DECOMPRESSED_BYTES) {
         await reader.cancel();
-        throw new Error("decompressed size exceeds limit");
+        throw new Error('decompressed size exceeds limit');
       }
       chunks.push(chunk);
     }
@@ -166,13 +166,13 @@ export async function encodeContractShare(c: TContract): Promise<string> {
 export async function decodeContractShare(s: string): Promise<TSharePayload> {
   try {
     if (s.length > MAX_SHARE_PAYLOAD_CHARS) {
-      throw new Error("token exceeds maximum length");
+      throw new Error('token exceeds maximum length');
     }
     const bytes = base64UrlToBytes(s);
     const json = await inflate(bytes);
     const parsed: unknown = JSON.parse(json);
     return sharePayloadSchema.parse(parsed);
   } catch (cause) {
-    throw new Error("invalid or corrupted share link", { cause });
+    throw new Error('invalid or corrupted share link', { cause });
   }
 }

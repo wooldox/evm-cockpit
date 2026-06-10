@@ -1,5 +1,5 @@
-import type { CSSProperties, ReactNode } from "react";
-import { cx } from "@/shared/lib/cx";
+import type { CSSProperties, ReactNode } from 'react';
+import { cx } from '@/shared/lib/cx';
 
 /* Spinner — inline loading indicator. */
 export function Spinner({
@@ -12,7 +12,7 @@ export function Spinner({
   return (
     <span
       className={cx(
-        "inline-block animate-spin rounded-full border-2 border-border-strong border-t-read",
+        'inline-block animate-spin rounded-full border-2 border-border-strong border-t-read',
         className,
       )}
       style={{ width: size, height: size }}
@@ -34,8 +34,8 @@ export function Skeleton({
   return (
     <span
       className={cx(
-        "block animate-shimmer rounded-xs",
-        "bg-[linear-gradient(90deg,var(--bg-elev-3)_25%,var(--bg-elev-4)_37%,var(--bg-elev-3)_63%)] bg-[length:400%_100%]",
+        'block animate-shimmer rounded-xs',
+        'bg-[linear-gradient(90deg,var(--bg-elev-3)_25%,var(--bg-elev-4)_37%,var(--bg-elev-3)_63%)] bg-[length:400%_100%]',
         className,
       )}
       style={style}
@@ -60,7 +60,7 @@ export function Empty({
   return (
     <div
       className={cx(
-        "flex flex-col items-center justify-center gap-3.5 px-6 py-12 text-center",
+        'flex flex-col items-center justify-center gap-3.5 px-6 py-12 text-center',
         className,
       )}
     >

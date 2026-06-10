@@ -1,5 +1,5 @@
-import { encodeFunctionData, type Abi } from "viem";
-import { paramSchema } from "./paramSchema";
+import { encodeFunctionData, type Abi } from 'viem';
+import { paramSchema } from './paramSchema';
 
 export type EncodeError = { index: number; name: string; message: string };
 export type EncodeResult =
@@ -9,8 +9,8 @@ export type EncodeResult =
 /** Find a function ABI item by name, picking the overload matching the arg count. */
 function findFunction(abi: Abi, name: string, argCount: number) {
   const matches = abi.filter(
-    (i): i is Extract<(typeof abi)[number], { type: "function" }> =>
-      i.type === "function" && "name" in i && i.name === name,
+    (i): i is Extract<(typeof abi)[number], { type: 'function' }> =>
+      i.type === 'function' && 'name' in i && i.name === name,
   );
   return matches.find((f) => f.inputs.length === argCount) ?? matches[0];
 }
@@ -25,7 +25,7 @@ export function encodeCall(
   if (!fn)
     return {
       ok: false,
-      errors: [{ index: -1, name, message: "function not found" }],
+      errors: [{ index: -1, name, message: 'function not found' }],
     };
 
   if (fn.inputs.length !== rawArgs.length) {
@@ -53,7 +53,7 @@ export function encodeCall(
       errors.push({
         index,
         name: input.name ?? `arg${index}`,
-        message: firstIssue?.message ?? "invalid",
+        message: firstIssue?.message ?? 'invalid',
       });
     }
   });

@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useAccount, useSwitchChain } from "wagmi";
-import { useTheme } from "@/shared/lib/use-theme";
-import { Icon } from "@/shared/icons";
-import { useAppShell } from "@/widgets/app-shell/AppShellProvider";
-import { ChainSelector } from "@/widgets/app-shell/ChainSelector";
-import { WalletButton } from "@/app/web3/WalletButton";
+import { useAccount, useSwitchChain } from 'wagmi';
+import { useTheme } from '@/shared/lib/use-theme';
+import { Icon } from '@/shared/icons';
+import { useAppShell } from '@/widgets/app-shell/AppShellProvider';
+import { ChainSelector } from '@/widgets/app-shell/ChainSelector';
+import { WalletButton } from '@/app/web3/WalletButton';
 
 /* ============================================================
    TopBar
@@ -41,7 +41,7 @@ export function TopBar() {
         onClick={toggle}
         className="grid size-[34px] place-items-center rounded-sm border border-transparent bg-transparent text-fg-2 cursor-pointer transition-colors hover:bg-elev-3 hover:text-fg"
       >
-        {theme === "dark" ? <Icon.sun size={16} /> : <Icon.moon size={16} />}
+        {theme === 'dark' ? <Icon.sun size={16} /> : <Icon.moon size={16} />}
       </button>
       <button
         type="button"

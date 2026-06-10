@@ -1,22 +1,22 @@
-import { getAddress } from "viem";
-import type { RpcProvider } from "@/shared/ports/rpc";
+import { getAddress } from 'viem';
+import type { RpcProvider } from '@/shared/ports/rpc';
 
 /** EIP-1967 implementation slot (transparent proxy / UUPS). */
 const EIP1967_IMPL_SLOT =
-  "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc" as const;
+  '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc' as const;
 
 /** EIP-1967 beacon slot. */
 const EIP1967_BEACON_SLOT =
-  "0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50" as const;
+  '0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50' as const;
 
 /** ABI for the beacon's `implementation()` getter. */
 const IMPLEMENTATION_ABI = [
   {
-    name: "implementation",
-    type: "function",
-    stateMutability: "view",
+    name: 'implementation',
+    type: 'function',
+    stateMutability: 'view',
     inputs: [],
-    outputs: [{ type: "address" }],
+    outputs: [{ type: 'address' }],
   },
 ] as const;
 
@@ -29,7 +29,7 @@ function slotToAddress(slot: `0x${string}`): `0x${string}` | null {
   return getAddress(`0x${addrHex}`);
 }
 
-export type ProxyKind = "eip1967" | "beacon";
+export type ProxyKind = 'eip1967' | 'beacon';
 
 export interface ProxyResult {
   kind: ProxyKind;
@@ -61,7 +61,7 @@ export async function detectProxy(
   if (implSlotValue) {
     const implAddress = slotToAddress(implSlotValue);
     if (implAddress !== null) {
-      return { kind: "eip1967", implAddress };
+      return { kind: 'eip1967', implAddress };
     }
   }
 
@@ -78,10 +78,10 @@ export async function detectProxy(
       const implAddress = (await client.readContract({
         address: beaconAddress,
         abi: IMPLEMENTATION_ABI,
-        functionName: "implementation",
+        functionName: 'implementation',
       })) as `0x${string}`;
 
-      return { kind: "beacon", implAddress: getAddress(implAddress) };
+      return { kind: 'beacon', implAddress: getAddress(implAddress) };
     }
   }
 

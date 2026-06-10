@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useRef } from "react";
-import { useChainCatalog } from "../model/catalogStore";
+import { useEffect, useRef } from 'react';
+import { useChainCatalog } from '../model/catalogStore';
 
 /**
  * Mounted once in the app shell. On mount (one-shot, StrictMode-safe via a

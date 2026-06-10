@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { HistoryView } from "@/features/history/ui/HistoryView";
+import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { HistoryView } from '@/features/history/ui/HistoryView';
 
 function HistoryRoute() {
-  const c = useSearchParams().get("c");
+  const c = useSearchParams().get('c');
   return <HistoryView initialContractId={c ?? undefined} />;
 }
 

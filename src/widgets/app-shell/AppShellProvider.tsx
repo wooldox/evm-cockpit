@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import {
   createContext,
   startTransition,
@@ -8,8 +8,8 @@ import {
   useMemo,
   useState,
   type ReactNode,
-} from "react";
-import type { TContract } from "@/entities/contract/model/types";
+} from 'react';
+import type { TContract } from '@/entities/contract/model/types';
 
 type AppShellState = {
   currentChainId: number;
@@ -35,7 +35,7 @@ export function AppShellProvider({ children }: { children: ReactNode }) {
   // Hydration-safe: init as 1, then read localStorage on the client (matches useTheme pattern).
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("cc-chain");
+      const saved = localStorage.getItem('cc-chain');
       if (saved !== null) {
         const parsed = parseInt(saved, 10);
         if (!isNaN(parsed))
@@ -49,7 +49,7 @@ export function AppShellProvider({ children }: { children: ReactNode }) {
   const setCurrentChainId = useCallback((id: number) => {
     setCurrentChainIdState(id);
     try {
-      localStorage.setItem("cc-chain", String(id));
+      localStorage.setItem('cc-chain', String(id));
     } catch {
       /* ignore */
     }
@@ -111,6 +111,6 @@ export function AppShellProvider({ children }: { children: ReactNode }) {
 export function useAppShell(): AppShellState {
   const ctx = useContext(Ctx);
   if (!ctx)
-    throw new Error("useAppShell must be used within <AppShellProvider>");
+    throw new Error('useAppShell must be used within <AppShellProvider>');
   return ctx;
 }

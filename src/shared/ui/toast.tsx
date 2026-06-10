@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   createContext,
@@ -9,13 +9,13 @@ import {
   useRef,
   useState,
   type ReactNode,
-} from "react";
-import { createPortal } from "react-dom";
-import { Icon } from "@/shared/icons";
-import { XBtn } from "./modal";
-import { cx } from "@/shared/lib/cx";
+} from 'react';
+import { createPortal } from 'react-dom';
+import { Icon } from '@/shared/icons';
+import { XBtn } from './modal';
+import { cx } from '@/shared/lib/cx';
 
-export type ToastKind = "success" | "error" | "write" | "info";
+export type ToastKind = 'success' | 'error' | 'write' | 'info';
 
 export interface ToastInput {
   kind?: ToastKind;
@@ -36,23 +36,23 @@ const kindStyles: Record<
   { bar: string; icon: string; node: ReactNode }
 > = {
   success: {
-    bar: "border-l-success",
-    icon: "text-success-fg",
+    bar: 'border-l-success',
+    icon: 'text-success-fg',
     node: <Icon.checkCircle size={18} />,
   },
   error: {
-    bar: "border-l-danger",
-    icon: "text-danger-fg",
+    bar: 'border-l-danger',
+    icon: 'text-danger-fg',
     node: <Icon.xCircle size={18} />,
   },
   write: {
-    bar: "border-l-write",
-    icon: "text-write-fg",
+    bar: 'border-l-write',
+    icon: 'text-write-fg',
     node: <Icon.bolt size={18} />,
   },
   info: {
-    bar: "border-l-read",
-    icon: "text-read-fg",
+    bar: 'border-l-read',
+    icon: 'text-read-fg',
     node: <Icon.info size={18} />,
   },
 };
@@ -91,17 +91,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         createPortal(
           <div className="fixed bottom-[18px] right-[18px] z-[200] flex w-[360px] max-w-[calc(100vw-36px)] flex-col gap-2.5">
             {toasts.map((t) => {
-              const s = kindStyles[t.kind ?? "info"];
+              const s = kindStyles[t.kind ?? 'info'];
               return (
                 <div
                   key={t.id}
                   className={cx(
-                    "flex gap-[11px] rounded-md border border-l-[3px] border-border-strong bg-elev-2 p-3",
-                    "shadow-[var(--shadow-pop)] animate-toast-in",
+                    'flex gap-[11px] rounded-md border border-l-[3px] border-border-strong bg-elev-2 p-3',
+                    'shadow-[var(--shadow-pop)] animate-toast-in',
                     s.bar,
                   )}
                 >
-                  <span className={cx("mt-px size-[18px] flex-none", s.icon)}>
+                  <span className={cx('mt-px size-[18px] flex-none', s.icon)}>
                     {s.node}
                   </span>
                   <div className="min-w-0 flex-1">
@@ -131,6 +131,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
 export function useToast(): (t: ToastInput) => void {
   const ctx = useContext(ToastCtx);
-  if (!ctx) throw new Error("useToast must be used within <ToastProvider>");
+  if (!ctx) throw new Error('useToast must be used within <ToastProvider>');
   return ctx;
 }

@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import { useRef, useState } from "react";
-import type { AbiFunction } from "abitype";
-import type { TContract } from "@/entities/contract/model/types";
-import type { RpcProvider } from "@/shared/ports/rpc";
-import { viemRpc } from "@/app/web3/services";
-import { type EthUnit } from "@/shared/lib/units/units";
-import { record } from "@/entities/history/model/store";
-import type { THistoryEntry } from "@/entities/history/model/types";
-import { parseOperationInputs } from "./parseOperationInputs";
-import { simulateOperation, type TSimResult } from "./simulateOperation";
+import { useRef, useState } from 'react';
+import type { AbiFunction } from 'abitype';
+import type { TContract } from '@/entities/contract/model/types';
+import type { RpcProvider } from '@/shared/ports/rpc';
+import { viemRpc } from '@/app/web3/services';
+import { type EthUnit } from '@/shared/lib/units/units';
+import { record } from '@/entities/history/model/store';
+import type { THistoryEntry } from '@/entities/history/model/types';
+import { parseOperationInputs } from './parseOperationInputs';
+import { simulateOperation, type TSimResult } from './simulateOperation';
 
 export type SimulationState =
-  | { status: "idle" }
-  | { status: "loading" }
+  | { status: 'idle' }
+  | { status: 'loading' }
   | {
-      status: "done";
+      status: 'done';
       result: TSimResult;
       // Parsed values are co-located with the result so consumers can only
       // read args that match the sim they are currently seeing. This prevents
@@ -43,7 +43,7 @@ export type UseSimulationResult = {
 
 type Deps = {
   rpc: RpcProvider;
-  addHistory: (e: Omit<THistoryEntry, "id" | "timestamp">) => void;
+  addHistory: (e: Omit<THistoryEntry, 'id' | 'timestamp'>) => void;
 };
 
 const defaultDeps: Deps = { rpc: viemRpc, addHistory: record };
@@ -53,7 +53,7 @@ export function useSimulation(
   fn: AbiFunction,
   deps: Deps = defaultDeps,
 ): UseSimulationResult {
-  const [state, setState] = useState<SimulationState>({ status: "idle" });
+  const [state, setState] = useState<SimulationState>({ status: 'idle' });
   const [argErrors, setArgErrors] = useState<Record<string, string>>({});
   const [valueError, setValueError] = useState<string | undefined>(undefined);
   // Monotonic call-id: incremented on every simulate() and reset() so an
@@ -62,7 +62,7 @@ export function useSimulation(
 
   function reset(): void {
     callId.current += 1;
-    setState({ status: "idle" });
+    setState({ status: 'idle' });
     setArgErrors({});
     setValueError(undefined);
   }
@@ -83,13 +83,13 @@ export function useSimulation(
     if (!parsed.ok) {
       setArgErrors(parsed.argErrors);
       setValueError(parsed.valueError);
-      setState({ status: "idle" });
+      setState({ status: 'idle' });
       return;
     }
 
     setArgErrors({});
     setValueError(undefined);
-    setState({ status: "loading" });
+    setState({ status: 'loading' });
 
     const result = await simulateOperation(
       { rpc: deps.rpc },
@@ -101,7 +101,7 @@ export function useSimulation(
     if (callId.current !== myCallId) return;
 
     setState({
-      status: "done",
+      status: 'done',
       result,
       parsedArgs: parsed.args,
       parsedValue: parsed.value,
@@ -111,10 +111,10 @@ export function useSimulation(
     deps.addHistory({
       contractId: contract.id,
       chainId: contract.chainId,
-      type: "simulate",
+      type: 'simulate',
       fnName: fn.name,
       args: rawArgs,
-      status: result.ok ? "ok" : "error",
+      status: result.ok ? 'ok' : 'error',
       result: result.ok ? `est. gas ${result.gas}` : undefined,
       error: !result.ok ? result.message : undefined,
       from: account,

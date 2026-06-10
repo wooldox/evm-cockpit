@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import { useShallow } from "zustand/react/shallow";
-import { Icon } from "@/shared/icons";
-import { ChainGlyph, ChainPickerPanel } from "@/shared/ui";
+import { useEffect, useRef, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import { Icon } from '@/shared/icons';
+import { ChainGlyph, ChainPickerPanel } from '@/shared/ui';
 import {
   useChainCatalog,
   useChainDisplay,
-} from "@/entities/chain/model/catalogStore";
-import { AddChainModal } from "@/features/add-chain/ui/AddChainModal";
+} from '@/entities/chain/model/catalogStore';
+import { AddChainModal } from '@/features/add-chain/ui/AddChainModal';
 
 /* ============================================================
    ChainSelector
@@ -47,8 +47,8 @@ export function ChainSelector({
       if (rootRef.current && !rootRef.current.contains(e.target as Node))
         setOpen(false);
     };
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
   }, [open]);
 
   const select = (id: number) => {
@@ -82,8 +82,8 @@ export function ChainSelector({
             onSelect={select}
             onRequestClose={() => setOpen(false)}
             notice={
-              status === "static-fallback"
-                ? "showing built-in networks — full list unavailable"
+              status === 'static-fallback'
+                ? 'showing built-in networks — full list unavailable'
                 : undefined
             }
             footer={

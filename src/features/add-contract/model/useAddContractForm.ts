@@ -1,21 +1,21 @@
-import { useState, useRef } from "react";
-import { isValidAddress } from "@/shared/lib/web3/address";
-import { categorizeAbi } from "@/shared/lib/abi/categorize";
-import { detectProxy } from "@/entities/contract/model/proxy";
-import { useContractsStore } from "@/entities/contract/model/store";
+import { useState, useRef } from 'react';
+import { isValidAddress } from '@/shared/lib/web3/address';
+import { categorizeAbi } from '@/shared/lib/abi/categorize';
+import { detectProxy } from '@/entities/contract/model/proxy';
+import { useContractsStore } from '@/entities/contract/model/store';
 import {
   abiResolver as defaultAbiResolver,
   viemRpc as defaultViemRpc,
-} from "@/app/web3/services";
+} from '@/app/web3/services';
 import type {
   TContract,
   TProxyInfo,
   TAddress,
   TAbiSource,
-} from "@/entities/contract/model/types";
-import type { AbiSource } from "@/shared/ports/abi-source";
-import type { RpcProvider } from "@/shared/ports/rpc";
-import type { Abi } from "abitype";
+} from '@/entities/contract/model/types';
+import type { AbiSource } from '@/shared/ports/abi-source';
+import type { RpcProvider } from '@/shared/ports/rpc';
+import type { Abi } from 'abitype';
 
 // ─── Deps ────────────────────────────────────────────────────────────────────
 
@@ -29,7 +29,7 @@ export type Deps = {
     chainId: number,
     address: `0x${string}`,
   ) => Promise<{
-    kind: "eip1967" | "beacon";
+    kind: 'eip1967' | 'beacon';
     implAddress: `0x${string}`;
   } | null>;
 };
@@ -47,7 +47,7 @@ function buildDefaultDeps(): Deps {
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type FetchStatus = "idle" | "loading" | "done" | "error";
+export type FetchStatus = 'idle' | 'loading' | 'done' | 'error';
 
 export type FetchCategories = {
   properties: number;
@@ -79,8 +79,8 @@ export type AddContractFormResult = {
   setAddress: (v: string) => void;
   abiText: string;
   setAbiText: (v: string) => void;
-  mode: "fetch" | "manual";
-  setMode: (v: "fetch" | "manual") => void;
+  mode: 'fetch' | 'manual';
+  setMode: (v: 'fetch' | 'manual') => void;
   importedProxy: TProxyInfo | undefined;
   setImportedProxy: (v: TProxyInfo | undefined) => void;
   // Derived
@@ -117,7 +117,7 @@ export function useAddContractForm(opts?: {
   /** Which ABI-source tab opens first. The modal sets this from the Etherscan
    *  key — auto-fetch by default only when a key is present (Sourcify needs no
    *  key, but the explorer fallback does). Defaults to "fetch". */
-  defaultMode?: "fetch" | "manual";
+  defaultMode?: 'fetch' | 'manual';
   deps?: Partial<Deps>;
 }): AddContractFormResult {
   const editing = opts?.editing ?? null;
@@ -128,16 +128,16 @@ export function useAddContractForm(opts?: {
   };
 
   // ── Field state ─────────────────────────────────────────────────────────
-  const [name, setName] = useState<string>(editing?.name ?? "");
+  const [name, setName] = useState<string>(editing?.name ?? '');
   const [chainId, setChainIdState] = useState<number>(
     editing?.chainId ?? opts?.defaultChainId ?? 1,
   );
-  const [address, setAddressState] = useState<string>(editing?.address ?? "");
+  const [address, setAddressState] = useState<string>(editing?.address ?? '');
   const [abiText, setAbiText] = useState<string>(
-    editing?.abi ? JSON.stringify(editing.abi, null, 2) : "",
+    editing?.abi ? JSON.stringify(editing.abi, null, 2) : '',
   );
-  const [mode, setMode] = useState<"fetch" | "manual">(
-    opts?.defaultMode ?? "fetch",
+  const [mode, setMode] = useState<'fetch' | 'manual'>(
+    opts?.defaultMode ?? 'fetch',
   );
   // Proxy info carried in from a file import (manual mode). Belongs to one exact
   // address+chainId, so it is cleared whenever either of those is edited below.
@@ -156,7 +156,7 @@ export function useAddContractForm(opts?: {
     setImportedProxy(undefined);
   }
   const [fetchState, setFetchState] = useState<InternalFetchState>({
-    status: "idle",
+    status: 'idle',
   });
   const [abiError, setAbiError] = useState<string | undefined>(undefined);
 
@@ -172,18 +172,18 @@ export function useAddContractForm(opts?: {
 
   const errors: FormErrors = {};
   if (address.length > 0 && !addrValid) {
-    errors.address = "Invalid Ethereum address";
+    errors.address = 'Invalid Ethereum address';
   }
   if (abiError) {
     errors.abi = abiError;
-  } else if (mode === "manual" && abiText.trim().length > 0) {
+  } else if (mode === 'manual' && abiText.trim().length > 0) {
     try {
       const parsed = JSON.parse(abiText);
       if (!Array.isArray(parsed)) {
-        errors.abi = "ABI must be a JSON array";
+        errors.abi = 'ABI must be a JSON array';
       }
     } catch {
-      errors.abi = "ABI must be valid JSON";
+      errors.abi = 'ABI must be valid JSON';
     }
   }
 
@@ -193,20 +193,20 @@ export function useAddContractForm(opts?: {
   // We compare purely against state (_fetchKey stored in the state object) to
   // avoid reading refs during render, which the project's linting rules forbid.
   const fetchResultIsStale =
-    fetchState.status === "done" && fetchState._fetchKey !== currentFetchKey;
+    fetchState.status === 'done' && fetchState._fetchKey !== currentFetchKey;
 
   // Strip the internal _fetchKey before exposing to consumers
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { _fetchKey: _stripped, ...publicFetchState } = fetchState;
   const effectiveFetchState: FetchState = fetchResultIsStale
-    ? { status: "idle" }
+    ? { status: 'idle' }
     : publicFetchState;
 
   const canSubmit: boolean = (() => {
     if (!name.trim()) return false;
     if (!addrValid) return false;
-    if (mode === "fetch") {
-      return effectiveFetchState.status === "done";
+    if (mode === 'fetch') {
+      return effectiveFetchState.status === 'done';
     }
     // manual
     if (abiText.trim().length === 0) return false;
@@ -220,13 +220,13 @@ export function useAddContractForm(opts?: {
     if (!addrValid) return;
     // Snapshot the key at the moment of initiating the fetch
     const fetchKey = currentFetchKey;
-    setFetchState({ status: "loading" });
+    setFetchState({ status: 'loading' });
     resolvedRef.current = null;
 
     const r = await deps.abiResolver.fetchAbi(chainId, address);
 
     if (!r.ok) {
-      setFetchState({ status: "error", error: r.error });
+      setFetchState({ status: 'error', error: r.error });
       return;
     }
 
@@ -269,7 +269,7 @@ export function useAddContractForm(opts?: {
 
     resolvedRef.current = { abi, source, proxy };
 
-    setFetchState({ status: "done", categories, proxy, _fetchKey: fetchKey });
+    setFetchState({ status: 'done', categories, proxy, _fetchKey: fetchKey });
   }
 
   function submit(): boolean {
@@ -280,20 +280,20 @@ export function useAddContractForm(opts?: {
     let source: TAbiSource;
     let proxy: TProxyInfo | undefined;
 
-    if (mode === "manual") {
+    if (mode === 'manual') {
       let parsed: unknown;
       try {
         parsed = JSON.parse(abiText);
       } catch {
-        setAbiError("ABI must be valid JSON");
+        setAbiError('ABI must be valid JSON');
         return false;
       }
       if (!Array.isArray(parsed)) {
-        setAbiError("ABI must be a JSON array");
+        setAbiError('ABI must be a JSON array');
         return false;
       }
       abi = parsed as Abi;
-      source = "manual";
+      source = 'manual';
       // Preserve proxy info carried in from a file import. setImportedProxy is
       // cleared when the user edits the address/chain, so a stale proxy can't
       // attach to a different target.
@@ -301,7 +301,7 @@ export function useAddContractForm(opts?: {
     } else {
       // fetch mode — effectiveFetchState is already "idle" when stale,
       // so this guard also rejects stale results.
-      if (effectiveFetchState.status !== "done" || !resolvedRef.current) {
+      if (effectiveFetchState.status !== 'done' || !resolvedRef.current) {
         return false;
       }
       abi = resolvedRef.current.abi;

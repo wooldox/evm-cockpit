@@ -1,29 +1,29 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi } from 'vitest';
 import {
   BaseError,
   ContractFunctionRevertedError,
   HttpRequestError,
   encodeErrorResult,
   encodeFunctionData,
-} from "viem";
-import type { PublicClient } from "viem";
-import type { AbiFunction } from "abitype";
-import { simulateOperation } from "./simulateOperation";
-import { erc20Abi } from "@/shared/lib/abi/fixtures";
-import type { TContract } from "@/entities/contract/model/types";
-import type { RpcProvider } from "@/shared/ports/rpc";
+} from 'viem';
+import type { PublicClient } from 'viem';
+import type { AbiFunction } from 'abitype';
+import { simulateOperation } from './simulateOperation';
+import { erc20Abi } from '@/shared/lib/abi/fixtures';
+import type { TContract } from '@/entities/contract/model/types';
+import type { RpcProvider } from '@/shared/ports/rpc';
 
-const ADDR = "0x1234567890123456789012345678901234567890" as const;
-const ACCOUNT = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd" as const;
+const ADDR = '0x1234567890123456789012345678901234567890' as const;
+const ACCOUNT = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as const;
 
 function makeContract(overrides?: Partial<TContract>): TContract {
   return {
-    id: "test-id",
-    name: "TestToken",
+    id: 'test-id',
+    name: 'TestToken',
     chainId: 1,
     address: ADDR,
     abi: erc20Abi,
-    source: "manual",
+    source: 'manual',
     addedAt: 0,
     ...overrides,
   };
@@ -31,7 +31,7 @@ function makeContract(overrides?: Partial<TContract>): TContract {
 
 // transfer(address to, uint256 amount) → bool
 const transferFn = erc20Abi.find(
-  (x) => x.type === "function" && x.name === "transfer",
+  (x) => x.type === 'function' && x.name === 'transfer',
 ) as AbiFunction;
 
 const ARGS = [ACCOUNT, 100n] as const;
@@ -62,8 +62,8 @@ function makeRpc(client: FakeClient): RpcProvider {
   };
 }
 
-describe("simulateOperation", () => {
-  it("returns ok with gas, data, fees and nonce on success", async () => {
+describe('simulateOperation', () => {
+  it('returns ok with gas, data, fees and nonce on success', async () => {
     const client = makeFakeClient();
     const res = await simulateOperation(
       { rpc: makeRpc(client) },
@@ -77,12 +77,12 @@ describe("simulateOperation", () => {
     );
 
     expect(res.ok).toBe(true);
-    if (!res.ok) throw new Error("expected ok");
+    if (!res.ok) throw new Error('expected ok');
     expect(res.gas).toBe(21000n);
     expect(res.data).toBe(
       encodeFunctionData({
         abi: erc20Abi,
-        functionName: "transfer",
+        functionName: 'transfer',
         args: ARGS,
       }),
     );
@@ -95,7 +95,7 @@ describe("simulateOperation", () => {
     const expectedCall = {
       address: ADDR,
       abi: erc20Abi,
-      functionName: "transfer",
+      functionName: 'transfer',
       args: ARGS,
       value: 5n,
       account: ACCOUNT,
@@ -104,18 +104,18 @@ describe("simulateOperation", () => {
     expect(client.estimateContractGas).toHaveBeenCalledWith(expectedCall);
   });
 
-  it("returns revert failure when simulateContract reverts; does not reach estimateContractGas", async () => {
+  it('returns revert failure when simulateContract reverts; does not reach estimateContractGas', async () => {
     const data = encodeErrorResult({
       abi: erc20Abi,
-      errorName: "InsufficientBalance",
+      errorName: 'InsufficientBalance',
       args: [1n, 2n],
     });
     const reverted = new ContractFunctionRevertedError({
       abi: erc20Abi,
       data,
-      functionName: "transfer",
+      functionName: 'transfer',
     });
-    const wrapped = new BaseError("wrapper", { cause: reverted });
+    const wrapped = new BaseError('wrapper', { cause: reverted });
     const client = makeFakeClient({
       simulateContract: vi.fn().mockRejectedValue(wrapped),
     });
@@ -126,18 +126,18 @@ describe("simulateOperation", () => {
     );
 
     expect(res.ok).toBe(false);
-    if (res.ok) throw new Error("expected failure");
-    expect(res.kind).toBe("revert");
-    expect(res.message).toContain("InsufficientBalance");
+    if (res.ok) throw new Error('expected failure');
+    expect(res.kind).toBe('revert');
+    expect(res.message).toContain('InsufficientBalance');
     expect(client.estimateContractGas).not.toHaveBeenCalled();
   });
 
-  it("returns rpc failure when estimateContractGas throws a non-revert error", async () => {
+  it('returns rpc failure when estimateContractGas throws a non-revert error', async () => {
     const client = makeFakeClient({
       estimateContractGas: vi
         .fn()
         .mockRejectedValue(
-          new HttpRequestError({ url: "https://x", status: 500 }),
+          new HttpRequestError({ url: 'https://x', status: 500 }),
         ),
     });
 
@@ -147,14 +147,14 @@ describe("simulateOperation", () => {
     );
 
     expect(res.ok).toBe(false);
-    if (res.ok) throw new Error("expected failure");
-    expect(res.kind).toBe("rpc");
+    if (res.ok) throw new Error('expected failure');
+    expect(res.kind).toBe('rpc');
     expect(client.simulateContract).toHaveBeenCalledOnce();
   });
 
-  it("returns ok with undefined fees when estimateFeesPerGas throws", async () => {
+  it('returns ok with undefined fees when estimateFeesPerGas throws', async () => {
     const client = makeFakeClient({
-      estimateFeesPerGas: vi.fn().mockRejectedValue(new Error("no fees")),
+      estimateFeesPerGas: vi.fn().mockRejectedValue(new Error('no fees')),
     });
 
     const res = await simulateOperation(
@@ -168,12 +168,12 @@ describe("simulateOperation", () => {
     );
 
     expect(res.ok).toBe(true);
-    if (!res.ok) throw new Error("expected ok");
+    if (!res.ok) throw new Error('expected ok');
     expect(res.fees).toBeUndefined();
     expect(res.nonce).toBe(7);
   });
 
-  it("does not call getTransactionCount and leaves nonce undefined when no account", async () => {
+  it('does not call getTransactionCount and leaves nonce undefined when no account', async () => {
     const client = makeFakeClient();
 
     const res = await simulateOperation(
@@ -182,14 +182,14 @@ describe("simulateOperation", () => {
     );
 
     expect(res.ok).toBe(true);
-    if (!res.ok) throw new Error("expected ok");
+    if (!res.ok) throw new Error('expected ok');
     expect(res.nonce).toBeUndefined();
     expect(client.getTransactionCount).not.toHaveBeenCalled();
   });
 
-  it("returns ok with undefined nonce when getTransactionCount throws", async () => {
+  it('returns ok with undefined nonce when getTransactionCount throws', async () => {
     const client = makeFakeClient({
-      getTransactionCount: vi.fn().mockRejectedValue(new Error("nonce fail")),
+      getTransactionCount: vi.fn().mockRejectedValue(new Error('nonce fail')),
     });
 
     const res = await simulateOperation(
@@ -203,12 +203,12 @@ describe("simulateOperation", () => {
     );
 
     expect(res.ok).toBe(true);
-    if (!res.ok) throw new Error("expected ok");
+    if (!res.ok) throw new Error('expected ok');
     expect(res.nonce).toBeUndefined();
     expect(res.fees).toBeDefined();
   });
 
-  it("omits fees when chain returns legacy fee values (no EIP-1559 fields)", async () => {
+  it('omits fees when chain returns legacy fee values (no EIP-1559 fields)', async () => {
     const client = makeFakeClient({
       estimateFeesPerGas: vi.fn().mockResolvedValue({ gasPrice: 100n }),
     });
@@ -219,11 +219,11 @@ describe("simulateOperation", () => {
     );
 
     expect(res.ok).toBe(true);
-    if (!res.ok) throw new Error("expected ok");
+    if (!res.ok) throw new Error('expected ok');
     expect(res.fees).toBeUndefined();
   });
 
-  it("returns rpc failure when calldata encoding throws", async () => {
+  it('returns rpc failure when calldata encoding throws', async () => {
     const client = makeFakeClient();
 
     const res = await simulateOperation(
@@ -232,13 +232,13 @@ describe("simulateOperation", () => {
       {
         contract: makeContract(),
         fn: transferFn,
-        args: ["not-an-address", "not-a-number"],
+        args: ['not-an-address', 'not-a-number'],
       },
     );
 
     expect(res.ok).toBe(false);
-    if (res.ok) throw new Error("expected failure");
-    expect(res.kind).toBe("rpc");
+    if (res.ok) throw new Error('expected failure');
+    expect(res.kind).toBe('rpc');
     expect(client.simulateContract).not.toHaveBeenCalled();
   });
 });

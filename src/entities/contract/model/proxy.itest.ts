@@ -1,16 +1,16 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { getAddress } from "viem";
-import { getEffectiveAbi } from "@/features/contract-browser/model/effectiveAbi";
-import { createViemRpc } from "@/shared/adapters/viem-rpc";
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { getAddress } from 'viem';
+import { getEffectiveAbi } from '@/features/contract-browser/model/effectiveAbi';
+import { createViemRpc } from '@/shared/adapters/viem-rpc';
 import {
   clientsFor,
   deployArtifact,
   loadArtifact,
   startAnvil,
   type AnvilHandle,
-} from "@/test/anvil";
-import { detectProxy } from "./proxy";
-import type { TContract } from "./types";
+} from '@/test/anvil';
+import { detectProxy } from './proxy';
+import type { TContract } from './types';
 
 /**
  * Real EIP-1967 proxy detection through the production `detectProxy`, which
@@ -19,15 +19,15 @@ import type { TContract } from "./types";
  * impl address, and the proxy-aware effective ABI must let us read/write the
  * impl methods at the proxy address.
  */
-describe("detectProxy (integration)", () => {
+describe('detectProxy (integration)', () => {
   let anvil: AnvilHandle;
   let implAddress: `0x${string}`;
   let proxyAddress: `0x${string}`;
 
   beforeAll(async () => {
     anvil = await startAnvil();
-    implAddress = await deployArtifact(anvil.rpcUrl, "CounterV1");
-    proxyAddress = await deployArtifact(anvil.rpcUrl, "SlimProxy", [
+    implAddress = await deployArtifact(anvil.rpcUrl, 'CounterV1');
+    proxyAddress = await deployArtifact(anvil.rpcUrl, 'SlimProxy', [
       implAddress,
     ]);
   }, 30_000);
@@ -36,41 +36,41 @@ describe("detectProxy (integration)", () => {
     await anvil?.stop();
   });
 
-  it("detects the EIP-1967 implementation behind the proxy", async () => {
+  it('detects the EIP-1967 implementation behind the proxy', async () => {
     const rpc = createViemRpc(() => ({ 31337: anvil.rpcUrl }));
     const result = await detectProxy(rpc, 31337, proxyAddress);
 
     expect(result).not.toBeNull();
-    expect(result?.kind).toBe("eip1967");
+    expect(result?.kind).toBe('eip1967');
     expect(result?.implAddress.toLowerCase()).toBe(implAddress.toLowerCase());
   });
 
-  it("returns null for a non-proxy contract", async () => {
+  it('returns null for a non-proxy contract', async () => {
     const rpc = createViemRpc(() => ({ 31337: anvil.rpcUrl }));
     const result = await detectProxy(rpc, 31337, implAddress);
     expect(result).toBeNull();
   });
 
-  it("reads and writes impl methods at the proxy via the effective ABI", async () => {
+  it('reads and writes impl methods at the proxy via the effective ABI', async () => {
     const rpc = createViemRpc(() => ({ 31337: anvil.rpcUrl }));
     const detected = await detectProxy(rpc, 31337, proxyAddress);
     expect(detected).not.toBeNull();
 
-    const { abi: implAbi } = loadArtifact("CounterV1");
-    const { abi: proxyAbi } = loadArtifact("SlimProxy");
+    const { abi: implAbi } = loadArtifact('CounterV1');
+    const { abi: proxyAbi } = loadArtifact('SlimProxy');
 
     // Mirror how the app builds a proxied TContract: own (proxy) ABI plus the
     // implementation ABI captured in `proxy.implAbi`.
     const contract: TContract = {
-      id: "itest-proxy",
-      name: "Counter Proxy",
+      id: 'itest-proxy',
+      name: 'Counter Proxy',
       chainId: 31337,
       address: proxyAddress,
       abi: proxyAbi,
-      source: "manual",
+      source: 'manual',
       addedAt: 0,
       proxy: {
-        kind: "eip1967",
+        kind: 'eip1967',
         implAddress: getAddress(implAddress),
         implAbi,
       },
@@ -78,10 +78,10 @@ describe("detectProxy (integration)", () => {
 
     const effectiveAbi = getEffectiveAbi(contract);
     const fnNames = effectiveAbi
-      .filter((item) => item.type === "function")
+      .filter((item) => item.type === 'function')
       .map((item) => item.name);
-    expect(fnNames).toContain("increment");
-    expect(fnNames).toContain("count");
+    expect(fnNames).toContain('increment');
+    expect(fnNames).toContain('count');
 
     const client = rpc.getClient(31337);
 
@@ -89,7 +89,7 @@ describe("detectProxy (integration)", () => {
     const before = await client.readContract({
       address: proxyAddress,
       abi: effectiveAbi,
-      functionName: "count",
+      functionName: 'count',
     });
     expect(before).toBe(0n);
 
@@ -98,7 +98,7 @@ describe("detectProxy (integration)", () => {
     const hash = await wallet.writeContract({
       address: proxyAddress,
       abi: effectiveAbi,
-      functionName: "increment",
+      functionName: 'increment',
       account: wallet.account ?? null,
       chain: null,
     });
@@ -107,7 +107,7 @@ describe("detectProxy (integration)", () => {
     const after = await client.readContract({
       address: proxyAddress,
       abi: effectiveAbi,
-      functionName: "count",
+      functionName: 'count',
     });
     expect(after).toBe(1n);
   });

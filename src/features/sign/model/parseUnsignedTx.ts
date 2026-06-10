@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export type TParsedTx = {
   to: `0x${string}`;
@@ -15,16 +15,16 @@ export type TParsedTx = {
  * non-integer numbers, and numeric values outside the safe-integer range
  * (magnitudes > 2^53-1 lose precision in JSON.parse before zod sees them). */
 const bigintLike = z.union([z.string(), z.number()]).transform((v, ctx) => {
-  if (typeof v === "number") {
+  if (typeof v === 'number') {
     if (!Number.isInteger(v)) {
-      ctx.addIssue({ code: "custom", message: "must be an integer" });
+      ctx.addIssue({ code: 'custom', message: 'must be an integer' });
       return z.NEVER;
     }
     if (!Number.isSafeInteger(v)) {
       ctx.addIssue({
-        code: "custom",
+        code: 'custom',
         message:
-          "use a decimal string for large values (numeric precision lost above 2^53-1)",
+          'use a decimal string for large values (numeric precision lost above 2^53-1)',
       });
       return z.NEVER;
     }
@@ -33,11 +33,11 @@ const bigintLike = z.union([z.string(), z.number()]).transform((v, ctx) => {
   try {
     parsed = BigInt(v);
   } catch {
-    ctx.addIssue({ code: "custom", message: "must be an integer" });
+    ctx.addIssue({ code: 'custom', message: 'must be an integer' });
     return z.NEVER;
   }
   if (parsed < 0n) {
-    ctx.addIssue({ code: "custom", message: "must not be negative" });
+    ctx.addIssue({ code: 'custom', message: 'must not be negative' });
     return z.NEVER;
   }
   return parsed;
@@ -46,10 +46,10 @@ const bigintLike = z.union([z.string(), z.number()]).transform((v, ctx) => {
 const unsignedTxSchema = z.object({
   to: z
     .string()
-    .regex(/^0x[0-9a-fA-F]{40}$/, "must be a 0x-prefixed 20-byte address"),
+    .regex(/^0x[0-9a-fA-F]{40}$/, 'must be a 0x-prefixed 20-byte address'),
   data: z
     .string()
-    .regex(/^0x([0-9a-fA-F]{2})*$/, "must be 0x-prefixed even-length hex")
+    .regex(/^0x([0-9a-fA-F]{2})*$/, 'must be 0x-prefixed even-length hex')
     .optional(),
   value: bigintLike.optional(),
   gas: bigintLike.optional(),
@@ -71,14 +71,14 @@ export function parseUnsignedTx(
   try {
     json = JSON.parse(raw);
   } catch {
-    return { ok: false, error: "invalid JSON" };
+    return { ok: false, error: 'invalid JSON' };
   }
 
   const result = unsignedTxSchema.safeParse(json);
   if (!result.success) {
     const issue = result.error.issues[0];
-    const path = issue?.path.join(".") ?? "";
-    const message = issue?.message ?? "invalid input";
+    const path = issue?.path.join('.') ?? '';
+    const message = issue?.message ?? 'invalid input';
     return { ok: false, error: path ? `${path}: ${message}` : message };
   }
 

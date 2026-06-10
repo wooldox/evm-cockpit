@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import { useQuery } from "@tanstack/react-query";
-import { BaseError, ChainDoesNotSupportContract } from "viem";
-import type { AbiFunction } from "abitype";
-import type { PublicClient } from "viem";
-import type { TContract } from "@/entities/contract/model/types";
-import type { RpcProvider } from "@/shared/ports/rpc";
-import { viemRpc } from "@/app/web3/services";
-import { formatCallError } from "@/shared/lib/errors/classifyWriteError";
-import { getEffectiveAbi, getBrowserSections } from "./effectiveAbi";
+import { useQuery } from '@tanstack/react-query';
+import { BaseError, ChainDoesNotSupportContract } from 'viem';
+import type { AbiFunction } from 'abitype';
+import type { PublicClient } from 'viem';
+import type { TContract } from '@/entities/contract/model/types';
+import type { RpcProvider } from '@/shared/ports/rpc';
+import { viemRpc } from '@/app/web3/services';
+import { formatCallError } from '@/shared/lib/errors/classifyWriteError';
+import { getEffectiveAbi, getBrowserSections } from './effectiveAbi';
 
 export type PropertyRow =
-  | { fn: AbiFunction; status: "ok"; value: unknown }
-  | { fn: AbiFunction; status: "error"; error: string };
+  | { fn: AbiFunction; status: 'ok'; value: unknown }
+  | { fn: AbiFunction; status: 'error'; error: string };
 
 export type UsePropertiesResult = {
   rows: PropertyRow[];
@@ -30,8 +30,8 @@ type Deps = {
 const defaultDeps: Deps = { rpc: viemRpc };
 
 type MulticallItem =
-  | { status: "success"; result: unknown }
-  | { status: "failure"; error: unknown };
+  | { status: 'success'; result: unknown }
+  | { status: 'failure'; error: unknown };
 
 /** Map a single multicall result item to a PropertyRow. */
 function toRow(
@@ -39,12 +39,12 @@ function toRow(
   item: MulticallItem,
   abi: ReturnType<typeof getEffectiveAbi>,
 ): PropertyRow {
-  if (item.status === "success") {
-    return { fn, status: "ok", value: item.result };
+  if (item.status === 'success') {
+    return { fn, status: 'ok', value: item.result };
   }
   return {
     fn,
-    status: "error",
+    status: 'error',
     error: formatCallError(abi, item.error),
   };
 }
@@ -76,12 +76,12 @@ async function readEachProperty(
   );
   return sections.properties.map((fn, i): PropertyRow => {
     const r = settled[i]!;
-    if (r.status === "fulfilled") {
-      return { fn, status: "ok", value: r.value };
+    if (r.status === 'fulfilled') {
+      return { fn, status: 'ok', value: r.value };
     }
     return {
       fn,
-      status: "error",
+      status: 'error',
       error: formatCallError(abi, r.reason),
     };
   });
@@ -95,7 +95,7 @@ export function useProperties(
 
   const query = useQuery({
     queryKey: [
-      "properties",
+      'properties',
       contract.id,
       contract.chainId,
       contract.proxy?.implAddress ?? null,
@@ -117,9 +117,9 @@ export function useProperties(
       }));
 
       let res: (
-        | { status: "success"; result: unknown }
+        | { status: 'success'; result: unknown }
         | {
-            status: "failure";
+            status: 'failure';
             error: unknown;
           }
       )[];
@@ -128,7 +128,7 @@ export function useProperties(
         res = (await client.multicall({
           contracts: contracts as Parameters<
             typeof client.multicall
-          >[0]["contracts"],
+          >[0]['contracts'],
           allowFailure: true,
         })) as typeof res;
       } catch (err) {

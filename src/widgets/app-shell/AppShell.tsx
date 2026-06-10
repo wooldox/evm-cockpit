@@ -1,15 +1,15 @@
-"use client";
-import { Suspense, type ReactNode } from "react";
-import { ToastProvider } from "@/shared/ui";
-import { useSettingsStore } from "@/entities/settings/model/store";
-import { Web3Providers } from "@/app/web3/Web3Providers";
-import { AddContractModal } from "@/features/add-contract/ui/AddContractModal";
-import { SettingsModal } from "@/features/settings/ui/SettingsModal";
-import { HashImport } from "@/features/share/ui/HashImport";
-import { CatalogLoader } from "@/entities/chain/ui/CatalogLoader";
-import { AppShellProvider, useAppShell } from "./AppShellProvider";
-import { Sidebar } from "./Sidebar";
-import { TopBar } from "./TopBar";
+'use client';
+import { Suspense, type ReactNode } from 'react';
+import { ToastProvider } from '@/shared/ui';
+import { useSettingsStore } from '@/entities/settings/model/store';
+import { Web3Providers } from '@/app/web3/Web3Providers';
+import { AddContractModal } from '@/features/add-contract/ui/AddContractModal';
+import { SettingsModal } from '@/features/settings/ui/SettingsModal';
+import { HashImport } from '@/features/share/ui/HashImport';
+import { CatalogLoader } from '@/entities/chain/ui/CatalogLoader';
+import { AppShellProvider, useAppShell } from './AppShellProvider';
+import { Sidebar } from './Sidebar';
+import { TopBar } from './TopBar';
 
 /** Rendered inside AppShellProvider — safe to call useAppShell(). */
 function ShellModals() {
@@ -43,7 +43,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <AppShellProvider>
         <ToastProvider>
           <div
-            data-density={density === "compact" ? "compact" : undefined}
+            data-density={density === 'compact' ? 'compact' : undefined}
             className="grid h-screen grid-cols-[264px_1fr] overflow-hidden bg-surface max-[860px]:grid-cols-1"
           >
             <Suspense fallback={null}>

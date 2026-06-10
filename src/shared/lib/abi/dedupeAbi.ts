@@ -1,5 +1,5 @@
-import { formatAbiItem } from "viem/utils";
-import type { Abi, AbiItem } from "viem";
+import { formatAbiItem } from 'viem/utils';
+import type { Abi, AbiItem } from 'viem';
 
 /**
  * Canonical de-dup key for an ABI item. Functions, events and errors are keyed
@@ -9,9 +9,9 @@ import type { Abi, AbiItem } from "viem";
  */
 function abiKey(item: AbiItem): string {
   if (
-    item.type === "function" ||
-    item.type === "event" ||
-    item.type === "error"
+    item.type === 'function' ||
+    item.type === 'event' ||
+    item.type === 'error'
   ) {
     return `${item.type}:${formatAbiItem(item)}`;
   }

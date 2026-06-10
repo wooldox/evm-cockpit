@@ -1,4 +1,4 @@
-import type { AbiSource, AbiFetchResult } from "@/shared/ports/abi-source";
+import type { AbiSource, AbiFetchResult } from '@/shared/ports/abi-source';
 
 export function createAbiResolver(sources: AbiSource[]): AbiSource {
   return {
@@ -16,7 +16,7 @@ export function createAbiResolver(sources: AbiSource[]): AbiSource {
       return {
         ok: false,
         error:
-          errors.length > 0 ? errors.join("; ") : "no ABI sources configured",
+          errors.length > 0 ? errors.join('; ') : 'no ABI sources configured',
       };
     },
   };

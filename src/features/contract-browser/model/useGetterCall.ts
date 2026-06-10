@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import type { AbiFunction } from "abitype";
-import type { TContract } from "@/entities/contract/model/types";
-import type { RpcProvider } from "@/shared/ports/rpc";
-import { viemRpc } from "@/app/web3/services";
-import { paramSchema } from "@/shared/lib/values/paramSchema";
-import { stringifyWithBigint } from "@/shared/lib/json/stringify";
-import { record } from "@/entities/history/model/store";
-import type { THistoryEntry } from "@/entities/history/model/types";
-import { formatCallError } from "@/shared/lib/errors/classifyWriteError";
-import { getEffectiveAbi } from "./effectiveAbi";
+import { useState } from 'react';
+import type { AbiFunction } from 'abitype';
+import type { TContract } from '@/entities/contract/model/types';
+import type { RpcProvider } from '@/shared/ports/rpc';
+import { viemRpc } from '@/app/web3/services';
+import { paramSchema } from '@/shared/lib/values/paramSchema';
+import { stringifyWithBigint } from '@/shared/lib/json/stringify';
+import { record } from '@/entities/history/model/store';
+import type { THistoryEntry } from '@/entities/history/model/types';
+import { formatCallError } from '@/shared/lib/errors/classifyWriteError';
+import { getEffectiveAbi } from './effectiveAbi';
 
-export type GetterStatus = "idle" | "loading" | "done" | "error";
+export type GetterStatus = 'idle' | 'loading' | 'done' | 'error';
 
 export type UseGetterCallState = {
   status: GetterStatus;
@@ -27,7 +27,7 @@ export type UseGetterCallResult = UseGetterCallState & {
 
 type Deps = {
   rpc: RpcProvider;
-  addHistory: (e: Omit<THistoryEntry, "id" | "timestamp">) => void;
+  addHistory: (e: Omit<THistoryEntry, 'id' | 'timestamp'>) => void;
 };
 
 const defaultDeps: Deps = { rpc: viemRpc, addHistory: record };
@@ -38,7 +38,7 @@ export function useGetterCall(
   deps: Deps = defaultDeps,
 ): UseGetterCallResult {
   const [state, setState] = useState<UseGetterCallState>({
-    status: "idle",
+    status: 'idle',
     argErrors: {},
   });
 
@@ -50,10 +50,10 @@ export function useGetterCall(
     for (let i = 0; i < fn.inputs.length; i++) {
       const input = fn.inputs[i]!;
       const key = input.name ?? String(i);
-      const raw = rawArgs[key] ?? "";
+      const raw = rawArgs[key] ?? '';
       const result = paramSchema(input.type).safeParse(raw);
       if (!result.success) {
-        argErrors[key] = result.error.issues[0]?.message ?? "invalid value";
+        argErrors[key] = result.error.issues[0]?.message ?? 'invalid value';
       } else {
         parsedArgs.push(result.data);
       }
@@ -64,7 +64,7 @@ export function useGetterCall(
       return;
     }
 
-    setState({ status: "loading", argErrors: {} });
+    setState({ status: 'loading', argErrors: {} });
 
     try {
       const client = deps.rpc.getClient(contract.chainId);
@@ -77,14 +77,14 @@ export function useGetterCall(
         args: parsedArgs as readonly unknown[],
       });
 
-      setState({ status: "done", result, argErrors: {} });
+      setState({ status: 'done', result, argErrors: {} });
       deps.addHistory({
         contractId: contract.id,
         chainId: contract.chainId,
-        type: "read",
+        type: 'read',
         fnName: fn.name,
         args: rawArgs,
-        status: "ok",
+        status: 'ok',
         result: stringifyWithBigint(result),
       });
     } catch (e) {
@@ -92,14 +92,14 @@ export function useGetterCall(
       // a read through a proxy can hit guarded functions (e.g. UUPS
       // proxiableUUID's notDelegated) and the custom error is the answer.
       const message = formatCallError(getEffectiveAbi(contract), e);
-      setState({ status: "error", error: message, argErrors: {} });
+      setState({ status: 'error', error: message, argErrors: {} });
       deps.addHistory({
         contractId: contract.id,
         chainId: contract.chainId,
-        type: "read",
+        type: 'read',
         fnName: fn.name,
         args: rawArgs,
-        status: "error",
+        status: 'error',
         error: message,
       });
     }

@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useHistoryStore } from "@/entities/history/model/store";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useHistoryStore } from '@/entities/history/model/store';
 import type {
   THistoryEntry,
   THistoryType,
-} from "@/entities/history/model/types";
-import { useContractsStore } from "@/entities/contract/model/store";
-import { useRerunStore } from "@/entities/rerun/model/store";
-import { useChainDisplay } from "@/entities/chain/model/catalogStore";
-import { txUrl } from "@/entities/chain/model/explorer";
-import { trunc } from "@/shared/lib/format";
+} from '@/entities/history/model/types';
+import { useContractsStore } from '@/entities/contract/model/store';
+import { useRerunStore } from '@/entities/rerun/model/store';
+import { useChainDisplay } from '@/entities/chain/model/catalogStore';
+import { txUrl } from '@/entities/chain/model/explorer';
+import { trunc } from '@/shared/lib/format';
 import {
   Badge,
   Button,
@@ -20,26 +20,26 @@ import {
   Panel,
   Segment,
   Select,
-} from "@/shared/ui";
-import { ExtLink } from "@/shared/ui/copyable";
-import { Icon } from "@/shared/icons";
+} from '@/shared/ui';
+import { ExtLink } from '@/shared/ui/copyable';
+import { Icon } from '@/shared/icons';
 
-type TypeFilter = "all" | THistoryType;
+type TypeFilter = 'all' | THistoryType;
 
 const TYPE_FILTER_OPTIONS: { value: TypeFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "read", label: "Reads" },
-  { value: "write", label: "Writes" },
-  { value: "simulate", label: "Sims" },
+  { value: 'all', label: 'All' },
+  { value: 'read', label: 'Reads' },
+  { value: 'write', label: 'Writes' },
+  { value: 'simulate', label: 'Sims' },
 ];
 
 const TYPE_BADGE: Record<
   THistoryType,
-  { variant: "read" | "neutral" | "write"; label: string }
+  { variant: 'read' | 'neutral' | 'write'; label: string }
 > = {
-  read: { variant: "read", label: "read" },
-  simulate: { variant: "neutral", label: "simulate" },
-  write: { variant: "write", label: "write" },
+  read: { variant: 'read', label: 'read' },
+  simulate: { variant: 'neutral', label: 'simulate' },
+  write: { variant: 'write', label: 'write' },
 };
 
 /* ── HistoryRow ─────────────────────────────────────────── */
@@ -73,11 +73,11 @@ function HistoryRow({
         <Muted className="ml-1.5 text-[11px]">{chainName}</Muted>
       </td>
       <td className="border-b border-border px-3 py-[9px] align-top">
-        {entry.status === "ok" ? (
+        {entry.status === 'ok' ? (
           <span className="text-success-fg">✓ ok</span>
         ) : (
           <span className="text-danger-fg" title={entry.error}>
-            error{entry.error ? ` · ${trunc(entry.error, 16)}` : ""}
+            error{entry.error ? ` · ${trunc(entry.error, 16)}` : ''}
           </span>
         )}
       </td>
@@ -108,7 +108,7 @@ function HistoryRow({
           icon={<Icon.refresh size={13} />}
           onClick={() => onRerun(entry)}
           disabled={!contractExists}
-          title={contractExists ? undefined : "contract no longer saved"}
+          title={contractExists ? undefined : 'contract no longer saved'}
         >
           Re-run
         </Button>
@@ -136,14 +136,14 @@ export function HistoryView({
       .getState()
       .contracts.some((c) => c.id === initialContractId)
       ? initialContractId
-      : "all",
+      : 'all',
   );
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
 
   const filtered = entries.filter(
     (e) =>
-      (sel === "all" || e.contractId === sel) &&
-      (typeFilter === "all" || e.type === typeFilter),
+      (sel === 'all' || e.contractId === sel) &&
+      (typeFilter === 'all' || e.type === typeFilter),
   );
 
   const nameById = new Map(contracts.map((c) => [c.id, c.name]));
@@ -151,7 +151,7 @@ export function HistoryView({
   const contractIds = new Set(contracts.map((c) => c.id));
 
   function handleClear(): void {
-    if (window.confirm("Clear all history?")) clear();
+    if (window.confirm('Clear all history?')) clear();
   }
 
   /**
@@ -178,7 +178,7 @@ export function HistoryView({
             History
           </h1>
           <Muted className="text-[13px]">
-            {entries.length} {entries.length === 1 ? "entry" : "entries"}
+            {entries.length} {entries.length === 1 ? 'entry' : 'entries'}
           </Muted>
         </div>
         <div className="flex items-center gap-2">
@@ -225,13 +225,13 @@ export function HistoryView({
               <thead>
                 <tr>
                   {[
-                    "Type",
-                    "Function",
-                    "Contract",
-                    "Status",
-                    "Result",
-                    "Time",
-                    "",
+                    'Type',
+                    'Function',
+                    'Contract',
+                    'Status',
+                    'Result',
+                    'Time',
+                    '',
                   ].map((h, i) => (
                     <th
                       key={h || `col-${i}`}

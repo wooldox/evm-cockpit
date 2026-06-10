@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useRef, useState } from "react";
-import { Icon } from "@/shared/icons";
-import { useChainCatalog } from "@/entities/chain/model/catalogStore";
-import { useSettingsStore } from "@/entities/settings/model/store";
-import type { TAddress, TContract } from "@/entities/contract/model/types";
-import type { Abi } from "abitype";
-import { trunc } from "@/shared/lib/format";
-import { sharePayloadSchema } from "@/shared/lib/share/codec";
+import { useRef, useState } from 'react';
+import { Icon } from '@/shared/icons';
+import { useChainCatalog } from '@/entities/chain/model/catalogStore';
+import { useSettingsStore } from '@/entities/settings/model/store';
+import type { TAddress, TContract } from '@/entities/contract/model/types';
+import type { Abi } from 'abitype';
+import { trunc } from '@/shared/lib/format';
+import { sharePayloadSchema } from '@/shared/lib/share/codec';
 import {
   Badge,
   Button,
@@ -22,8 +22,8 @@ import {
   Spinner,
   Textarea,
   useToast,
-} from "@/shared/ui";
-import { useAddContractForm } from "../model/useAddContractForm";
+} from '@/shared/ui';
+import { useAddContractForm } from '../model/useAddContractForm';
 
 export interface AddContractModalProps {
   onClose: () => void;
@@ -41,11 +41,11 @@ export function AddContractModal({
   // Auto-fetch is the default tab only when an Etherscan key is set; otherwise
   // open on "Paste manually". Read once at mount (the modal remounts per open).
   const hasEtherscanKey =
-    useSettingsStore.getState().etherscanApiKey.trim() !== "";
+    useSettingsStore.getState().etherscanApiKey.trim() !== '';
   const f = useAddContractForm({
     editing,
     defaultChainId,
-    defaultMode: hasEtherscanKey ? "fetch" : "manual",
+    defaultMode: hasEtherscanKey ? 'fetch' : 'manual',
   });
   const toast = useToast();
   const chainEntries = useChainCatalog((s) => s.entries);
@@ -64,7 +64,7 @@ export function AddContractModal({
       f.setChainId(payload.chainId);
       f.setAddress(payload.address);
       f.setAbiText(JSON.stringify(payload.abi, null, 2));
-      f.setMode("manual");
+      f.setMode('manual');
       f.setImportedProxy(
         payload.proxy
           ? {
@@ -75,14 +75,14 @@ export function AddContractModal({
           : undefined,
       );
     } catch {
-      setImportError("not a valid contract export");
+      setImportError('not a valid contract export');
     }
   }
 
   return (
     <Modal
       lg
-      title={editing ? "Edit contract" : "Add contract"}
+      title={editing ? 'Edit contract' : 'Add contract'}
       onClose={onClose}
       footer={
         <>
@@ -95,15 +95,15 @@ export function AddContractModal({
             onClick={() => {
               if (f.submit()) {
                 toast({
-                  kind: "success",
-                  title: editing ? "Contract updated" : "Contract added",
+                  kind: 'success',
+                  title: editing ? 'Contract updated' : 'Contract added',
                   msg: f.name,
                 });
                 onClose();
               }
             }}
           >
-            {editing ? "Save changes" : "Add contract"}
+            {editing ? 'Save changes' : 'Add contract'}
           </Button>
         </>
       }
@@ -140,11 +140,11 @@ export function AddContractModal({
               tone={
                 f.address
                   ? f.errors.address
-                    ? "invalid"
+                    ? 'invalid'
                     : f.addrValid
-                      ? "valid"
-                      : "default"
-                  : "default"
+                      ? 'valid'
+                      : 'default'
+                  : 'default'
               }
               placeholder="0x0000000000000000000000000000000000000000"
               value={f.address}
@@ -177,7 +177,7 @@ export function AddContractModal({
               const file = e.target.files?.[0];
               if (file) void handleImportFile(file);
               // Reset so re-selecting the same file re-fires onChange.
-              e.target.value = "";
+              e.target.value = '';
             }}
           />
         </div>
@@ -186,13 +186,13 @@ export function AddContractModal({
           onChange={f.setMode}
           options={[
             {
-              value: "fetch" as const,
-              label: "Auto-fetch from explorer",
+              value: 'fetch' as const,
+              label: 'Auto-fetch from explorer',
               icon: <Icon.download size={14} />,
             },
             {
-              value: "manual" as const,
-              label: "Paste manually",
+              value: 'manual' as const,
+              label: 'Paste manually',
               icon: <Icon.code size={14} />,
             },
           ]}
@@ -207,11 +207,11 @@ export function AddContractModal({
       )}
 
       {/* ── Fetch tab ─────────────────────────────────────────────── */}
-      {f.mode === "fetch" ? (
+      {f.mode === 'fetch' ? (
         <div className="flex flex-col gap-3">
           <div className="flex items-end gap-2">
             <div className="flex-1 text-xs text-fg-3">
-              Resolves the verified ABI via{" "}
+              Resolves the verified ABI via{' '}
               <strong className="text-fg">Sourcify → Etherscan V2</strong> and
               auto-detects proxies.
             </div>
@@ -219,21 +219,21 @@ export function AddContractModal({
               variant="read"
               fill="soft"
               icon={
-                f.fetch.status === "loading" ? (
+                f.fetch.status === 'loading' ? (
                   <Spinner />
                 ) : (
                   <Icon.refresh size={14} />
                 )
               }
               onClick={f.fetchAbi}
-              disabled={!f.addrValid || f.fetch.status === "loading"}
+              disabled={!f.addrValid || f.fetch.status === 'loading'}
             >
               Fetch ABI
             </Button>
           </div>
 
           {/* loading */}
-          {f.fetch.status === "loading" && (
+          {f.fetch.status === 'loading' && (
             <div className="flex items-center gap-2.5 rounded-sm border border-border bg-elev-3 px-3.5 py-3 text-[13px]">
               <Spinner />
               <Muted>Querying…</Muted>
@@ -241,13 +241,13 @@ export function AddContractModal({
           )}
 
           {/* done */}
-          {f.fetch.status === "done" && (
+          {f.fetch.status === 'done' && (
             <div className="flex flex-col items-stretch gap-[9px] rounded-sm border border-border bg-inset px-3.5 py-3 text-[13px]">
               <div className="flex items-center gap-2">
                 <Icon.checkCircle size={16} className="text-success-fg" />
                 <strong className="font-semibold">Verified ABI found</strong>
                 <Badge size="sm" variant="success">
-                  {f.fetch.categories ? "Verified" : "Source"}
+                  {f.fetch.categories ? 'Verified' : 'Source'}
                 </Badge>
               </div>
               {f.fetch.categories && (
@@ -255,28 +255,28 @@ export function AddContractModal({
                   <span>
                     <strong className="font-mono text-fg">
                       {f.fetch.categories.properties}
-                    </strong>{" "}
+                    </strong>{' '}
                     properties
                   </span>
                   <span className="text-fg-4">·</span>
                   <span>
                     <strong className="font-mono text-fg">
                       {f.fetch.categories.getters}
-                    </strong>{" "}
+                    </strong>{' '}
                     getters
                   </span>
                   <span className="text-fg-4">·</span>
                   <span>
                     <strong className="font-mono text-fg">
                       {f.fetch.categories.operations}
-                    </strong>{" "}
+                    </strong>{' '}
                     operations
                   </span>
                   <span className="text-fg-4">·</span>
                   <span>
                     <strong className="font-mono text-fg">
                       {f.fetch.categories.events}
-                    </strong>{" "}
+                    </strong>{' '}
                     events
                   </span>
                 </div>
@@ -285,15 +285,15 @@ export function AddContractModal({
                 <div className="flex items-center gap-[7px] rounded-xs border border-read-border bg-read-bg px-2.5 py-[7px] text-xs text-fg-2">
                   <Icon.layers size={13} className="text-read-fg" />
                   <strong className="font-semibold text-read-fg">
-                    {f.fetch.proxy.kind === "beacon"
-                      ? "Beacon proxy detected"
-                      : "EIP-1967 proxy detected"}
-                  </strong>{" "}
-                  — implementation{" "}
-                  <Mono>{trunc(f.fetch.proxy.implAddress)}</Mono>{" "}
+                    {f.fetch.proxy.kind === 'beacon'
+                      ? 'Beacon proxy detected'
+                      : 'EIP-1967 proxy detected'}
+                  </strong>{' '}
+                  — implementation{' '}
+                  <Mono>{trunc(f.fetch.proxy.implAddress)}</Mono>{' '}
                   {f.fetch.proxy.implAbi
-                    ? "ABI merged automatically"
-                    : "(implementation ABI unavailable)"}
+                    ? 'ABI merged automatically'
+                    : '(implementation ABI unavailable)'}
                   .
                 </div>
               )}
@@ -301,20 +301,20 @@ export function AddContractModal({
           )}
 
           {/* error */}
-          {f.fetch.status === "error" && (
+          {f.fetch.status === 'error' && (
             <ErrorBanner
               icon={<Icon.alert size={18} />}
               title="Not verified on Sourcify or Etherscan"
               hint={
                 <>
-                  → Switch to{" "}
+                  → Switch to{' '}
                   <button
                     type="button"
-                    onClick={() => f.setMode("manual")}
+                    onClick={() => f.setMode('manual')}
                     className="cursor-pointer border-0 bg-transparent p-0 text-read-fg underline"
                   >
                     Paste manually
-                  </button>{" "}
+                  </button>{' '}
                   to supply the ABI yourself.
                 </>
               }
@@ -332,7 +332,7 @@ export function AddContractModal({
           <Textarea
             mono
             rows={9}
-            tone={f.errors.abi ? "invalid" : "default"}
+            tone={f.errors.abi ? 'invalid' : 'default'}
             placeholder='[ { "type": "function", "name": "transfer", "inputs": [...] } ]'
             value={f.abiText}
             onChange={(e) => f.setAbiText(e.target.value)}

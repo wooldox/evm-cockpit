@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import type { TContract } from "@/entities/contract/model/types";
-import type { RpcProvider } from "@/shared/ports/rpc";
-import type { THistoryEntry } from "@/entities/history/model/types";
-import { useRerunStore, type TRerunIntent } from "@/entities/rerun/model/store";
-import { getBrowserSections } from "@/features/contract-browser/model/effectiveAbi";
-import { Icon } from "@/shared/icons";
-import { Badge, Empty, Input } from "@/shared/ui";
-import { ContractHeader } from "./ContractHeader";
-import { PropertiesSection } from "./PropertiesSection";
-import { GettersSection } from "./GettersSection";
-import { OperationsSection } from "./OperationsSection";
-import { EventsSection } from "./EventsSection";
+import { useState } from 'react';
+import type { TContract } from '@/entities/contract/model/types';
+import type { RpcProvider } from '@/shared/ports/rpc';
+import type { THistoryEntry } from '@/entities/history/model/types';
+import { useRerunStore, type TRerunIntent } from '@/entities/rerun/model/store';
+import { getBrowserSections } from '@/features/contract-browser/model/effectiveAbi';
+import { Icon } from '@/shared/icons';
+import { Badge, Empty, Input } from '@/shared/ui';
+import { ContractHeader } from './ContractHeader';
+import { PropertiesSection } from './PropertiesSection';
+import { GettersSection } from './GettersSection';
+import { OperationsSection } from './OperationsSection';
+import { EventsSection } from './EventsSection';
 
 /**
  * Test seam (flat). Forwarded as-is to OperationsSection; EventsSection only
@@ -21,7 +21,7 @@ import { EventsSection } from "./EventsSection";
  */
 type BrowserDeps = {
   rpc: RpcProvider;
-  addHistory: (e: Omit<THistoryEntry, "id" | "timestamp">) => void;
+  addHistory: (e: Omit<THistoryEntry, 'id' | 'timestamp'>) => void;
 };
 
 /* ── NoFunctionMatch ─────────────────────────────────────── */
@@ -44,7 +44,7 @@ export function ContractBrowser({
   onRemoved: () => void;
   deps?: BrowserDeps;
 }) {
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState('');
   const ql = q.toLowerCase();
 
   // Consume a re-run intent once per mount (lazy initializer — no effect).

@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { cx } from "@/shared/lib/cx";
+import type { ReactNode } from 'react';
+import { cx } from '@/shared/lib/cx';
 
 /** Inline monospace span — replaces the old `<span class="mono">` used inside
  *  toast/help strings, so we never need dangerouslySetInnerHTML. */
@@ -30,7 +30,7 @@ export function Muted({
   children: ReactNode;
   className?: string;
 }) {
-  return <span className={cx("text-fg-3", className)}>{children}</span>;
+  return <span className={cx('text-fg-3', className)}>{children}</span>;
 }
 
 /** Eyebrow — small uppercase section label. */
@@ -44,7 +44,7 @@ export function Eyebrow({
   return (
     <span
       className={cx(
-        "text-[11px] font-semibold uppercase tracking-[0.07em] text-fg-3",
+        'text-[11px] font-semibold uppercase tracking-[0.07em] text-fg-3',
         className,
       )}
     >

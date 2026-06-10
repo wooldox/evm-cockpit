@@ -1,7 +1,7 @@
-import { http } from "wagmi";
-import type { Transport } from "viem";
-import { resolveRpcUrl } from "@/entities/chain/model/resolveRpcUrl";
-import { useSettingsStore } from "@/entities/settings/model/store";
+import { http } from 'wagmi';
+import type { Transport } from 'viem';
+import { resolveRpcUrl } from '@/entities/chain/model/resolveRpcUrl';
+import { useSettingsStore } from '@/entities/settings/model/store';
 
 /**
  * A wagmi transport that resolves its RPC URL lazily from the settings store

@@ -1,5 +1,5 @@
-import * as allViemChains from "viem/chains";
-import { getCuratedMeta, CURATED_VIEM_CHAINS } from "./chains";
+import * as allViemChains from 'viem/chains';
+import { getCuratedMeta, CURATED_VIEM_CHAINS } from './chains';
 
 /**
  * The full, app-wide chain catalog. Built statically from every chain bundled
@@ -20,21 +20,21 @@ export type TCatalogChain = {
   explorerUrl?: string;
   nativeSymbol: string;
   testnet?: boolean;
-  source: "viem" | "remote" | "custom";
+  source: 'viem' | 'remote' | 'custom';
 };
 
 /** ~10 muted hues that read well on both our dark and light tokens. */
 const PALETTE = [
-  "#6b7682",
-  "#5b8def",
-  "#3aa675",
-  "#c9772f",
-  "#a05ad6",
-  "#d05b8c",
-  "#4aa6a6",
-  "#b58a2f",
-  "#7a86c4",
-  "#c25b5b",
+  '#6b7682',
+  '#5b8def',
+  '#3aa675',
+  '#c9772f',
+  '#a05ad6',
+  '#d05b8c',
+  '#4aa6a6',
+  '#b58a2f',
+  '#7a86c4',
+  '#c25b5b',
 ] as const;
 
 /**
@@ -46,8 +46,8 @@ export function sanitizeRpcUrls(urls: readonly string[]): string[] {
   const out: string[] = [];
   for (const raw of urls) {
     const url = raw.trim();
-    if (!url.startsWith("https://")) continue;
-    if (url.includes("${")) continue;
+    if (!url.startsWith('https://')) continue;
+    if (url.includes('${')) continue;
     if (out.includes(url)) continue;
     out.push(url);
     if (out.length === 3) break;
@@ -69,7 +69,7 @@ function nameInitials(name: string): string {
     .filter(Boolean)
     .slice(0, 4)
     .map((w) => w[0]!.toUpperCase())
-    .join("");
+    .join('');
 }
 
 /**
@@ -92,7 +92,7 @@ export function genDisplay(
 }
 
 function stripTrailingSlash(url: string): string {
-  return url.endsWith("/") ? url.slice(0, -1) : url;
+  return url.endsWith('/') ? url.slice(0, -1) : url;
 }
 
 /** Structural shape we read off a viem chain export. */
@@ -106,26 +106,26 @@ type ViemChainLike = {
 };
 
 function isViemChainLike(v: unknown): v is ViemChainLike {
-  if (typeof v !== "object" || v === null) return false;
+  if (typeof v !== 'object' || v === null) return false;
   const o = v as Record<string, unknown>;
-  if (typeof o.id !== "number") return false;
-  if (typeof o.name !== "string") return false;
+  if (typeof o.id !== 'number') return false;
+  if (typeof o.name !== 'string') return false;
   const rpc = o.rpcUrls;
-  if (typeof rpc !== "object" || rpc === null) return false;
-  if (!("default" in rpc)) return false;
+  if (typeof rpc !== 'object' || rpc === null) return false;
+  if (!('default' in rpc)) return false;
   // Require a usable default http URL (matches the chains.ts config filter).
   // A viem chain without one (e.g. `arc`: `default.http: []`) is unusable via
   // the viem-default tier AND would shadow a usable chainid.network entry for
   // the same id in mergeCatalog — skip it so the remote merge can supply it.
   const def = (rpc as { default: unknown }).default;
-  if (typeof def !== "object" || def === null) return false;
+  if (typeof def !== 'object' || def === null) return false;
   const http = (def as Record<string, unknown>).http;
-  if (!Array.isArray(http) || typeof http[0] !== "string" || http[0] === "") {
+  if (!Array.isArray(http) || typeof http[0] !== 'string' || http[0] === '') {
     return false;
   }
   const nc = o.nativeCurrency;
-  if (typeof nc !== "object" || nc === null) return false;
-  return typeof (nc as Record<string, unknown>).symbol === "string";
+  if (typeof nc !== 'object' || nc === null) return false;
+  return typeof (nc as Record<string, unknown>).symbol === 'string';
 }
 
 function toCatalogChain(c: ViemChainLike): TCatalogChain {
@@ -138,7 +138,7 @@ function toCatalogChain(c: ViemChainLike): TCatalogChain {
     color,
     rpcUrls: sanitizeRpcUrls(c.rpcUrls.default.http ?? []),
     nativeSymbol: c.nativeCurrency.symbol,
-    source: "viem",
+    source: 'viem',
   };
   if (explorer) entry.explorerUrl = stripTrailingSlash(explorer);
   if (c.testnet === true) entry.testnet = true;
@@ -194,32 +194,32 @@ type RemoteChainValid = {
 };
 
 function validateRemote(v: unknown): RemoteChainValid | undefined {
-  if (typeof v !== "object" || v === null) return undefined;
+  if (typeof v !== 'object' || v === null) return undefined;
   const o = v as Record<string, unknown>;
 
   const { chainId, name, rpc, explorers, nativeCurrency } = o;
   if (
-    typeof chainId !== "number" ||
+    typeof chainId !== 'number' ||
     !Number.isInteger(chainId) ||
     chainId <= 0
   ) {
     return undefined;
   }
-  if (typeof name !== "string" || name.length === 0) return undefined;
+  if (typeof name !== 'string' || name.length === 0) return undefined;
   if (!Array.isArray(rpc) || rpc.length === 0) return undefined;
-  if (!rpc.every((u): u is string => typeof u === "string")) return undefined;
+  if (!rpc.every((u): u is string => typeof u === 'string')) return undefined;
   if (!Array.isArray(explorers) || explorers.length === 0) return undefined;
 
   const first = explorers[0];
-  if (typeof first !== "object" || first === null) return undefined;
+  if (typeof first !== 'object' || first === null) return undefined;
   const explorerUrl = (first as Record<string, unknown>).url;
-  if (typeof explorerUrl !== "string" || explorerUrl.length === 0)
+  if (typeof explorerUrl !== 'string' || explorerUrl.length === 0)
     return undefined;
 
-  if (typeof nativeCurrency !== "object" || nativeCurrency === null)
+  if (typeof nativeCurrency !== 'object' || nativeCurrency === null)
     return undefined;
   const symbol = (nativeCurrency as Record<string, unknown>).symbol;
-  if (typeof symbol !== "string" || symbol.length === 0) return undefined;
+  if (typeof symbol !== 'string' || symbol.length === 0) return undefined;
 
   return { chainId, name, rpc, explorerUrl, symbol };
 }
@@ -256,7 +256,7 @@ export function mergeCatalog(
       rpcUrls,
       explorerUrl: stripTrailingSlash(v.explorerUrl),
       nativeSymbol: v.symbol,
-      source: "remote",
+      source: 'remote',
     };
     if (TESTNET_RE.test(v.name)) entry.testnet = true;
 

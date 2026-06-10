@@ -1,13 +1,13 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { createSourcifyAbiSource } from "./sourcify";
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { createSourcifyAbiSource } from './sourcify';
 
 const MOCK_ABI = [
   {
-    type: "function",
-    name: "balanceOf",
-    inputs: [{ name: "owner", type: "address" }],
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
+    type: 'function',
+    name: 'balanceOf',
+    inputs: [{ name: 'owner', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
   },
 ];
 
@@ -19,10 +19,10 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("createSourcifyAbiSource", () => {
-  it("returns ok+abi when full_match metadata is found", async () => {
+describe('createSourcifyAbiSource', () => {
+  it('returns ok+abi when full_match metadata is found', async () => {
     vi.stubGlobal(
-      "fetch",
+      'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => MOCK_METADATA,
@@ -32,32 +32,32 @@ describe("createSourcifyAbiSource", () => {
     const source = createSourcifyAbiSource();
     const result = await source.fetchAbi(
       1,
-      "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
     );
 
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.source).toBe("sourcify");
+      expect(result.source).toBe('sourcify');
       expect(result.abi).toEqual(MOCK_ABI);
     }
 
     expect(fetch).toHaveBeenCalledWith(
-      "https://repo.sourcify.dev/contracts/full_match/1/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/metadata.json",
+      'https://repo.sourcify.dev/contracts/full_match/1/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/metadata.json',
     );
   });
 
-  it("returns ok:false when the server responds with 404", async () => {
+  it('returns ok:false when the server responds with 404', async () => {
     vi.stubGlobal(
-      "fetch",
+      'fetch',
       vi.fn().mockResolvedValue({
         ok: false,
         status: 404,
-        statusText: "Not Found",
+        statusText: 'Not Found',
       }),
     );
 
     const source = createSourcifyAbiSource();
-    const result = await source.fetchAbi(1, "0xdeadbeef");
+    const result = await source.fetchAbi(1, '0xdeadbeef');
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
@@ -65,9 +65,9 @@ describe("createSourcifyAbiSource", () => {
     }
   });
 
-  it("returns ok:false when metadata has no output.abi array", async () => {
+  it('returns ok:false when metadata has no output.abi array', async () => {
     vi.stubGlobal(
-      "fetch",
+      'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({ output: {} }),
@@ -75,19 +75,19 @@ describe("createSourcifyAbiSource", () => {
     );
 
     const source = createSourcifyAbiSource();
-    const result = await source.fetchAbi(1, "0xdeadbeef");
+    const result = await source.fetchAbi(1, '0xdeadbeef');
 
     expect(result.ok).toBe(false);
   });
 
-  it("returns ok:false when fetch throws a network error", async () => {
+  it('returns ok:false when fetch throws a network error', async () => {
     vi.stubGlobal(
-      "fetch",
-      vi.fn().mockRejectedValue(new Error("Network failure")),
+      'fetch',
+      vi.fn().mockRejectedValue(new Error('Network failure')),
     );
 
     const source = createSourcifyAbiSource();
-    const result = await source.fetchAbi(1, "0xdeadbeef");
+    const result = await source.fetchAbi(1, '0xdeadbeef');
 
     expect(result.ok).toBe(false);
     if (!result.ok) {

@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useSettingsStore } from "@/entities/settings/model/store";
-import { useTheme } from "@/shared/lib/use-theme";
-import { Icon } from "@/shared/icons";
-import { Modal, Field, Input, Segment, Button } from "@/shared/ui";
-import { useAppShell } from "@/widgets/app-shell/AppShellProvider";
-import { CustomRpcManager } from "./CustomRpcManager";
+import { useSettingsStore } from '@/entities/settings/model/store';
+import { useTheme } from '@/shared/lib/use-theme';
+import { Icon } from '@/shared/icons';
+import { Modal, Field, Input, Segment, Button } from '@/shared/ui';
+import { useAppShell } from '@/widgets/app-shell/AppShellProvider';
+import { CustomRpcManager } from './CustomRpcManager';
 
 export function SettingsModal({ onClose }: { onClose: () => void }) {
   const [theme, setTheme] = useTheme();
@@ -32,8 +32,8 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             value={theme}
             onChange={setTheme}
             options={[
-              { value: "dark", label: "Dark", icon: <Icon.moon size={14} /> },
-              { value: "light", label: "Light", icon: <Icon.sun size={14} /> },
+              { value: 'dark', label: 'Dark', icon: <Icon.moon size={14} /> },
+              { value: 'light', label: 'Light', icon: <Icon.sun size={14} /> },
             ]}
           />
         </Field>
@@ -43,8 +43,8 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             value={density}
             onChange={setDensity}
             options={[
-              { value: "comfortable", label: "Comfortable" },
-              { value: "compact", label: "Compact" },
+              { value: 'comfortable', label: 'Comfortable' },
+              { value: 'compact', label: 'Compact' },
             ]}
           />
         </Field>

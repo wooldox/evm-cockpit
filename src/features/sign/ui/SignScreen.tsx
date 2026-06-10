@@ -1,23 +1,23 @@
-"use client";
+'use client';
 
-import { useRef, useState } from "react";
+import { useRef, useState } from 'react';
 import {
   useAccount,
   useChainId,
   useSendTransaction,
   useSignMessage,
-} from "wagmi";
-import type { RpcProvider } from "@/shared/ports/rpc";
-import { viemRpc } from "@/app/web3/services";
-import { getChainDisplay } from "@/entities/chain/model/chains";
-import { txUrl } from "@/entities/chain/model/explorer";
-import { trunc } from "@/shared/lib/format";
-import { fromBaseUnits } from "@/shared/lib/units/units";
+} from 'wagmi';
+import type { RpcProvider } from '@/shared/ports/rpc';
+import { viemRpc } from '@/app/web3/services';
+import { getChainDisplay } from '@/entities/chain/model/chains';
+import { txUrl } from '@/entities/chain/model/explorer';
+import { trunc } from '@/shared/lib/format';
+import { fromBaseUnits } from '@/shared/lib/units/units';
 import {
   parseUnsignedTx,
   type TParsedTx,
-} from "@/features/sign/model/parseUnsignedTx";
-import { Icon } from "@/shared/icons";
+} from '@/features/sign/model/parseUnsignedTx';
+import { Icon } from '@/shared/icons';
 import {
   Badge,
   Button,
@@ -31,38 +31,38 @@ import {
   Spinner,
   Textarea,
   useToast,
-} from "@/shared/ui";
-import { CopyBtn, ExtLink } from "@/shared/ui/copyable";
-import { Field } from "@/shared/ui/field";
-import { VerifyMessageCard } from "./VerifyMessageCard";
+} from '@/shared/ui';
+import { CopyBtn, ExtLink } from '@/shared/ui/copyable';
+import { Field } from '@/shared/ui/field';
+import { VerifyMessageCard } from './VerifyMessageCard';
 
 // NOTE: the Sign page intentionally records NO history entries — signing/broadcasting
 // here is not bound to a stored contract (no contractId).
 
 type Deps = { rpc: RpcProvider };
 
-type Mode = "tx" | "message";
+type Mode = 'tx' | 'message';
 
 const TX_SAMPLE = [
-  "{",
+  '{',
   '  "to": "0xA0b86991c6218B36c1d19D4a2e9Eb0cE3606eB48",',
   '  "value": "0",',
   '  "data": "0xa9059cbb…",',
   '  "nonce": 142,',
   '  "gas": "51284"',
-  "}",
-].join("\n");
+  '}',
+].join('\n');
 
 const MSG_SAMPLE =
-  "I authorize this session for app.evmcockpit.xyz\nNonce: 8f2a01";
+  'I authorize this session for app.evmcockpit.xyz\nNonce: 8f2a01';
 
 /** Broadcast lifecycle for raw-tx mode. */
 type TxStatus =
-  | { kind: "idle" }
-  | { kind: "wallet" }
-  | { kind: "pending"; hash: `0x${string}` }
-  | { kind: "confirmed"; hash: `0x${string}`; blockNumber: bigint }
-  | { kind: "failed"; error: string };
+  | { kind: 'idle' }
+  | { kind: 'wallet' }
+  | { kind: 'pending'; hash: `0x${string}` }
+  | { kind: 'confirmed'; hash: `0x${string}`; blockNumber: bigint }
+  | { kind: 'failed'; error: string };
 
 function SignRow({ k, v }: { k: string; v: React.ReactNode }) {
   return (
@@ -74,12 +74,12 @@ function SignRow({ k, v }: { k: string; v: React.ReactNode }) {
 }
 
 function errMessage(e: unknown): string {
-  if (e && typeof e === "object") {
+  if (e && typeof e === 'object') {
     const o = e as { shortMessage?: unknown; message?: unknown };
-    if (typeof o.shortMessage === "string") return o.shortMessage;
-    if (typeof o.message === "string") return o.message;
+    if (typeof o.shortMessage === 'string') return o.shortMessage;
+    if (typeof o.message === 'string') return o.message;
   }
-  return "Something went wrong";
+  return 'Something went wrong';
 }
 
 export function SignScreen({ deps }: { deps?: Deps }) {
@@ -90,10 +90,10 @@ export function SignScreen({ deps }: { deps?: Deps }) {
   const { signMessageAsync } = useSignMessage();
   const { sendTransactionAsync } = useSendTransaction();
 
-  const [mode, setMode] = useState<Mode>("tx");
+  const [mode, setMode] = useState<Mode>('tx');
 
   // ── Message mode ──
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState('');
   const [signature, setSignature] = useState<`0x${string}` | null>(null);
   const [signError, setSignError] = useState<string | null>(null);
   const signBusyRef = useRef(false);
@@ -101,8 +101,8 @@ export function SignScreen({ deps }: { deps?: Deps }) {
   const msgByteLength = new TextEncoder().encode(message).length;
 
   // ── Raw tx mode ──
-  const [raw, setRaw] = useState("");
-  const [txStatus, setTxStatus] = useState<TxStatus>({ kind: "idle" });
+  const [raw, setRaw] = useState('');
+  const [txStatus, setTxStatus] = useState<TxStatus>({ kind: 'idle' });
   const sendBusyRef = useRef(false);
 
   const parsed = raw.trim() ? parseUnsignedTx(raw) : null;
@@ -118,11 +118,11 @@ export function SignScreen({ deps }: { deps?: Deps }) {
     try {
       const sig = await signMessageAsync({ message });
       setSignature(sig);
-      toast({ kind: "success", title: "Message signed" });
+      toast({ kind: 'success', title: 'Message signed' });
     } catch (e) {
       const msg = errMessage(e);
       setSignError(msg);
-      toast({ kind: "error", title: "Signing failed", msg });
+      toast({ kind: 'error', title: 'Signing failed', msg });
     } finally {
       signBusyRef.current = false;
       setSigning(false);
@@ -132,7 +132,7 @@ export function SignScreen({ deps }: { deps?: Deps }) {
   async function handleBroadcast(): Promise<void> {
     if (!tx || sendBusyRef.current) return;
     sendBusyRef.current = true;
-    setTxStatus({ kind: "wallet" });
+    setTxStatus({ kind: 'wallet' });
     try {
       const hash = await sendTransactionAsync({
         to: tx.to,
@@ -143,49 +143,49 @@ export function SignScreen({ deps }: { deps?: Deps }) {
         maxFeePerGas: tx.maxFeePerGas,
         maxPriorityFeePerGas: tx.maxPriorityFeePerGas,
       });
-      setTxStatus({ kind: "pending", hash });
+      setTxStatus({ kind: 'pending', hash });
       const receipt = await rpc
         .getClient(walletChainId)
         .waitForTransactionReceipt({ hash });
-      if (receipt.status === "success") {
+      if (receipt.status === 'success') {
         setTxStatus({
-          kind: "confirmed",
+          kind: 'confirmed',
           hash,
           blockNumber: receipt.blockNumber,
         });
-        toast({ kind: "success", title: "Transaction confirmed" });
+        toast({ kind: 'success', title: 'Transaction confirmed' });
       } else {
-        setTxStatus({ kind: "failed", error: "Transaction reverted" });
-        toast({ kind: "error", title: "Transaction reverted" });
+        setTxStatus({ kind: 'failed', error: 'Transaction reverted' });
+        toast({ kind: 'error', title: 'Transaction reverted' });
       }
     } catch (e) {
       const msg = errMessage(e);
-      setTxStatus({ kind: "failed", error: msg });
-      toast({ kind: "error", title: "Broadcast failed", msg });
+      setTxStatus({ kind: 'failed', error: msg });
+      toast({ kind: 'error', title: 'Broadcast failed', msg });
     } finally {
       sendBusyRef.current = false;
     }
   }
 
-  const txBusy = txStatus.kind === "wallet" || txStatus.kind === "pending";
+  const txBusy = txStatus.kind === 'wallet' || txStatus.kind === 'pending';
 
   const signDisabled = !message || !isConnected || signing;
-  const signTitle = !isConnected ? "Connect a wallet to sign" : undefined;
+  const signTitle = !isConnected ? 'Connect a wallet to sign' : undefined;
 
   const sendDisabled = !tx || !isConnected || txBusy;
   let sendTitle: string | undefined;
-  if (!isConnected) sendTitle = "Connect a wallet to broadcast";
-  else if (!tx) sendTitle = "Paste a valid unsigned transaction";
+  if (!isConnected) sendTitle = 'Connect a wallet to broadcast';
+  else if (!tx) sendTitle = 'Paste a valid unsigned transaction';
 
-  let sendLabel = "Sign & broadcast";
-  if (txStatus.kind === "wallet") sendLabel = "Confirm in wallet…";
-  else if (txStatus.kind === "pending") sendLabel = "Broadcasting…";
+  let sendLabel = 'Sign & broadcast';
+  if (txStatus.kind === 'wallet') sendLabel = 'Confirm in wallet…';
+  else if (txStatus.kind === 'pending') sendLabel = 'Broadcasting…';
 
   const chainMismatch =
     tx?.chainId !== undefined && tx.chainId !== walletChainId;
 
   const confirmedHashLink =
-    txStatus.kind === "confirmed"
+    txStatus.kind === 'confirmed'
       ? txUrl(walletChainId, txStatus.hash)
       : undefined;
 
@@ -206,13 +206,13 @@ export function SignScreen({ deps }: { deps?: Deps }) {
           onChange={setMode}
           options={[
             {
-              value: "tx",
-              label: "Raw transaction",
+              value: 'tx',
+              label: 'Raw transaction',
               icon: <Icon.file size={14} />,
             },
             {
-              value: "message",
-              label: "Message",
+              value: 'message',
+              label: 'Message',
               icon: <Icon.sign size={14} />,
             },
           ]}
@@ -223,11 +223,11 @@ export function SignScreen({ deps }: { deps?: Deps }) {
         <Card>
           <CardHead>
             <CardTitle>
-              {mode === "tx" ? "Transaction payload" : "Message to sign"}
+              {mode === 'tx' ? 'Transaction payload' : 'Message to sign'}
             </CardTitle>
           </CardHead>
           <CardBody className="flex flex-col gap-3.5">
-            {mode === "tx" ? (
+            {mode === 'tx' ? (
               <>
                 <Field
                   label="Unsigned transaction (JSON)"
@@ -236,7 +236,7 @@ export function SignScreen({ deps }: { deps?: Deps }) {
                   <Textarea
                     mono
                     rows={7}
-                    tone={parseError ? "invalid" : "default"}
+                    tone={parseError ? 'invalid' : 'default'}
                     placeholder={TX_SAMPLE}
                     value={raw}
                     onChange={(e) => setRaw(e.target.value)}
@@ -250,16 +250,16 @@ export function SignScreen({ deps }: { deps?: Deps }) {
                       <SignRow k="To" v={trunc(tx.to, 6)} />
                       <SignRow
                         k="Value"
-                        v={`${fromBaseUnits(tx.valueWei ?? 0n, "ether")} ETH`}
+                        v={`${fromBaseUnits(tx.valueWei ?? 0n, 'ether')} ETH`}
                       />
                       <SignRow
                         k="Data"
-                        v={tx.data ? `${(tx.data.length - 2) / 2} bytes` : "—"}
+                        v={tx.data ? `${(tx.data.length - 2) / 2} bytes` : '—'}
                       />
-                      <SignRow k="Nonce" v={tx.nonce ?? "—"} />
+                      <SignRow k="Nonce" v={tx.nonce ?? '—'} />
                       <SignRow
                         k="Gas"
-                        v={tx.gas !== undefined ? tx.gas.toLocaleString() : "—"}
+                        v={tx.gas !== undefined ? tx.gas.toLocaleString() : '—'}
                       />
                       <SignRow
                         k="Chain"
@@ -274,7 +274,7 @@ export function SignScreen({ deps }: { deps?: Deps }) {
                               )}
                             </span>
                           ) : (
-                            "—"
+                            '—'
                           )
                         }
                       />
@@ -300,19 +300,19 @@ export function SignScreen({ deps }: { deps?: Deps }) {
                 </div>
 
                 {/* broadcast status */}
-                {txStatus.kind === "pending" && (
+                {txStatus.kind === 'pending' && (
                   <p className="font-mono text-[12px] text-fg-3">
                     Submitted · {trunc(txStatus.hash, 6)}
                   </p>
                 )}
-                {txStatus.kind === "confirmed" && (
+                {txStatus.kind === 'confirmed' && (
                   <p className="inline-flex items-center gap-1.5 font-mono text-[12px] text-success-fg">
-                    Confirmed in block {txStatus.blockNumber.toString()} ·{" "}
+                    Confirmed in block {txStatus.blockNumber.toString()} ·{' '}
                     {trunc(txStatus.hash, 6)}
                     {confirmedHashLink && <ExtLink href={confirmedHashLink} />}
                   </p>
                 )}
-                {txStatus.kind === "failed" && (
+                {txStatus.kind === 'failed' && (
                   <p className="font-mono text-[12px] text-danger-fg">
                     {txStatus.error}
                   </p>
@@ -377,7 +377,7 @@ export function SignScreen({ deps }: { deps?: Deps }) {
           </CardBody>
         </Card>
 
-        {mode === "message" && <VerifyMessageCard />}
+        {mode === 'message' && <VerifyMessageCard />}
       </div>
     </div>
   );

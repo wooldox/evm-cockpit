@@ -1,34 +1,34 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import type { AbiEvent } from "abitype";
-import type { TContract } from "@/entities/contract/model/types";
-import type { RpcProvider } from "@/shared/ports/rpc";
-import { getBrowserSections } from "@/features/contract-browser/model/effectiveAbi";
-import { useEventLogs } from "@/features/contract-browser/model/useEventLogs";
+import { useState } from 'react';
+import type { AbiEvent } from 'abitype';
+import type { TContract } from '@/entities/contract/model/types';
+import type { RpcProvider } from '@/shared/ports/rpc';
+import { getBrowserSections } from '@/features/contract-browser/model/effectiveAbi';
+import { useEventLogs } from '@/features/contract-browser/model/useEventLogs';
 import {
   MAX_LOGS,
   type TDecodedLog,
-} from "@/features/contract-browser/model/fetchEventLogs";
-import { txUrl } from "@/entities/chain/model/explorer";
-import { Icon } from "@/shared/icons";
-import { trunc } from "@/shared/lib/format";
-import { Button, Muted, Panel, Spinner } from "@/shared/ui";
-import { ExtLink } from "@/shared/ui/copyable";
-import { Field, Input, Select } from "@/shared/ui/field";
-import { TypedValue } from "./values";
-import { SectionHead } from "./PropertiesSection";
+} from '@/features/contract-browser/model/fetchEventLogs';
+import { txUrl } from '@/entities/chain/model/explorer';
+import { Icon } from '@/shared/icons';
+import { trunc } from '@/shared/lib/format';
+import { Button, Muted, Panel, Spinner } from '@/shared/ui';
+import { ExtLink } from '@/shared/ui/copyable';
+import { Field, Input, Select } from '@/shared/ui/field';
+import { TypedValue } from './values';
+import { SectionHead } from './PropertiesSection';
 
 /** Test seam mirroring useEventLogs deps (defaults to the rpc singleton). */
 type EventsDeps = { rpc: RpcProvider };
 
 /** Full event signature `name(type,…)` — unique even across overloads. */
 function eventSig(e: AbiEvent): string {
-  return `${e.name}(${e.inputs.map((i) => i.type).join(",")})`;
+  return `${e.name}(${e.inputs.map((i) => i.type).join(',')})`;
 }
 
 /** Column label for an input; empty-string names fall back to `argN`. */
-function colLabel(inp: AbiEvent["inputs"][number], i: number): string {
+function colLabel(inp: AbiEvent['inputs'][number], i: number): string {
   return inp.name || `arg${i}`;
 }
 
@@ -43,8 +43,8 @@ function EventsTable({
   chainId: number;
 }) {
   const th =
-    "sticky top-0 whitespace-nowrap border-b border-border bg-elev-1 px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-fg-3";
-  const td = "border-b border-border px-3 py-[9px] align-top text-fg-2";
+    'sticky top-0 whitespace-nowrap border-b border-border bg-elev-1 px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-fg-3';
+  const td = 'border-b border-border px-3 py-[9px] align-top text-fg-2';
 
   // viem decides positional-vs-named for the WHOLE event: if ANY input is
   // unnamed, every arg comes back positional ("0","1",… via normalizeLog).
@@ -115,9 +115,9 @@ export function EventsSection({
   const sections = getBrowserSections(contract);
   const events = sections.events;
 
-  const [selSig, setSelSig] = useState(events[0] ? eventSig(events[0]) : "");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [selSig, setSelSig] = useState(events[0] ? eventSig(events[0]) : '');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
 
   const { state, loadDefaultRange, fetchLogs, reset } = useEventLogs(
     contract,
@@ -129,7 +129,7 @@ export function EventsSection({
   const filtered = events.filter((e) => !q || e.name.toLowerCase().includes(q));
   const selected = events.find((e) => eventSig(e) === selSig) ?? events[0];
 
-  const loading = state.status === "loading";
+  const loading = state.status === 'loading';
 
   function onSelectEvent(sig: string): void {
     setSelSig(sig);
@@ -140,7 +140,7 @@ export function EventsSection({
   async function onFetch(): Promise<void> {
     if (!selected) return;
     let fromValue = from.trim();
-    if (fromValue === "") {
+    if (fromValue === '') {
       // Resolve the default look-back window first, populate the From input so
       // the user sees what ran, then fetch with the resolved value. (State
       // updates aren't visible in this closure, so use the returned range.)
@@ -198,11 +198,11 @@ export function EventsSection({
             onClick={() => void onFetch()}
             disabled={loading}
           >
-            {loading ? "Fetching…" : "Fetch logs"}
+            {loading ? 'Fetching…' : 'Fetch logs'}
           </Button>
         </div>
 
-        {state.status === "done" &&
+        {state.status === 'done' &&
           selected &&
           (state.result.logs.length > 0 ? (
             <>
@@ -225,7 +225,7 @@ export function EventsSection({
             <Muted className="mt-3 block text-sm">No logs in this range.</Muted>
           ))}
 
-        {state.status === "error" && (
+        {state.status === 'error' && (
           <div className="mt-3 flex flex-col gap-1">
             <p className="font-mono text-[12px] text-danger-fg">
               {state.error}
@@ -237,7 +237,7 @@ export function EventsSection({
           </div>
         )}
 
-        {state.status === "idle" && (
+        {state.status === 'idle' && (
           <div className="mt-3 text-xs text-fg-3">
             Pick an event and block range, then fetch decoded logs. Large ranges
             are auto-chunked.

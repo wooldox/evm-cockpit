@@ -1,9 +1,9 @@
-"use client";
-import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
-import { idbStateStorage } from "@/entities/_shared/idbStateStorage";
+'use client';
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { idbStateStorage } from '@/entities/_shared/idbStateStorage';
 
-export type Density = "comfortable" | "compact";
+export type Density = 'comfortable' | 'compact';
 
 export type SettingsState = {
   rpcOverrides: Record<number, string>;
@@ -19,8 +19,8 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       rpcOverrides: {},
-      etherscanApiKey: "",
-      density: "comfortable",
+      etherscanApiKey: '',
+      density: 'comfortable',
       setRpcOverride: (chainId, url) =>
         set((s) => ({ rpcOverrides: { ...s.rpcOverrides, [chainId]: url } })),
       clearRpcOverride: (chainId) =>
@@ -33,8 +33,8 @@ export const useSettingsStore = create<SettingsState>()(
       setDensity: (density) => set({ density }),
     }),
     {
-      name: "cc-settings",
-      storage: createJSONStorage(() => idbStateStorage("settings")),
+      name: 'cc-settings',
+      storage: createJSONStorage(() => idbStateStorage('settings')),
     },
   ),
 );

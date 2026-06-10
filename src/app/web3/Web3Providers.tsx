@@ -1,26 +1,26 @@
-"use client";
+'use client';
 
-import "@rainbow-me/rainbowkit/styles.css";
+import '@rainbow-me/rainbowkit/styles.css';
 
-import { useState, type ReactNode } from "react";
-import { WagmiProvider } from "wagmi";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useState, type ReactNode } from 'react';
+import { WagmiProvider } from 'wagmi';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   RainbowKitProvider,
   darkTheme,
   lightTheme,
-} from "@rainbow-me/rainbowkit";
-import { useTheme } from "@/shared/lib/use-theme";
-import { config } from "./config";
-import { IS_E2E } from "./e2e";
-import { E2EAutoConnect } from "./E2EAutoConnect";
+} from '@rainbow-me/rainbowkit';
+import { useTheme } from '@/shared/lib/use-theme';
+import { config } from './config';
+import { IS_E2E } from './e2e';
+import { E2EAutoConnect } from './E2EAutoConnect';
 
 function RainbowKitThemed({ children }: { children: ReactNode }) {
   const [theme] = useTheme();
   const rkTheme =
-    theme === "dark"
-      ? darkTheme({ accentColor: "#3b82f6", accentColorForeground: "white" })
-      : lightTheme({ accentColor: "#3b82f6", accentColorForeground: "white" });
+    theme === 'dark'
+      ? darkTheme({ accentColor: '#3b82f6', accentColorForeground: 'white' })
+      : lightTheme({ accentColor: '#3b82f6', accentColorForeground: 'white' });
   return <RainbowKitProvider theme={rkTheme}>{children}</RainbowKitProvider>;
 }
 
