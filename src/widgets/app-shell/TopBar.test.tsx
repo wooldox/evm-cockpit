@@ -65,6 +65,17 @@ describe('TopBar chain selection', () => {
     await userEvent.click(baseOption!);
   }
 
+  it('renders a GitHub source link that opens in a new tab', () => {
+    renderTopBar();
+    const link = screen.getByRole('link', { name: /github/i });
+    expect(link).toHaveAttribute(
+      'href',
+      'https://github.com/wooldox/evm-cockpit',
+    );
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link.getAttribute('rel')).toContain('noopener');
+  });
+
   it('updates the selector trigger to the picked chain (context effect)', async () => {
     renderTopBar();
     await selectBase();

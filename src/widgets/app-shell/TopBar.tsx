@@ -35,6 +35,16 @@ export function TopBar() {
     <header className="z-20 flex h-[54px] flex-none items-center gap-2.5 border-b border-border bg-[color-mix(in_oklab,var(--bg-elev-1)_75%,transparent)] px-[18px] backdrop-blur-[10px]">
       <ChainSelector value={currentChainId} onChange={handleChainChange} />
       <div className="flex-1" />
+      <a
+        href="https://github.com/wooldox/evm-cockpit"
+        target="_blank"
+        rel="noreferrer noopener"
+        title="View source on GitHub"
+        aria-label="View source on GitHub"
+        className="grid size-[34px] place-items-center rounded-sm border border-transparent bg-transparent text-fg-2 transition-colors hover:bg-elev-3 hover:text-fg"
+      >
+        <Icon.github size={16} />
+      </a>
       <button
         type="button"
         title="Toggle theme"
