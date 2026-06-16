@@ -6,7 +6,7 @@ export const dynamic = 'force-static';
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: { userAgent: '*', allow: '/', disallow: '/ui' },
-    sitemap: 'https://evmcockpit.xyz/sitemap.xml',
-    host: 'https://evmcockpit.xyz',
+    sitemap: 'https://evm-cockpit.xyz/sitemap.xml',
+    host: 'https://evm-cockpit.xyz',
   };
 }

@@ -7,7 +7,7 @@ const PK =
   '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80' as const;
 const account = privateKeyToAccount(PK); // 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
 const MESSAGE =
-  'I authorize this session for app.evmcockpit.xyz\nNonce: 8f2a01';
+  'I authorize this session for app.evm-cockpit.xyz\nNonce: 8f2a01';
 
 describe('SIGNATURE_RE', () => {
   it('accepts a 65-byte 0x-hex string and rejects junk', () => {

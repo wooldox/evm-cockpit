@@ -27,9 +27,9 @@ import {
 // account 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 (anvil #0) — so the
 // "Paste example" shortcut verifies green end-to-end.
 const EXAMPLE_MESSAGE =
-  'I authorize this session for app.evmcockpit.xyz\nNonce: 8f2a01';
+  'I authorize this session for app.evm-cockpit.xyz\nNonce: 8f2a01';
 const EXAMPLE_SIGNATURE =
-  '0x2ca94ae4d0269c6bb15e4d9ff45bbcf464f2550f4f9c5bdac10409f8d4af8166030b69c3f481ec1c23ac97e3d6cc33e70989c0e7edceb3eff5be847d99209a691c';
+  '0x6848e23fe8322f3e91990437ad86b894c8c43f59ab36615651bde62cad1e1e1c6ebc1824375e812626d544aaf6f172835353aec3bc215ed40441825ac6a2b8051c';
 
 /** The reverse of signing: recover a signer from a message + signature.
  *  Read-only (no gas, no wallet) — styled with the read (blue) accent. */

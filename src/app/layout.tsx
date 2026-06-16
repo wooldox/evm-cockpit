@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
-const SITE_URL = 'https://evmcockpit.xyz';
+const SITE_URL = 'https://evm-cockpit.xyz';
 const SITE_NAME = 'EVM Cockpit';
 const DESCRIPTION =
   'Read and write any EVM smart contract, on any chain, right in your ' +
@@ -50,17 +50,30 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: '/' },
   robots: { index: true, follow: true },
+  // Static PNGs in /public — referenced with explicit .png paths so any host
+  // (incl. Vercel static export) serves them as image/png. metadataBase makes
+  // og:image absolute, which social scrapers require.
+  icons: { icon: '/icon.png', apple: '/apple-icon.png' },
   openGraph: {
     type: 'website',
     url: SITE_URL,
     siteName: SITE_NAME,
     title: 'EVM Cockpit — Read & write any EVM smart contract',
     description: DESCRIPTION,
+    images: [
+      {
+        url: '/og.png',
+        width: 1200,
+        height: 630,
+        alt: 'EVM Cockpit — read & write any EVM smart contract',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'EVM Cockpit — Read & write any EVM smart contract',
     description: DESCRIPTION,
+    images: ['/og.png'],
   },
 };
 

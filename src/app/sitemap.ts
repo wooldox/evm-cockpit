@@ -5,7 +5,7 @@ export const dynamic = 'force-static';
 // Emitted as a static sitemap.xml at build time. /ui is the internal component
 // gallery — intentionally excluded (see robots.ts).
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = 'https://evmcockpit.xyz';
+  const base = 'https://evm-cockpit.xyz';
   const paths = ['', '/deploy', '/sign', '/history'];
   return paths.map((path) => ({
     url: `${base}${path}`,

@@ -54,7 +54,7 @@ const TX_SAMPLE = [
 ].join('\n');
 
 const MSG_SAMPLE =
-  'I authorize this session for app.evmcockpit.xyz\nNonce: 8f2a01';
+  'I authorize this session for app.evm-cockpit.xyz\nNonce: 8f2a01';
 
 /** Broadcast lifecycle for raw-tx mode. */
 type TxStatus =
