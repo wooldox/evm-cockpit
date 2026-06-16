@@ -1,6 +1,13 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
+
+const SITE_URL = 'https://evmcockpit.xyz';
+const SITE_NAME = 'EVM Cockpit';
+const DESCRIPTION =
+  'Read and write any EVM smart contract, on any chain, right in your ' +
+  'browser. Every write is simulated before you sign. Built for developers ' +
+  'and auditors.';
 
 // next/font exposes CSS variables that globals.css maps into Tailwind's
 // --font-sans / --font-mono via @theme inline. Don't re-import Google Fonts
@@ -20,9 +27,58 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'EVM Cockpit',
-  description:
-    'Read = free, write sends a transaction. Simulate every write before you sign.',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: 'EVM Cockpit — Read & write any EVM smart contract',
+    template: '%s · EVM Cockpit',
+  },
+  description: DESCRIPTION,
+  applicationName: SITE_NAME,
+  keywords: [
+    'EVM',
+    'smart contract',
+    'Ethereum',
+    'contract explorer',
+    'read contract',
+    'write contract',
+    'transaction simulation',
+    'wallet',
+    'web3 tools',
+    'blockchain developer tools',
+    'auditor',
+    'ABI',
+  ],
+  alternates: { canonical: '/' },
+  robots: { index: true, follow: true },
+  openGraph: {
+    type: 'website',
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: 'EVM Cockpit — Read & write any EVM smart contract',
+    description: DESCRIPTION,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'EVM Cockpit — Read & write any EVM smart contract',
+    description: DESCRIPTION,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#0a0c10',
+};
+
+// SoftwareApplication structured data — helps search engines understand what
+// this is (a free, browser-based developer tool) for richer result cards.
+const JSON_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: SITE_NAME,
+  applicationCategory: 'DeveloperApplication',
+  operatingSystem: 'Web',
+  url: SITE_URL,
+  description: DESCRIPTION,
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
 };
 
 export default function RootLayout({
@@ -46,6 +102,10 @@ export default function RootLayout({
             __html:
               "try{var t=localStorage.getItem('cc-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}",
           }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
         />
       </head>
       <body>{children}</body>
