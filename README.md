@@ -10,7 +10,7 @@ Block explorers let you call contracts, but they're tied to one chain, gate writ
 
 ## Features
 
-- **Any contract, any chain** — a full catalog of ~2,200 networks (sourced from [chainid.network](https://chainid.network)), plus add-your-own custom chains.
+- **Any contract, any chain** — a full catalog of ~2,900 networks (sourced from [chainlist.org](https://chainlist.org)), each with a fallback list of RPC endpoints, plus add-your-own custom chains.
 - **ABI resolution** — auto-fetch verified ABIs via Sourcify → Etherscan V2, with automatic proxy detection (EIP-1967 / beacon) and implementation-ABI merging. Or paste an ABI manually.
 - **Reads** — properties and getters rendered with typed inputs, batched via Multicall3 where available (sequential fallback otherwise).
 - **Writes** — typed argument inputs and payable ETH value, an explicit **Simulate** step with a will-succeed / will-revert verdict and decoded custom-error reverts, then **Sign & Send** gated on the simulation. An **Execute** path is available for direct send when you want to review the raw transaction and skip simulation.

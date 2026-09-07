@@ -22,8 +22,8 @@ const REMOTE_ITEM = {
 describe('useChainCatalog', () => {
   beforeEach(resetStore);
 
-  it('exposes the chainid.network endpoint constant', () => {
-    expect(CHAINS_ENDPOINT).toBe('https://chainid.network/chains.json');
+  it('exposes the chainlist.org endpoint constant', () => {
+    expect(CHAINS_ENDPOINT).toBe('https://chainlist.org/rpcs.json');
   });
 
   it('initializes to static with entries ready and a working byId', () => {

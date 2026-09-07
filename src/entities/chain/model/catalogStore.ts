@@ -11,8 +11,9 @@ import {
 } from './catalog';
 import { getChainDisplay, type TChainDisplay } from './chains';
 
-/** Community chain registry — sourced from chainid.network. */
-export const CHAINS_ENDPOINT = 'https://chainid.network/chains.json';
+/** Community chain registry — chainlist.org's list (chainid.network's data plus
+ *  per-RPC `tracking` flags and more endpoints per chain). */
+export const CHAINS_ENDPOINT = 'https://chainlist.org/rpcs.json';
 
 const FETCH_TIMEOUT_MS = 10_000;
 

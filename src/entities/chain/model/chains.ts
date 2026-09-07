@@ -17,16 +17,38 @@ export type TChainDisplay = {
   color: string;
 };
 
-/** Curated default public RPC per supported chain (viem's built-in defaults can rot —
- *  e.g. mainnet's eth.merkle.io went dead). Settings rpcOverrides always win over these. */
-export const DEFAULT_RPC_URLS: Record<number, string> = {
-  1: 'https://eth.drpc.org',
-  8453: 'https://base.drpc.org',
-  42161: 'https://arbitrum.drpc.org',
-  10: 'https://optimism.drpc.org',
-  137: 'https://polygon.drpc.org',
-  11155111: 'https://sepolia.drpc.org',
-  31337: 'http://127.0.0.1:8545',
+/** Curated public RPC fallback lists per supported chain, tried in order (viem's
+ *  built-in defaults rot — mainnet's eth.merkle.io went dead, and every drpc.org
+ *  endpoint now answers "chain is not available on free plan"). The chain
+ *  catalog's own RPCs (viem defaults + chainlist.org) are appended after these,
+ *  see resolveRpcUrls. Settings rpcOverrides always win over the whole list. */
+export const DEFAULT_RPC_URLS: Record<number, readonly string[]> = {
+  1: [
+    'https://ethereum-rpc.publicnode.com',
+    'https://1rpc.io/eth',
+    'https://rpc.mevblocker.io',
+  ],
+  8453: [
+    'https://base-rpc.publicnode.com',
+    'https://mainnet.base.org',
+    'https://1rpc.io/base',
+  ],
+  42161: [
+    'https://arbitrum-one-rpc.publicnode.com',
+    'https://arb1.arbitrum.io/rpc',
+    'https://1rpc.io/arb',
+  ],
+  10: [
+    'https://optimism-rpc.publicnode.com',
+    'https://mainnet.optimism.io',
+    'https://1rpc.io/op',
+  ],
+  137: ['https://polygon-bor-rpc.publicnode.com', 'https://1rpc.io/matic'],
+  11155111: [
+    'https://ethereum-sepolia-rpc.publicnode.com',
+    'https://1rpc.io/sepolia',
+  ],
+  31337: ['http://127.0.0.1:8545'],
 };
 
 const META: Record<number, { short: string; color: string }> = {

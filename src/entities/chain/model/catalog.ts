@@ -193,6 +193,35 @@ type RemoteChainValid = {
   symbol: string;
 };
 
+/**
+ * Normalize a registry `rpc` array. chainlist.org/rpcs.json ships
+ * `{ url, tracking? }` objects; chainid.network/chains.json ships plain
+ * strings — accept both. Non-tracking endpoints are ordered first so the
+ * fallback list reaches for a privacy-preserving node before a logging one
+ * (stable within each group).
+ */
+function normalizeRemoteRpc(rpc: readonly unknown[]): string[] {
+  const rank = (t: unknown) => (t === 'none' ? 0 : t === 'yes' ? 2 : 1);
+  return rpc
+    .map((r) =>
+      typeof r === 'string'
+        ? { url: r, tracking: undefined as unknown }
+        : typeof r === 'object' && r !== null
+          ? {
+              url: (r as Record<string, unknown>).url,
+              tracking: (r as Record<string, unknown>).tracking,
+            }
+          : undefined,
+    )
+    .filter(
+      (r): r is { url: string; tracking: unknown } =>
+        typeof r?.url === 'string',
+    )
+    .map((r, i) => ({ ...r, i }))
+    .sort((a, b) => rank(a.tracking) - rank(b.tracking) || a.i - b.i)
+    .map((r) => r.url);
+}
+
 function validateRemote(v: unknown): RemoteChainValid | undefined {
   if (typeof v !== 'object' || v === null) return undefined;
   const o = v as Record<string, unknown>;
@@ -207,7 +236,8 @@ function validateRemote(v: unknown): RemoteChainValid | undefined {
   }
   if (typeof name !== 'string' || name.length === 0) return undefined;
   if (!Array.isArray(rpc) || rpc.length === 0) return undefined;
-  if (!rpc.every((u): u is string => typeof u === 'string')) return undefined;
+  const rpcUrls = normalizeRemoteRpc(rpc);
+  if (rpcUrls.length === 0) return undefined;
   if (!Array.isArray(explorers) || explorers.length === 0) return undefined;
 
   const first = explorers[0];
@@ -221,31 +251,44 @@ function validateRemote(v: unknown): RemoteChainValid | undefined {
   const symbol = (nativeCurrency as Record<string, unknown>).symbol;
   if (typeof symbol !== 'string' || symbol.length === 0) return undefined;
 
-  return { chainId, name, rpc, explorerUrl, symbol };
+  return { chainId, name, rpc: rpcUrls, explorerUrl, symbol };
 }
 
 const TESTNET_RE = /testnet|sepolia|holesky|goerli/i;
 
 /**
- * Merge a community chainid.network list into the base catalog. Malformed
- * items are skipped silently; ids already in base are skipped; items whose rpc
- * sanitizes to empty are skipped. Remote entries are appended after base
- * (which keeps its sort contract), sorted alphabetically by name.
+ * Merge a community chain registry (chainlist.org / chainid.network) into the
+ * base catalog. Malformed items are skipped silently; items whose rpc
+ * sanitizes to empty are skipped. An id already in base keeps its identity
+ * (name/short/color/explorer) but gains the registry's RPCs as extra fallback
+ * endpoints — that is the only thing a remote entry may change about a known
+ * chain. Unknown ids are appended after base (which keeps its sort contract),
+ * sorted alphabetically by name.
  */
 export function mergeCatalog(
   base: TCatalogChain[],
   remote: unknown[],
 ): TCatalogChain[] {
-  const seen = new Set(base.map((c) => c.id));
+  const byId = new Map(base.map((c) => [c.id, c]));
   const added: TCatalogChain[] = [];
 
   for (const item of remote) {
     const v = validateRemote(item);
     if (!v) continue;
-    if (seen.has(v.chainId)) continue;
 
     const rpcUrls = sanitizeRpcUrls(v.rpc);
     if (rpcUrls.length === 0) continue;
+
+    const known = byId.get(v.chainId);
+    if (known) {
+      // sanitizeRpcUrls dedupes and caps, so a chain that already has a full
+      // list is left untouched.
+      byId.set(v.chainId, {
+        ...known,
+        rpcUrls: sanitizeRpcUrls([...known.rpcUrls, ...rpcUrls]),
+      });
+      continue;
+    }
 
     const { short, color } = genDisplay(v.chainId, v.name, v.symbol);
     const entry: TCatalogChain = {
@@ -260,12 +303,12 @@ export function mergeCatalog(
     };
     if (TESTNET_RE.test(v.name)) entry.testnet = true;
 
-    seen.add(v.chainId);
+    byId.set(v.chainId, entry);
     added.push(entry);
   }
 
   added.sort((a, b) => a.name.localeCompare(b.name));
-  return [...base, ...added];
+  return [...base.map((c) => byId.get(c.id) ?? c), ...added];
 }
 
 /**

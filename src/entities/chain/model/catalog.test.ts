@@ -173,11 +173,46 @@ describe('mergeCatalog', () => {
     expect(z?.explorerUrl).toBe('https://zetascan.example');
   });
 
-  it('skips ids already present in base', () => {
+  it('keeps the base identity for ids already present, adding only RPCs', () => {
     const collide = { ...validRemote, chainId: 1 };
     const out = mergeCatalog(base, [collide]);
     expect(out.filter((c) => c.id === 1)).toHaveLength(1);
-    expect(out.find((c) => c.id === 1)?.source).toBe('viem');
+    const eth = out.find((c) => c.id === 1);
+    expect(eth?.source).toBe('viem');
+    expect(eth?.name).toBe('Ethereum');
+    // The registry's endpoints land after the ones base already knew — extra
+    // fallbacks, not a replacement.
+    expect(eth?.rpcUrls).toEqual([
+      'https://eth.example',
+      'https://zeta.example/',
+    ]);
+  });
+
+  it("accepts chainlist's { url, tracking } rpc objects", () => {
+    const out = mergeCatalog(base, [
+      { ...validRemote, rpc: [{ url: 'https://a.example', tracking: 'none' }] },
+    ]);
+    expect(out.find((c) => c.id === 700700)?.rpcUrls).toEqual([
+      'https://a.example',
+    ]);
+  });
+
+  it('orders non-tracking endpoints first, stable within a group', () => {
+    const out = mergeCatalog(base, [
+      {
+        ...validRemote,
+        rpc: [
+          { url: 'https://logs.example', tracking: 'yes' },
+          { url: 'https://some.example', tracking: 'limited' },
+          { url: 'https://private.example', tracking: 'none' },
+        ],
+      },
+    ]);
+    expect(out.find((c) => c.id === 700700)?.rpcUrls).toEqual([
+      'https://private.example',
+      'https://some.example',
+      'https://logs.example',
+    ]);
   });
 
   it('skips malformed entries silently (missing rpc)', () => {
