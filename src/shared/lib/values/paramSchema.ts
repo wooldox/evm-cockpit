@@ -77,14 +77,68 @@ function fixedBytesSchema(byteLen: number) {
     );
 }
 
+/**
+ * Quote bare integer and 0x-hex tokens (outside of strings) so that
+ * `[1000000000000000000000]` keeps full precision through JSON.parse and
+ * Etherscan-style `[0xabc…, 0xdef…]` parses at all.
+ */
+function quoteBareTokens(json: string): string {
+  let out = '';
+  let inString = false;
+  for (let i = 0; i < json.length; i++) {
+    const c = json[i]!;
+    if (inString) {
+      out += c;
+      if (c === '\\') out += json[++i] ?? '';
+      else if (c === '"') inString = false;
+      continue;
+    }
+    if (c === '"') {
+      inString = true;
+      out += c;
+      continue;
+    }
+    const m = /^(?:0x[0-9a-fA-F]*|-?\d+)(?![\w.])/.exec(json.slice(i));
+    if (m) {
+      out += `"${m[0]}"`;
+      i += m[0].length - 1;
+      continue;
+    }
+    out += c;
+  }
+  return out;
+}
+
+/**
+ * Form fields hand us strings; array params need a real array. Parse the
+ * JSON text the input placeholder asks for. Non-strings pass through, so
+ * already-structured values (and nested arrays) are untouched.
+ */
+function arraySchema(element: z.ZodType, length?: number): z.ZodType {
+  const base =
+    length === undefined ? z.array(element) : z.array(element).length(length);
+  return z.preprocess((v, ctx) => {
+    if (typeof v !== 'string') return v;
+    try {
+      return JSON.parse(quoteBareTokens(v.trim()));
+    } catch {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'expected a JSON array, e.g. [1, 2]',
+      });
+      return z.NEVER;
+    }
+  }, base);
+}
+
 /** Build a zod schema for a single ABI parameter type string. */
 export function paramSchema(type: string): z.ZodType {
   if (type.endsWith('[]')) {
-    return z.array(paramSchema(type.slice(0, -2)));
+    return arraySchema(paramSchema(type.slice(0, -2)));
   }
   const fixedArr = /^(.+)\[(\d+)\]$/.exec(type);
   if (fixedArr) {
-    return z.array(paramSchema(fixedArr[1]!)).length(Number(fixedArr[2]!));
+    return arraySchema(paramSchema(fixedArr[1]!), Number(fixedArr[2]!));
   }
   if (type === 'address') return addressSchema;
   if (type === 'bool') return boolSchema;
