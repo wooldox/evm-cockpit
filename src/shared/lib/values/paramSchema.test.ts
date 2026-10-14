@@ -41,6 +41,35 @@ describe('paramSchema', () => {
     expect(s.safeParse([a, '0x1']).success).toBe(false);
   });
 
+  it('parses array params given as JSON text from a form field', () => {
+    const big = (1n << 255n).toString();
+    const s = paramSchema('uint256[]');
+    expect(s.parse('[1, 2, 3]')).toEqual([1n, 2n, 3n]);
+    expect(s.parse(`[${big}]`)).toEqual([1n << 255n]); // no float precision loss
+    expect(s.parse('["0x10"]')).toEqual([16n]);
+    expect(s.parse('[]')).toEqual([]);
+    expect(s.safeParse('1,2').success).toBe(false);
+    expect(s.safeParse('nope').error?.issues[0]?.message).toBe(
+      'expected a JSON array, e.g. [1, 2]',
+    );
+
+    const a = '0x4E639304D9229AF411020C45b6b4c0ac105225c4';
+    expect(paramSchema('address[]').parse(`[${a}, "${a}"]`)).toEqual([a, a]);
+    expect(paramSchema('string[]').parse('["a,1,b", "2"]')).toEqual([
+      'a,1,b',
+      '2',
+    ]);
+    expect(paramSchema('bool[2]').parse('[true, false]')).toEqual([
+      true,
+      false,
+    ]);
+    expect(paramSchema('bool[2]').safeParse('[true]').success).toBe(false);
+    expect(paramSchema('uint8[][]').parse('[[1], [2, 3]]')).toEqual([
+      [1n],
+      [2n, 3n],
+    ]);
+  });
+
   it('validates dynamic bytes and rejects odd-length hex', () => {
     const s = paramSchema('bytes');
     expect(s.safeParse('0xabcd').success).toBe(true);
