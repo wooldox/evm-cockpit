@@ -11,6 +11,8 @@ vi.mock('wagmi', () => ({
   useSwitchChain: () => ({ switchChainAsync }),
 }));
 
+vi.mock('./NativePrice', () => ({ NativePrice: () => null }));
+
 // WalletButton pulls in RainbowKit/wagmi context we don't need here.
 vi.mock('@/app/web3/WalletButton', () => ({
   WalletButton: () => <div data-testid="wallet-button" />,

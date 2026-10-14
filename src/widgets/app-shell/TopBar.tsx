@@ -5,6 +5,7 @@ import { useTheme } from '@/shared/lib/use-theme';
 import { Icon } from '@/shared/icons';
 import { useAppShell } from '@/widgets/app-shell/AppShellProvider';
 import { ChainSelector } from '@/widgets/app-shell/ChainSelector';
+import { NativePrice } from '@/widgets/app-shell/NativePrice';
 import { WalletButton } from '@/app/web3/WalletButton';
 
 /* ============================================================
@@ -34,6 +35,7 @@ export function TopBar() {
   return (
     <header className="z-20 flex h-[54px] flex-none items-center gap-2.5 border-b border-border bg-[color-mix(in_oklab,var(--bg-elev-1)_75%,transparent)] px-[18px] backdrop-blur-[10px]">
       <ChainSelector value={currentChainId} onChange={handleChainChange} />
+      <NativePrice chainId={currentChainId} />
       <div className="flex-1" />
       <a
         href="https://github.com/wooldox/evm-cockpit"

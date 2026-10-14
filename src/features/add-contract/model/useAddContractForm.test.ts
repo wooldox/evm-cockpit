@@ -39,6 +39,45 @@ function makeDeps(overrides?: Partial<Deps>): Deps {
 describe('useAddContractForm', () => {
   // ── 0. Initial mode ────────────────────────────────────────────────────────
 
+  describe('prefill (duplicate)', () => {
+    it('seeds a NEW contract in manual mode with the ABI pasted', () => {
+      const deps = makeDeps();
+      const { result } = renderHook(() =>
+        useAddContractForm({
+          prefill: {
+            name: 'USDC',
+            chainId: 1,
+            address: VALID_ADDRESS,
+            abi: erc20Abi,
+          },
+          defaultMode: 'fetch',
+          deps,
+        }),
+      );
+      expect(result.current.mode).toBe('manual');
+      expect(result.current.name).toBe('USDC');
+      expect(JSON.parse(result.current.abiText)).toEqual(erc20Abi);
+
+      act(() => {
+        result.current.setChainId(11155111);
+        result.current.setAddress(IMPL_ADDRESS);
+      });
+      act(() => {
+        expect(result.current.submit()).toBe(true);
+      });
+      expect(deps.updateContract).not.toHaveBeenCalled();
+      expect(deps.addContract).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'USDC',
+          chainId: 11155111,
+          address: IMPL_ADDRESS,
+          abi: erc20Abi,
+          source: 'manual',
+        }),
+      );
+    });
+  });
+
   describe('defaultMode', () => {
     it('defaults to fetch when no defaultMode is given', () => {
       const { result } = renderHook(() =>

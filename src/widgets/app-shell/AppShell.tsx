@@ -4,6 +4,7 @@ import { ToastProvider } from '@/shared/ui';
 import { useSettingsStore } from '@/entities/settings/model/store';
 import { Web3Providers } from '@/app/web3/Web3Providers';
 import { AddContractModal } from '@/features/add-contract/ui/AddContractModal';
+import { getEffectiveAbi } from '@/features/contract-browser/model/effectiveAbi';
 import { SettingsModal } from '@/features/settings/ui/SettingsModal';
 import { HashImport } from '@/features/share/ui/HashImport';
 import { CatalogLoader } from '@/entities/chain/ui/CatalogLoader';
@@ -16,6 +17,7 @@ function ShellModals() {
   const {
     addOpen,
     editing,
+    duplicating,
     closeAdd,
     settingsOpen,
     closeSettings,
@@ -26,6 +28,13 @@ function ShellModals() {
       {addOpen && (
         <AddContractModal
           editing={editing}
+          // The merged (proxy + implementation) ABI, so a copy pointed at a
+          // different address/chain still gets the full interface.
+          prefill={
+            duplicating
+              ? { ...duplicating, abi: getEffectiveAbi(duplicating) }
+              : undefined
+          }
           defaultChainId={currentChainId}
           onClose={closeAdd}
         />

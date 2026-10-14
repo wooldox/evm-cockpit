@@ -20,6 +20,7 @@ describe('shared/ui barrel', () => {
       'Card',
       'Panel',
       'Modal',
+      'Menu',
       'ToastProvider',
       'useToast',
       'Empty',

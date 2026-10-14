@@ -177,6 +177,16 @@ describe('ContractBrowser', () => {
     expect(usdCoinNodes.length).toBeGreaterThan(0);
   });
 
+  it('toolbar Refresh re-reads properties', async () => {
+    const user = userEvent.setup();
+    renderBrowser(baseContract);
+    await screen.findByText('24,891,003,472');
+    expect(mockClient.multicall).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole('button', { name: /refresh/i }));
+    await waitFor(() => expect(mockClient.multicall).toHaveBeenCalledTimes(2));
+  });
+
   /* 3. Getter call ─────────────────────────────────────── */
   it('validates args before calling, then calls with valid address', async () => {
     const user = userEvent.setup();

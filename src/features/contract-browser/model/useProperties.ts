@@ -87,6 +87,11 @@ async function readEachProperty(
   });
 }
 
+/** Key prefix shared by every properties query of a contract — lets callers
+ *  outside PropertiesSection (e.g. the sticky toolbar) refetch / observe it. */
+export const propertiesQueryKey = (contractId: string) =>
+  ['properties', contractId] as const;
+
 export function useProperties(
   contract: TContract,
   deps: Deps = defaultDeps,
@@ -95,8 +100,7 @@ export function useProperties(
 
   const query = useQuery({
     queryKey: [
-      'properties',
-      contract.id,
+      ...propertiesQueryKey(contract.id),
       contract.chainId,
       contract.proxy?.implAddress ?? null,
     ],

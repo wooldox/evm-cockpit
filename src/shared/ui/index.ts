@@ -24,6 +24,7 @@ export { Switch } from './switch';
 export { Segment, type SegmentOption } from './segment';
 export { Card, CardHead, CardTitle, CardBody, CardFoot, Panel } from './card';
 export { Modal, XBtn, type ModalProps } from './modal';
+export { Menu, type MenuItem, type MenuAnchor } from './menu';
 export {
   ToastProvider,
   useToast,
