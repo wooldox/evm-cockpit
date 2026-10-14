@@ -1,12 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { cx } from '@/shared/lib/cx';
 import { trunc } from '@/shared/lib/format';
 import { Icon } from '@/shared/icons';
-import { Button, ChainGlyph } from '@/shared/ui';
+import {
+  Button,
+  ChainGlyph,
+  Menu,
+  useToast,
+  type MenuAnchor,
+  type MenuItem,
+} from '@/shared/ui';
 import { Ident } from '@/shared/ui/copyable';
 import {
   catalogDisplay,
@@ -19,6 +26,8 @@ import {
 import { useAppShell } from '@/widgets/app-shell/AppShellProvider';
 import { Logo } from '@/widgets/app-shell/Logo';
 import { useContractsStore } from '@/entities/contract/model/store';
+import type { TContract } from '@/entities/contract/model/types';
+import { ShareModal } from '@/features/share/ui/ShareModal';
 
 /* ---------- ScopeBtn ---------- */
 function ScopeBtn({
@@ -51,6 +60,152 @@ function ScopeBtn({
   );
 }
 
+/* ---------- ContractRow ---------- */
+function ContractRow({
+  contract,
+  active,
+  onSelect,
+}: {
+  contract: TContract;
+  active: boolean;
+  onSelect: () => void;
+}) {
+  const { openEdit, openDuplicate } = useAppShell();
+  const router = useRouter();
+  const toast = useToast();
+  const [menu, setMenu] = useState<MenuAnchor | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const dotsRef = useRef<HTMLButtonElement>(null);
+  const closeMenu = useCallback(() => setMenu(null), []);
+  const proxy = !!contract.proxy;
+
+  const handleDelete = () => {
+    if (!window.confirm(`Remove ${contract.name}?`)) return;
+    useContractsStore.getState().remove(contract.id);
+    toast({ kind: 'success', title: 'Contract removed', msg: contract.name });
+    if (active) router.push('/');
+  };
+
+  const items: MenuItem[] = [
+    {
+      key: 'edit',
+      label: 'Edit',
+      icon: <Icon.edit size={14} />,
+      onSelect: () => openEdit(contract),
+    },
+    {
+      key: 'duplicate',
+      label: 'Duplicate',
+      icon: <Icon.copy size={14} />,
+      onSelect: () => openDuplicate(contract),
+    },
+    {
+      key: 'share',
+      label: 'Share',
+      icon: <Icon.share size={14} />,
+      onSelect: () => setShareOpen(true),
+    },
+    {
+      key: 'history',
+      label: 'History',
+      icon: <Icon.history size={14} />,
+      onSelect: () => router.push(`/history?c=${contract.id}`),
+    },
+    {
+      key: 'delete',
+      label: 'Delete',
+      icon: <Icon.trash size={14} />,
+      danger: true,
+      separated: true,
+      onSelect: handleDelete,
+    },
+  ];
+
+  return (
+    <div
+      className="group relative"
+      onContextMenu={(e) => {
+        e.preventDefault();
+        setMenu({ x: e.clientX, y: e.clientY });
+      }}
+    >
+      <button
+        type="button"
+        onClick={onSelect}
+        className={cx(
+          'flex w-full items-center gap-2.5 rounded-sm border px-[9px] py-2 text-left transition-colors',
+          active
+            ? 'border-border-strong bg-elev-3'
+            : menu
+              ? 'border-transparent bg-elev-3'
+              : 'border-transparent bg-transparent hover:bg-elev-3',
+        )}
+      >
+        <Ident seed={contract.address} size={26} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-[5px] overflow-hidden text-ellipsis whitespace-nowrap text-[13px] font-medium text-fg">
+            {contract.name}
+            {proxy && (
+              <span className="text-[11px] text-read-fg" title="Proxy">
+                ⃝
+              </span>
+            )}
+          </div>
+          <div className="mt-px font-mono text-[11.5px] text-fg-3">
+            {trunc(contract.address, 5)}
+          </div>
+        </div>
+        {proxy && (
+          <span
+            className={cx(
+              'rounded-[4px] border border-read-border bg-read-bg px-[5px] py-px font-mono text-[10px] text-read-fg transition-opacity',
+              // Yield the slot to the dots trigger while it's showing.
+              menu
+                ? 'opacity-0'
+                : 'group-hover:opacity-0 group-has-[:focus-visible]:opacity-0',
+            )}
+          >
+            proxy
+          </span>
+        )}
+      </button>
+      <button
+        ref={dotsRef}
+        type="button"
+        aria-label={`Actions for ${contract.name}`}
+        aria-haspopup="menu"
+        aria-expanded={!!menu}
+        title="Actions"
+        onClick={() => {
+          if (menu) return setMenu(null);
+          const r = dotsRef.current!.getBoundingClientRect();
+          setMenu({ x: r.right, y: r.bottom + 4, align: 'end' });
+        }}
+        className={cx(
+          'absolute right-1.5 top-1/2 grid size-7 -translate-y-1/2 cursor-pointer place-items-center rounded-sm border-0 bg-transparent text-fg-3 transition-[opacity,color,background-color] hover:bg-elev-4 hover:text-fg focus-visible:opacity-100',
+          menu
+            ? 'bg-elev-4 text-fg opacity-100'
+            : 'opacity-0 group-hover:opacity-100 group-has-[:focus-visible]:opacity-100',
+        )}
+      >
+        <Icon.dots size={16} />
+      </button>
+      {menu && (
+        <Menu
+          anchor={menu}
+          items={items}
+          onClose={closeMenu}
+          label={`${contract.name} actions`}
+          triggerRef={dotsRef}
+        />
+      )}
+      {shareOpen && (
+        <ShareModal contract={contract} onClose={() => setShareOpen(false)} />
+      )}
+    </div>
+  );
+}
+
 /* ---------- Sidebar ---------- */
 export function Sidebar({
   currentId,
@@ -68,6 +223,7 @@ export function Sidebar({
   const [scope, setScope] = useState<'all' | 'current'>('all');
 
   const rawContracts = useContractsStore((s) => s.contracts);
+  const byId = new Map(rawContracts.map((c) => [c.id, c]));
   const contracts: SidebarContract[] = rawContracts.map((c) => ({
     id: c.id,
     name: c.name,
@@ -173,45 +329,18 @@ export function Sidebar({
                 </span>
               </div>
               {list.map((c) => {
-                const active = selectedId === c.id && pathname === '/';
+                const contract = byId.get(c.id);
+                if (!contract) return null;
                 return (
-                  <button
+                  <ContractRow
                     key={c.id}
-                    type="button"
-                    onClick={() => {
+                    contract={contract}
+                    active={selectedId === c.id && pathname === '/'}
+                    onSelect={() => {
                       router.push(`/?c=${c.id}`);
                       onSelect?.(c.id);
                     }}
-                    className={cx(
-                      'flex w-full items-center gap-2.5 rounded-sm border px-[9px] py-2 text-left transition-colors',
-                      active
-                        ? 'border-border-strong bg-elev-3'
-                        : 'border-transparent bg-transparent hover:bg-elev-3',
-                    )}
-                  >
-                    <Ident seed={c.address} size={26} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-[5px] overflow-hidden text-ellipsis whitespace-nowrap text-[13px] font-medium text-fg">
-                        {c.name}
-                        {c.proxy && (
-                          <span
-                            className="text-[11px] text-read-fg"
-                            title="Proxy"
-                          >
-                            ⃝
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-px font-mono text-[11.5px] text-fg-3">
-                        {trunc(c.address, 5)}
-                      </div>
-                    </div>
-                    {c.proxy && (
-                      <span className="rounded-[4px] border border-read-border bg-read-bg px-[5px] py-px font-mono text-[10px] text-read-fg">
-                        proxy
-                      </span>
-                    )}
-                  </button>
+                  />
                 );
               })}
             </div>

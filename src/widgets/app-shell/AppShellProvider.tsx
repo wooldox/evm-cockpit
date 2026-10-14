@@ -16,8 +16,11 @@ type AppShellState = {
   setCurrentChainId: (id: number) => void;
   addOpen: boolean;
   editing: TContract | null;
+  /** Source contract when the add modal was opened via "Duplicate". */
+  duplicating: TContract | null;
   openAdd: () => void;
   openEdit: (c: TContract) => void;
+  openDuplicate: (c: TContract) => void;
   closeAdd: () => void;
   settingsOpen: boolean;
   openSettings: () => void;
@@ -30,6 +33,7 @@ export function AppShellProvider({ children }: { children: ReactNode }) {
   const [currentChainId, setCurrentChainIdState] = useState(1);
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<TContract | null>(null);
+  const [duplicating, setDuplicating] = useState<TContract | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Hydration-safe: init as 1, then read localStorage on the client (matches useTheme pattern).
@@ -57,17 +61,26 @@ export function AppShellProvider({ children }: { children: ReactNode }) {
 
   const openAdd = useCallback(() => {
     setEditing(null);
+    setDuplicating(null);
     setAddOpen(true);
   }, []);
 
   const openEdit = useCallback((c: TContract) => {
     setEditing(c);
+    setDuplicating(null);
+    setAddOpen(true);
+  }, []);
+
+  const openDuplicate = useCallback((c: TContract) => {
+    setEditing(null);
+    setDuplicating(c);
     setAddOpen(true);
   }, []);
 
   const closeAdd = useCallback(() => {
     setAddOpen(false);
     setEditing(null);
+    setDuplicating(null);
   }, []);
 
   const openSettings = useCallback(() => {
@@ -84,8 +97,10 @@ export function AppShellProvider({ children }: { children: ReactNode }) {
       setCurrentChainId,
       addOpen,
       editing,
+      duplicating,
       openAdd,
       openEdit,
+      openDuplicate,
       closeAdd,
       settingsOpen,
       openSettings,
@@ -96,8 +111,10 @@ export function AppShellProvider({ children }: { children: ReactNode }) {
       setCurrentChainId,
       addOpen,
       editing,
+      duplicating,
       openAdd,
       openEdit,
+      openDuplicate,
       closeAdd,
       settingsOpen,
       openSettings,

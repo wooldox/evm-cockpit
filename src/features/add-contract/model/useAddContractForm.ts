@@ -93,6 +93,13 @@ export type AddContractFormResult = {
   submit: () => boolean;
 };
 
+/** Seed for a NEW contract copied from an existing one ("Duplicate"). Opens in
+ *  manual mode with the ABI pasted, so only address/chain need changing. */
+export type ContractPrefill = Pick<
+  TContract,
+  'name' | 'chainId' | 'address' | 'abi'
+>;
+
 // ─── Internal fetch state (includes key for staleness detection) ─────────────
 
 /** Internal shape stored in state — extends the public FetchState with a key
@@ -111,6 +118,7 @@ type ResolvedData = {
 
 export function useAddContractForm(opts?: {
   editing?: TContract | null;
+  prefill?: ContractPrefill;
   /** Initial chain for NEW contracts (the app's currently selected chain).
    *  An `editing` contract's own chain always wins. */
   defaultChainId?: number;
@@ -121,6 +129,7 @@ export function useAddContractForm(opts?: {
   deps?: Partial<Deps>;
 }): AddContractFormResult {
   const editing = opts?.editing ?? null;
+  const seed = editing ?? opts?.prefill ?? null;
 
   const deps: Deps = {
     ...buildDefaultDeps(),
@@ -128,16 +137,16 @@ export function useAddContractForm(opts?: {
   };
 
   // ── Field state ─────────────────────────────────────────────────────────
-  const [name, setName] = useState<string>(editing?.name ?? '');
+  const [name, setName] = useState<string>(seed?.name ?? '');
   const [chainId, setChainIdState] = useState<number>(
-    editing?.chainId ?? opts?.defaultChainId ?? 1,
+    seed?.chainId ?? opts?.defaultChainId ?? 1,
   );
-  const [address, setAddressState] = useState<string>(editing?.address ?? '');
+  const [address, setAddressState] = useState<string>(seed?.address ?? '');
   const [abiText, setAbiText] = useState<string>(
-    editing?.abi ? JSON.stringify(editing.abi, null, 2) : '',
+    seed?.abi ? JSON.stringify(seed.abi, null, 2) : '',
   );
   const [mode, setMode] = useState<'fetch' | 'manual'>(
-    opts?.defaultMode ?? 'fetch',
+    !editing && opts?.prefill ? 'manual' : (opts?.defaultMode ?? 'fetch'),
   );
   // Proxy info carried in from a file import (manual mode). Belongs to one exact
   // address+chainId, so it is cleared whenever either of those is edited below.

@@ -23,11 +23,16 @@ import {
   Textarea,
   useToast,
 } from '@/shared/ui';
-import { useAddContractForm } from '../model/useAddContractForm';
+import {
+  useAddContractForm,
+  type ContractPrefill,
+} from '../model/useAddContractForm';
 
 export interface AddContractModalProps {
   onClose: () => void;
   editing?: TContract | null;
+  /** Seed a NEW contract from an existing one ("Duplicate"). */
+  prefill?: ContractPrefill;
   /** Initial chain for NEW contracts — the caller passes the app's currently
    *  selected chain so the dropdown doesn't always reset to Ethereum. */
   defaultChainId?: number;
@@ -36,6 +41,7 @@ export interface AddContractModalProps {
 export function AddContractModal({
   onClose,
   editing,
+  prefill,
   defaultChainId,
 }: AddContractModalProps) {
   // Auto-fetch is the default tab only when an Etherscan key is set; otherwise
@@ -44,6 +50,7 @@ export function AddContractModal({
     useSettingsStore.getState().etherscanApiKey.trim() !== '';
   const f = useAddContractForm({
     editing,
+    prefill,
     defaultChainId,
     defaultMode: hasEtherscanKey ? 'fetch' : 'manual',
   });
@@ -82,7 +89,13 @@ export function AddContractModal({
   return (
     <Modal
       lg
-      title={editing ? 'Edit contract' : 'Add contract'}
+      title={
+        editing
+          ? 'Edit contract'
+          : prefill
+            ? 'Duplicate contract'
+            : 'Add contract'
+      }
       onClose={onClose}
       footer={
         <>
