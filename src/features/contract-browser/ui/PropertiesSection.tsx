@@ -5,15 +5,7 @@ import { getBrowserSections } from '@/features/contract-browser/model/effectiveA
 import { useProperties } from '@/features/contract-browser/model/useProperties';
 import { Icon } from '@/shared/icons';
 import { cx } from '@/shared/lib/cx';
-import {
-  Badge,
-  Button,
-  ErrorBanner,
-  Muted,
-  Panel,
-  Skeleton,
-  Spinner,
-} from '@/shared/ui';
+import { Badge, ErrorBanner, Muted, Panel, Skeleton } from '@/shared/ui';
 import { TypedValue } from './values';
 
 /* ── Rail + SectionHead (local to this file; also used in GettersSection/ContractBrowser) ── */
@@ -117,8 +109,7 @@ export function PropertiesSection({
   contract: TContract;
   q: string;
 }) {
-  const { rows, isLoading, isError, error, refetch, isFetching } =
-    useProperties(contract);
+  const { rows, isLoading, isError, error, refetch } = useProperties(contract);
 
   // sections is also computed inside useProperties; reuse it here for skeleton source
   const sections = getBrowserSections(contract);
@@ -141,17 +132,6 @@ export function PropertiesSection({
         title="Properties"
         count={isLoading ? skeletonFns.length : rows.length}
         note="auto-read · multicall batched"
-        action={
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={isFetching ? <Spinner /> : <Icon.refresh size={14} />}
-            onClick={() => refetch()}
-            disabled={isFetching}
-          >
-            Refresh
-          </Button>
-        }
       />
       {isError && (
         <ErrorBanner

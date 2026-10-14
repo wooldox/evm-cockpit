@@ -1,13 +1,15 @@
 'use client';
 
 import { useState } from 'react';
+import { useIsFetching, useQueryClient } from '@tanstack/react-query';
 import type { TContract } from '@/entities/contract/model/types';
 import type { RpcProvider } from '@/shared/ports/rpc';
 import type { THistoryEntry } from '@/entities/history/model/types';
 import { useRerunStore, type TRerunIntent } from '@/entities/rerun/model/store';
 import { getBrowserSections } from '@/features/contract-browser/model/effectiveAbi';
+import { propertiesQueryKey } from '@/features/contract-browser/model/useProperties';
 import { Icon } from '@/shared/icons';
-import { Badge, Empty, Input } from '@/shared/ui';
+import { Badge, Button, Empty, Input, Spinner } from '@/shared/ui';
 import { ContractHeader } from './ContractHeader';
 import { PropertiesSection } from './PropertiesSection';
 import { GettersSection } from './GettersSection';
@@ -63,6 +65,12 @@ export function ContractBrowser({
 
   const sections = getBrowserSections(contract);
 
+  // Lives in the sticky toolbar (not the Properties section head) so it stays
+  // reachable while scrolled down to Operations / Events.
+  const queryClient = useQueryClient();
+  const propsKey = propertiesQueryKey(contract.id);
+  const refreshing = useIsFetching({ queryKey: propsKey }) > 0;
+
   const noMatch =
     q &&
     ![
@@ -96,6 +104,19 @@ export function ContractBrowser({
         <Badge variant="write" size="sm" dot>
           write = sends tx
         </Badge>
+        {sections.properties.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-auto"
+            title="Re-read properties"
+            icon={refreshing ? <Spinner /> : <Icon.refresh size={14} />}
+            onClick={() => queryClient.refetchQueries({ queryKey: propsKey })}
+            disabled={refreshing}
+          >
+            Refresh
+          </Button>
+        )}
       </div>
 
       {/* Body */}
