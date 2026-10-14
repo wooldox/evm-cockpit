@@ -103,8 +103,10 @@ export function TypedValue({
     const raw = typeof value === 'bigint' ? value.toString() : String(value);
     const long = raw.length > 12;
     return (
-      <span className="inline-flex items-center gap-[7px]">
-        <span className="font-mono tabular-nums">{formatted}</span>
+      <span className="inline-flex min-w-0 flex-wrap items-center gap-[7px]">
+        <span className="min-w-0 font-mono tabular-nums [overflow-wrap:anywhere]">
+          {formatted}
+        </span>
         {long && (
           <Copyable
             value={raw}
@@ -120,7 +122,7 @@ export function TypedValue({
   /* ── string ── */
   if (type === 'string') {
     return (
-      <span className="font-mono text-success-fg">
+      <span className="min-w-0 font-mono text-success-fg [overflow-wrap:anywhere]">
         &quot;{String(value)}&quot;
       </span>
     );
@@ -147,5 +149,7 @@ export function TypedValue({
   if (str.length > 20) {
     return <Copyable value={str} display={trunc(str, 8)} />;
   }
-  return <span className="font-mono">{str}</span>;
+  return (
+    <span className="min-w-0 font-mono [overflow-wrap:anywhere]">{str}</span>
+  );
 }

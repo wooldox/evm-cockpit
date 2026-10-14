@@ -50,6 +50,14 @@ export function SectionHead({
   );
 }
 
+/** Offer line-break points at camelCase humps and after underscores, so long
+ *  identifiers wrap as autoApprove|Transfers|From|Validator, not mid-word. */
+function breakableIdent(name: string): React.ReactNode[] {
+  return name
+    .split(/(?<=[a-z0-9])(?=[A-Z])|(?<=_)(?=[^_])/)
+    .flatMap((part, i) => (i ? [<wbr key={i} />, part] : [part]));
+}
+
 /* ── PropRow ────────────────────────────────────────────── */
 function PropRow({
   name,
@@ -75,11 +83,14 @@ function PropRow({
       <div
         data-cc="kv-cell"
         className={cx(
-          'flex min-w-0 items-center gap-2 px-3.5 py-[9px] font-mono text-[13px] text-fg-2 group-hover:bg-elev-3',
+          'flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 px-3.5 py-[9px] font-mono text-[13px] text-fg-2 group-hover:bg-elev-3',
           border,
         )}
       >
-        {name}
+        {/* Long names wrap inside the label column instead of spilling into the value. */}
+        <span className="min-w-0 [overflow-wrap:anywhere]">
+          {breakableIdent(name)}
+        </span>
         <Muted className="text-[11px]">{outType}</Muted>
       </div>
       <div
