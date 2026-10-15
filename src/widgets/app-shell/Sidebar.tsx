@@ -41,6 +41,7 @@ import {
 } from '@/entities/chain/model/catalogStore';
 import {
   filterAndGroup,
+  filterContracts,
   type SidebarContract,
 } from '@/widgets/app-shell/lib/filterContracts';
 import { useAppShell } from '@/widgets/app-shell/AppShellProvider';
@@ -94,6 +95,9 @@ function useFileDrop(onFiles: (files: File[]) => void) {
     },
   };
 }
+
+/** Group key for the Pinned section (0 is never a real chain id). */
+const PINNED = 0;
 
 /* ---------- Drag-to-reorder helpers ---------- */
 type TDragData =
@@ -323,10 +327,20 @@ function ContractRow({
   onStartSelect,
   dragDisabled,
   onMove,
+  groupKey,
+  showChain,
+  pinned,
+  onTogglePin,
 }: {
   contract: TContract;
   active: boolean;
   dragDisabled: boolean;
+  /** Which list the row is in (a chain id, or PINNED) — drags stay inside it. */
+  groupKey: number;
+  /** Show the chain next to the address (Pinned mixes chains). */
+  showChain: boolean;
+  pinned: boolean;
+  onTogglePin: () => void;
   /** Move up/down within its chain; absent when already at that end. */
   onMove: { up?: () => void; down?: () => void };
   /** Bulk-select mode: the row toggles a checkbox instead of opening. */
@@ -347,7 +361,7 @@ function ContractRow({
   const { setNodeRef, listeners, transform, transition, isDragging } =
     useSortable({
       id: `c:${contract.id}`,
-      data: { kind: 'contract', chainId: contract.chainId } satisfies TDragData,
+      data: { kind: 'contract', chainId: groupKey } satisfies TDragData,
       disabled: dragDisabled,
     });
 
@@ -379,6 +393,12 @@ function ContractRow({
       label: 'History',
       icon: <Icon.history size={14} />,
       onSelect: () => router.push(`/history?c=${contract.id}`),
+    },
+    {
+      key: 'pin',
+      label: pinned ? 'Unpin' : 'Pin to top',
+      icon: <Icon.pin size={14} />,
+      onSelect: onTogglePin,
     },
     ...(onMove.up
       ? [
@@ -463,7 +483,15 @@ function ContractRow({
               </span>
             )}
           </div>
-          <div className="mt-px font-mono text-[11.5px] text-fg-3">
+          <div className="mt-px flex items-center gap-1.5 font-mono text-[11.5px] text-fg-3">
+            {showChain && (
+              <span title={catalogDisplay(contract.chainId).name}>
+                <ChainGlyph
+                  chain={catalogDisplay(contract.chainId)}
+                  size={11}
+                />
+              </span>
+            )}
             {trunc(contract.address, 5)}
           </div>
         </div>
@@ -548,14 +576,26 @@ export function Sidebar({
 
   const currentChain = useChainDisplay(currentChainId);
   const chainOrder = useSidebarStore((s) => s.chainOrder);
-  const groups = filterAndGroup(contracts, {
+  // Pinned contracts live in their own section above the chains (in pin
+  // order) and leave their chain group, so nothing shows twice.
+  const pinnedIds = useSidebarStore((s) => s.pinned).filter((id) =>
+    byId.has(id),
+  );
+  const pinnedSet = new Set(pinnedIds);
+  const unpinned = contracts.filter((c) => !pinnedSet.has(c.id));
+  const sidebarById = new Map(contracts.map((c) => [c.id, c]));
+  const pinnedList = filterContracts(
+    pinnedIds.map((id) => sidebarById.get(id)!),
+    { scope, query: q, currentChainId },
+  );
+  const groups = filterAndGroup(unpinned, {
     scope,
     query: q,
     currentChainId,
     chainOrder,
   });
   // Every chain in display order, whatever the filter — what reordering acts on.
-  const allChainIds = filterAndGroup(contracts, {
+  const allChainIds = filterAndGroup(unpinned, {
     scope: 'all',
     query: '',
     currentChainId,
@@ -566,8 +606,13 @@ export function Sidebar({
   const hydrated = useSidebarHydrated();
   // Searching shows every match, whatever is collapsed.
   const searching = q.trim() !== '';
+  // The group the open contract is shown in (Pinned or its chain).
   const activeChainId =
-    pathname === '/' ? byId.get(selectedId ?? '')?.chainId : undefined;
+    pathname !== '/' || !selectedId
+      ? undefined
+      : pinnedSet.has(selectedId)
+        ? PINNED
+        : byId.get(selectedId)?.chainId;
 
   // Opening a contract (sidebar, History, shared link, Duplicate…) expands its
   // chain so you can see where you are. Keyed on the selection, so collapsing
@@ -583,7 +628,7 @@ export function Sidebar({
     // Alt-click: collapse/expand every chain, like VS Code's tree views.
     if (e.altKey)
       setAll(
-        groups.map((g) => g.chainId),
+        [PINNED, ...groups.map((g) => g.chainId)],
         !collapsed.includes(chainId),
       );
     else toggleChain(chainId);
@@ -600,14 +645,17 @@ export function Sidebar({
 
   // "Select all" = everything the current scope/search shows (collapsed
   // chains included); Shift-click ranges only span rows actually on screen.
-  const filteredIds = groups.flatMap((g) => g.contracts.map((c) => c.id));
+  const filteredIds = [
+    ...pinnedList.map((c) => c.id),
+    ...groups.flatMap((g) => g.contracts.map((c) => c.id)),
+  ];
   // In sidebar order (filtered first, then any the filter hides); ids deleted
   // elsewhere while selecting drop out.
   const selectedIds = [
     ...filteredIds,
     ...rawContracts.map((c) => c.id).filter((id) => !filteredIds.includes(id)),
   ].filter((id) => picked.has(id));
-  const visibleIds = groups
+  const visibleIds = [{ chainId: PINNED, contracts: pinnedList }, ...groups]
     .filter((g) => searching || !collapsed.includes(g.chainId))
     .flatMap((g) => g.contracts.map((c) => c.id));
   const filteredSet = new Set(filteredIds);
@@ -708,14 +756,27 @@ export function Sidebar({
       .getState()
       .setChainOrder(arrayMove(allChainIds, i, i + delta));
   };
-  const chainContractIds = (chainId: number) =>
-    rawContracts.filter((c) => c.chainId === chainId).map((c) => c.id);
-  const moveContract = (c: TContract, delta: -1 | 1) => {
-    const ids = chainContractIds(c.chainId);
-    const i = ids.indexOf(c.id);
-    useContractsStore
-      .getState()
-      .reorderChain(c.chainId, arrayMove(ids, i, i + delta));
+  /** Ids in a group's display order: the pin order, or a chain's unpinned
+   *  contracts (pinned ones keep their hidden slots in the chain). */
+  const groupIds = (key: number) =>
+    key === PINNED
+      ? pinnedIds
+      : rawContracts
+          .filter((c) => c.chainId === key && !pinnedSet.has(c.id))
+          .map((c) => c.id);
+  /** Apply a new order for a group's ids (see groupIds). */
+  const reorderGroup = (key: number, ordered: string[]) => {
+    if (key === PINNED) return useSidebarStore.getState().setPinned(ordered);
+    const queue = [...ordered];
+    const full = rawContracts
+      .filter((c) => c.chainId === key)
+      .map((c) => (pinnedSet.has(c.id) ? c.id : queue.shift()!));
+    useContractsStore.getState().reorderChain(key, full);
+  };
+  const moveInGroup = (key: number, id: string, delta: -1 | 1) => {
+    const ids = groupIds(key);
+    const i = ids.indexOf(id);
+    reorderGroup(key, arrayMove(ids, i, i + delta));
   };
 
   const onDragStart = ({ active }: DragStartEvent) =>
@@ -738,18 +799,72 @@ export function Sidebar({
           ),
         );
     } else if (a.kind === 'contract' && a.chainId === o.chainId) {
-      const ids = chainContractIds(a.chainId);
+      const ids = groupIds(a.chainId);
       const from = ids.indexOf(String(active.id).slice(2));
       const to = ids.indexOf(String(over.id).slice(2));
-      useContractsStore
-        .getState()
-        .reorderChain(a.chainId, arrayMove(ids, from, to));
+      reorderGroup(a.chainId, arrayMove(ids, from, to));
     }
   };
 
   // Drop exported .json files anywhere on the sidebar to import them.
   const importFiles = useImportFiles();
   const drop = useFileDrop((files) => void importFiles(files));
+
+  /** A group's sortable rows (a chain's, or Pinned). */
+  const renderRows = (key: number, list: SidebarContract[]) => {
+    const ids = groupIds(key);
+    return (
+      <SortableContext
+        items={list.map((c) => `c:${c.id}`)}
+        strategy={verticalListSortingStrategy}
+      >
+        {list.map((c) => {
+          const contract = byId.get(c.id);
+          if (!contract) return null;
+          const i = ids.indexOf(c.id);
+          return (
+            <ContractRow
+              key={c.id}
+              contract={contract}
+              active={selectedId === c.id && pathname === '/'}
+              selecting={selecting}
+              checked={picked.has(c.id)}
+              onRowClick={onRowClick(c.id)}
+              onStartSelect={() => startSelect(c.id)}
+              dragDisabled={contractDragOff}
+              groupKey={key}
+              showChain={key === PINNED}
+              pinned={pinnedSet.has(c.id)}
+              onTogglePin={() => useSidebarStore.getState().togglePin(c.id)}
+              onMove={{
+                up: i > 0 ? () => moveInGroup(key, c.id, -1) : undefined,
+                down:
+                  i < ids.length - 1
+                    ? () => moveInGroup(key, c.id, 1)
+                    : undefined,
+              }}
+            />
+          );
+        })}
+      </SortableContext>
+    );
+  };
+
+  /** Select-mode checkbox on a group header (all / some / none picked). */
+  const groupCheckbox = (ids: string[], label: string) => {
+    const n = ids.filter((id) => picked.has(id)).length;
+    return (
+      // Lines up with the rows' checkboxes (26px slot after 10px).
+      <span className="ml-[10px] grid w-[26px] flex-none place-items-center">
+        <Checkbox
+          aria-label={label}
+          checked={n === ids.length}
+          indeterminate={n > 0 && n < ids.length}
+          onChange={() => setMany(ids, n < ids.length)}
+        />
+      </span>
+    );
+  };
 
   /* ---------- Bottom nav item ---------- */
   const navLinks: { href: string; icon: React.ReactNode; label: string }[] = [
@@ -824,6 +939,7 @@ export function Sidebar({
       {/* Contract list */}
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-3 pt-1">
         {groups.length === 0 &&
+          pinnedList.length === 0 &&
           (scope === 'current' && !q ? (
             <div className="px-3 py-6 text-center text-[13px] text-fg-4">
               No contracts on {currentChain.name}.
@@ -857,6 +973,76 @@ export function Sidebar({
           onDragEnd={onDragEnd}
           onDragCancel={() => setDragKind(null)}
         >
+          {pinnedList.length > 0 &&
+            (() => {
+              const isCollapsed =
+                dragKind === 'chain' ||
+                (!searching && collapsed.includes(PINNED));
+              return (
+                <div className="mb-3">
+                  <div className="flex items-center">
+                    {selecting &&
+                      groupCheckbox(
+                        pinnedList.map((c) => c.id),
+                        'Select all pinned',
+                      )}
+                    <button
+                      type="button"
+                      aria-expanded={!isCollapsed}
+                      aria-controls="sidebar-pinned"
+                      disabled={searching}
+                      title={
+                        searching
+                          ? undefined
+                          : `${isCollapsed ? 'Expand' : 'Collapse'} · Alt-click for all`
+                      }
+                      onClick={(e) => onChainHeaderClick(e, PINNED)}
+                      className="group/chain flex min-w-0 flex-1 items-center gap-[7px] rounded-sm border-0 bg-transparent px-2 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-fg-3 transition-colors enabled:cursor-pointer enabled:hover:bg-elev-3 enabled:hover:text-fg-2"
+                    >
+                      <Icon.pin size={14} className="flex-none text-read-fg" />
+                      <span className="min-w-0 truncate">Pinned</span>
+                      <span className="ml-auto rounded-full bg-elev-3 px-[7px] py-px text-[11px] text-fg-4">
+                        {pinnedList.length}
+                      </span>
+                      {!searching && (
+                        <Icon.chevD
+                          size={13}
+                          className={cx(
+                            'flex-none text-fg-4 transition-transform duration-150 group-hover/chain:text-fg-3',
+                            isCollapsed && '-rotate-90',
+                          )}
+                        />
+                      )}
+                    </button>
+                    {/* Keeps the count/chevron aligned with chain headers,
+                        which reserve room for their ⋯ button. */}
+                    {!chainDragOff && allChainIds.length > 1 && (
+                      <span className="ml-0.5 w-6 flex-none" />
+                    )}
+                  </div>
+                  <div
+                    id="sidebar-pinned"
+                    inert={isCollapsed}
+                    className={cx(
+                      'grid ease-out',
+                      !dragKind &&
+                        'transition-[grid-template-rows] duration-150',
+                      isCollapsed ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]',
+                    )}
+                  >
+                    <div
+                      className={cx(
+                        'min-h-0',
+                        (isCollapsed || dragKind !== 'contract') &&
+                          'overflow-hidden',
+                      )}
+                    >
+                      {renderRows(PINNED, pinnedList)}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           <SortableContext
             items={groups.map((g) => `chain:${g.chainId}`)}
             strategy={verticalListSortingStrategy}
@@ -895,21 +1081,10 @@ export function Sidebar({
                         dragHandle={dragHandle}
                       >
                         {selecting &&
-                          (() => {
-                            const ids = list.map((c) => c.id);
-                            const n = ids.filter((id) => picked.has(id)).length;
-                            return (
-                              // Lines up with the rows' checkboxes (26px slot after 10px).
-                              <span className="ml-[10px] grid w-[26px] flex-none place-items-center">
-                                <Checkbox
-                                  aria-label={`Select all on ${chain.name}`}
-                                  checked={n === ids.length}
-                                  indeterminate={n > 0 && n < ids.length}
-                                  onChange={() => setMany(ids, n < ids.length)}
-                                />
-                              </span>
-                            );
-                          })()}
+                          groupCheckbox(
+                            list.map((c) => c.id),
+                            `Select all on ${chain.name}`,
+                          )}
                         <button
                           type="button"
                           aria-expanded={!isCollapsed}
@@ -963,41 +1138,7 @@ export function Sidebar({
                               'overflow-hidden',
                           )}
                         >
-                          <SortableContext
-                            items={list.map((c) => `c:${c.id}`)}
-                            strategy={verticalListSortingStrategy}
-                          >
-                            {list.map((c) => {
-                              const contract = byId.get(c.id);
-                              if (!contract) return null;
-                              const ids = chainContractIds(chainId);
-                              const i = ids.indexOf(c.id);
-                              return (
-                                <ContractRow
-                                  key={c.id}
-                                  contract={contract}
-                                  active={
-                                    selectedId === c.id && pathname === '/'
-                                  }
-                                  selecting={selecting}
-                                  checked={picked.has(c.id)}
-                                  onRowClick={onRowClick(c.id)}
-                                  onStartSelect={() => startSelect(c.id)}
-                                  dragDisabled={contractDragOff}
-                                  onMove={{
-                                    up:
-                                      i > 0
-                                        ? () => moveContract(contract, -1)
-                                        : undefined,
-                                    down:
-                                      i < ids.length - 1
-                                        ? () => moveContract(contract, 1)
-                                        : undefined,
-                                  }}
-                                />
-                              );
-                            })}
-                          </SortableContext>
+                          {renderRows(chainId, list)}
                         </div>
                       </div>
                     </>

@@ -1,6 +1,12 @@
 import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 vi.mock('next/navigation', () => ({
@@ -107,6 +113,7 @@ describe('Sidebar', () => {
         'Duplicate',
         'Share',
         'History',
+        'Pin to top',
         'Select',
         'Delete',
       ]);
@@ -472,6 +479,90 @@ describe('Sidebar', () => {
       await user.type(screen.getByPlaceholderText('Search contracts'), 'o');
       expect(
         screen.queryByRole('button', { name: 'Actions for Sepolia' }),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  describe('pinned', () => {
+    beforeEach(() => {
+      useSidebarStore.setState({ collapsed: [], chainOrder: [], pinned: [] });
+      useContractsStore.setState({
+        contracts: [
+          mk('1', 'USD Coin', 1),
+          mk('2', 'Wood', 11155111),
+          mk('3', 'Water', 11155111),
+          mk('4', 'Stone', 11155111),
+        ],
+      });
+    });
+    const renderSidebar = () => {
+      render(
+        <ToastProvider>
+          <ConfirmProvider>
+            <AppShellProvider>
+              <Sidebar />
+            </AppShellProvider>
+          </ConfirmProvider>
+        </ToastProvider>,
+      );
+      return userEvent.setup();
+    };
+    const pin = async (
+      user: ReturnType<typeof userEvent.setup>,
+      name: string,
+      item = 'Pin to top',
+    ) => {
+      fireEvent.contextMenu(screen.getByText(name));
+      await user.click(screen.getByRole('menuitem', { name: item }));
+    };
+    const pinnedSection = () =>
+      document.getElementById('sidebar-pinned') as HTMLElement;
+
+    it('pinning moves a contract into a Pinned section above the chains', async () => {
+      const user = renderSidebar();
+      expect(pinnedSection()).toBeNull();
+      await pin(user, 'Water');
+      await pin(user, 'USD Coin');
+      expect(useSidebarStore.getState().pinned).toEqual(['3', '1']);
+      expect(
+        within(pinnedSection())
+          .getAllByText(/Water|USD Coin/)
+          .map((e) => e.textContent),
+      ).toEqual(['Water', 'USD Coin']);
+      // it leaves its chain group (Ethereum had only USD Coin → gone)
+      expect(
+        screen.queryByRole('button', { name: /ethereum/i, expanded: true }),
+      ).not.toBeInTheDocument();
+      const headers = screen
+        .getAllByRole('button')
+        .filter((b) => b.hasAttribute('aria-controls'));
+      expect(headers[0]).toHaveTextContent(/pinned/i);
+      expect(headers[0]).toHaveTextContent('2');
+    });
+
+    it('Unpin puts it back; Move works inside Pinned and skips pinned rows in a chain', async () => {
+      const user = renderSidebar();
+      await pin(user, 'Water');
+      // In Sepolia only Wood and Stone remain: Wood can move down past Stone
+      await pin(user, 'Wood', 'Move down');
+      expect(useContractsStore.getState().contracts.map((c) => c.name)).toEqual(
+        ['USD Coin', 'Stone', 'Water', 'Wood'],
+      );
+      await pin(user, 'USD Coin');
+      await pin(user, 'USD Coin', 'Move up');
+      expect(useSidebarStore.getState().pinned).toEqual(['1', '3']);
+      await pin(user, 'Water', 'Unpin');
+      expect(useSidebarStore.getState().pinned).toEqual(['1']);
+    });
+
+    it('search filters Pinned too', async () => {
+      const user = renderSidebar();
+      await pin(user, 'Water');
+      await pin(user, 'Wood');
+      await user.type(screen.getByPlaceholderText('Search contracts'), 'wat');
+      expect(within(pinnedSection()).getByText('Water')).toBeInTheDocument();
+      expect(
+        within(pinnedSection()).queryByText('Wood'),
       ).not.toBeInTheDocument();
     });
   });

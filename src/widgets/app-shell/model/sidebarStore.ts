@@ -11,6 +11,10 @@ export type SidebarState = {
    *  that just got its first contract — follow, in first-added order. */
   chainOrder: number[];
   setChainOrder: (chainIds: number[]) => void;
+  /** Pinned contract ids, in display order (shown above the chains). */
+  pinned: string[];
+  togglePin: (id: string) => void;
+  setPinned: (ids: string[]) => void;
   toggleChain: (chainId: number) => void;
   setAll: (chainIds: number[], collapsed: boolean) => void;
   expandChain: (chainId: number) => void;
@@ -22,6 +26,14 @@ export const useSidebarStore = create<SidebarState>()(
       collapsed: [],
       chainOrder: [],
       setChainOrder: (chainOrder) => set({ chainOrder }),
+      pinned: [],
+      togglePin: (id) =>
+        set((s) => ({
+          pinned: s.pinned.includes(id)
+            ? s.pinned.filter((p) => p !== id)
+            : [...s.pinned, id],
+        })),
+      setPinned: (pinned) => set({ pinned }),
       toggleChain: (id) =>
         set((s) => ({
           collapsed: s.collapsed.includes(id)
