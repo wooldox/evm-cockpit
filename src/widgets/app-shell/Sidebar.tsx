@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { cx } from '@/shared/lib/cx';
@@ -127,6 +127,7 @@ function ContractRow({
   const deleteContract = useDeleteContract();
   const [menu, setMenu] = useState<MenuAnchor | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  const shareList = useMemo(() => [contract], [contract]);
   const dotsRef = useRef<HTMLButtonElement>(null);
   const closeMenu = useCallback(() => setMenu(null), []);
   const proxy = !!contract.proxy;
@@ -249,7 +250,7 @@ function ContractRow({
         />
       )}
       {shareOpen && (
-        <ShareModal contract={contract} onClose={() => setShareOpen(false)} />
+        <ShareModal contracts={shareList} onClose={() => setShareOpen(false)} />
       )}
     </div>
   );

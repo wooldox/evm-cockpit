@@ -40,13 +40,22 @@ function bigContract(): TContract {
   return { ...smallContract, abi };
 }
 
-function renderModal(contract: TContract) {
+function renderModal(contract: TContract | TContract[]) {
+  const contracts = Array.isArray(contract) ? contract : [contract];
   return render(
     <ToastProvider>
-      <ShareModal contract={contract} onClose={vi.fn()} />
+      <ShareModal contracts={contracts} onClose={vi.fn()} />
     </ToastProvider>,
   );
 }
+
+const second: TContract = {
+  ...smallContract,
+  id: 'def456',
+  name: 'Tether',
+  chainId: 11155111,
+  address: '0x9999999999999999999999999999999999999999',
+};
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -121,5 +130,60 @@ describe('ShareModal', () => {
     await waitFor(() => expect(captured).not.toBeNull());
     const text = await (captured as unknown as Blob).text();
     expect(JSON.parse(text)).toEqual(toShareBundle([smallContract]));
+  });
+
+  it('several contracts: titled with the count, lists them, one link carries all', async () => {
+    renderModal([smallContract, second]);
+
+    expect(
+      screen.getByRole('dialog', { name: 'Share 2 contracts' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Tether')).toBeInTheDocument();
+    expect(screen.getByText('Sepolia')).toBeInTheDocument();
+
+    const input = (await screen.findByDisplayValue(
+      /#import=/,
+    )) as HTMLInputElement;
+    const decoded = await decodeShare(input.value.split('#import=')[1]!);
+    expect(decoded.map((c) => c.name)).toEqual(['USD Coin', 'Tether']);
+  });
+
+  it('several contracts too big for a link: says so, file still offered', async () => {
+    renderModal([bigContract(), { ...bigContract(), id: 'b2' }]);
+    expect(
+      await screen.findByText(/too long for a link \(2 contracts\)/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /download json/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('several contracts: Download JSON writes one bundle file', async () => {
+    let captured: Blob | null = null;
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: vi.fn((b: Blob) => {
+        captured = b;
+        return 'blob:fake-url';
+      }),
+      revokeObjectURL: vi.fn(),
+    });
+    let downloadName = '';
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      downloadName = this.download;
+    });
+
+    renderModal([smallContract, second]);
+    await screen.findByDisplayValue(/#import=/);
+    await userEvent.click(
+      screen.getByRole('button', { name: /download json/i }),
+    );
+
+    await waitFor(() => expect(captured).not.toBeNull());
+    expect(downloadName).toBe('evm-cockpit-2-contracts.json');
+    const text = await (captured as unknown as Blob).text();
+    expect(JSON.parse(text)).toEqual(toShareBundle([smallContract, second]));
   });
 });
