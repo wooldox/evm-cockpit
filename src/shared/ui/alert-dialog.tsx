@@ -14,6 +14,7 @@ import { createPortal } from 'react-dom';
 import { cx } from '@/shared/lib/cx';
 import { Icon } from '@/shared/icons';
 import { Button } from './button';
+import { Checkbox } from './checkbox';
 
 export type ConfirmOptions = {
   title: ReactNode;
@@ -23,7 +24,12 @@ export type ConfirmOptions = {
   cancelLabel?: string;
   /** `danger` = destructive action: red confirm button + warning icon. */
   tone?: 'danger' | 'default';
+  /** Optional opt-in shown under the description (e.g. "also delete X"). */
+  checkbox?: { label: ReactNode; defaultChecked?: boolean };
 };
+
+/** `false` when cancelled; otherwise the state of the optional checkbox. */
+export type ConfirmResult = false | { checked: boolean };
 
 /* ============================================================
    AlertDialog — modal confirmation that demands an explicit
@@ -37,9 +43,11 @@ export function AlertDialog({
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   tone = 'default',
+  checkbox,
   onResolve,
-}: ConfirmOptions & { onResolve: (confirmed: boolean) => void }) {
+}: ConfirmOptions & { onResolve: (result: ConfirmResult) => void }) {
   const id = useId();
+  const [checked, setChecked] = useState(checkbox?.defaultChecked ?? false);
   const ref = useRef<HTMLDivElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
 
@@ -56,7 +64,7 @@ export function AlertDialog({
       onResolve(false);
     } else if (e.key === 'Tab') {
       const els = Array.from(
-        ref.current?.querySelectorAll<HTMLElement>('button') ?? [],
+        ref.current?.querySelectorAll<HTMLElement>('button, input') ?? [],
       );
       const first = els[0];
       const last = els[els.length - 1];
@@ -102,6 +110,14 @@ export function AlertDialog({
                 {description}
               </div>
             )}
+            {checkbox && (
+              <Checkbox
+                className="mt-3"
+                label={checkbox.label}
+                checked={checked}
+                onChange={(e) => setChecked(e.target.checked)}
+              />
+            )}
           </div>
         </div>
         <div className={cx('mt-5 flex justify-end gap-2')}>
@@ -115,7 +131,7 @@ export function AlertDialog({
           <Button
             variant={tone === 'danger' ? 'danger' : 'primary'}
             fill={tone === 'danger' ? 'solid' : undefined}
-            onClick={() => onResolve(true)}
+            onClick={() => onResolve({ checked })}
           >
             {confirmLabel}
           </Button>
@@ -128,10 +144,10 @@ export function AlertDialog({
 
 /* ── useConfirm: promise-based drop-in for window.confirm ── */
 
-type Pending = ConfirmOptions & { resolve: (ok: boolean) => void };
+type Pending = ConfirmOptions & { resolve: (r: ConfirmResult) => void };
 
 const ConfirmCtx = createContext<
-  ((opts: ConfirmOptions) => Promise<boolean>) | null
+  ((opts: ConfirmOptions) => Promise<ConfirmResult>) | null
 >(null);
 
 export function ConfirmProvider({ children }: { children: ReactNode }) {
@@ -139,7 +155,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 
   const confirm = useCallback(
     (opts: ConfirmOptions) =>
-      new Promise<boolean>((resolve) => setPending({ ...opts, resolve })),
+      new Promise<ConfirmResult>((resolve) => setPending({ ...opts, resolve })),
     [],
   );
 
@@ -149,8 +165,8 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
       {pending && (
         <AlertDialog
           {...pending}
-          onResolve={(ok) => {
-            pending.resolve(ok);
+          onResolve={(r) => {
+            pending.resolve(r);
             setPending(null);
           }}
         />
@@ -159,8 +175,9 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
   );
 }
 
-/** `if (!(await confirm({ title: 'Delete X?', tone: 'danger' }))) return;` */
-export function useConfirm(): (opts: ConfirmOptions) => Promise<boolean> {
+/** `if (!(await confirm({ title: 'Delete X?', tone: 'danger' }))) return;`
+ *  With `checkbox`, read the opt-in from the result: `result.checked`. */
+export function useConfirm(): (opts: ConfirmOptions) => Promise<ConfirmResult> {
   const ctx = useContext(ConfirmCtx);
   if (!ctx) throw new Error('useConfirm must be used within <ConfirmProvider>');
   return ctx;
