@@ -26,7 +26,7 @@ vi.mock('next/link', () => ({
 
 import { Sidebar } from './Sidebar';
 import { AppShellProvider, useAppShell } from './AppShellProvider';
-import { ToastProvider } from '@/shared/ui';
+import { ConfirmProvider, ToastProvider } from '@/shared/ui';
 import { useSidebarStore } from './model/sidebarStore';
 import { useContractsStore } from '@/entities/contract/model/store';
 import type { TContract } from '@/entities/contract/model/types';
@@ -47,9 +47,11 @@ describe('Sidebar', () => {
   it('shows the empty state with no contracts', () => {
     render(
       <ToastProvider>
-        <AppShellProvider>
-          <Sidebar />
-        </AppShellProvider>
+        <ConfirmProvider>
+          <AppShellProvider>
+            <Sidebar />
+          </AppShellProvider>
+        </ConfirmProvider>
       </ToastProvider>,
     );
     expect(screen.getByText(/no saved contracts/i)).toBeInTheDocument();
@@ -59,9 +61,11 @@ describe('Sidebar', () => {
     useContractsStore.setState({ contracts: [mk('1', 'USD Coin')] });
     render(
       <ToastProvider>
-        <AppShellProvider>
-          <Sidebar />
-        </AppShellProvider>
+        <ConfirmProvider>
+          <AppShellProvider>
+            <Sidebar />
+          </AppShellProvider>
+        </ConfirmProvider>
       </ToastProvider>,
     );
     expect(screen.getByText('USD Coin')).toBeInTheDocument();
@@ -80,10 +84,12 @@ describe('Sidebar', () => {
     const renderWithProbe = () =>
       render(
         <ToastProvider>
-          <AppShellProvider>
-            <Sidebar />
-            <DuplicateProbe />
-          </AppShellProvider>
+          <ConfirmProvider>
+            <AppShellProvider>
+              <Sidebar />
+              <DuplicateProbe />
+            </AppShellProvider>
+          </ConfirmProvider>
         </ToastProvider>,
       );
 
@@ -129,7 +135,6 @@ describe('Sidebar', () => {
 
     it('Delete removes the contract after confirm', async () => {
       const user = userEvent.setup();
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
       useContractsStore.setState({
         contracts: [mk('1', 'USD Coin'), mk('2', 'Tether')],
       });
@@ -137,6 +142,7 @@ describe('Sidebar', () => {
 
       fireEvent.contextMenu(screen.getByText('USD Coin'));
       await user.click(screen.getByRole('menuitem', { name: 'Delete' }));
+      await user.click(screen.getByRole('button', { name: 'Delete' }));
       expect(useContractsStore.getState().contracts.map((c) => c.id)).toEqual([
         '2',
       ]);
@@ -154,9 +160,11 @@ describe('Sidebar', () => {
     const renderSidebar = (props: { currentId?: string } = {}) =>
       render(
         <ToastProvider>
-          <AppShellProvider>
-            <Sidebar {...props} />
-          </AppShellProvider>
+          <ConfirmProvider>
+            <AppShellProvider>
+              <Sidebar {...props} />
+            </AppShellProvider>
+          </ConfirmProvider>
         </ToastProvider>,
       );
     const header = (name: RegExp) =>

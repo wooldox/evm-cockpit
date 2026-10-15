@@ -10,6 +10,7 @@ import { txUrl } from '@/entities/chain/model/explorer';
 import { erc20Abi } from '@/shared/lib/abi/fixtures';
 import type { TContract } from '@/entities/contract/model/types';
 import type { THistoryEntry } from '@/entities/history/model/types';
+import { ConfirmProvider } from '@/shared/ui';
 import { HistoryView } from './HistoryView';
 
 /* ── next/navigation mock ───────────────────────────────── */
@@ -75,7 +76,7 @@ beforeEach(() => {
 describe('HistoryView', () => {
   it('renders read-ok row: type badge, fn, contract name, status', () => {
     seed([entry({ type: 'read', status: 'ok', result: '1,000' })]);
-    render(<HistoryView />);
+    render(<HistoryView />, { wrapper: ConfirmProvider });
 
     expect(screen.getByText('read')).toBeInTheDocument();
     expect(screen.getByText('balanceOf()')).toBeInTheDocument();
@@ -94,7 +95,7 @@ describe('HistoryView', () => {
         error: msg,
       }),
     ]);
-    render(<HistoryView />);
+    render(<HistoryView />, { wrapper: ConfirmProvider });
 
     expect(screen.getByText('simulate')).toBeInTheDocument();
     const statusCell = screen.getByText(/^error/);
@@ -110,7 +111,7 @@ describe('HistoryView', () => {
         txHash: HASH,
       }),
     ]);
-    render(<HistoryView />);
+    render(<HistoryView />, { wrapper: ConfirmProvider });
 
     expect(screen.getByText('write')).toBeInTheDocument();
     const link = screen.getByRole('link');
@@ -126,7 +127,7 @@ describe('HistoryView', () => {
       ],
       [contractA, contractB],
     );
-    render(<HistoryView />);
+    render(<HistoryView />, { wrapper: ConfirmProvider });
 
     expect(screen.getByText('balanceOf()')).toBeInTheDocument();
     expect(screen.getByText('allowance()')).toBeInTheDocument();
@@ -142,25 +143,25 @@ describe('HistoryView', () => {
 
   it('shows truncated contractId for a deleted contract', () => {
     seed([entry({ contractId: DELETED_ID })], []);
-    render(<HistoryView />);
+    render(<HistoryView />, { wrapper: ConfirmProvider });
 
     expect(screen.getByText(/^0xdead/)).toBeInTheDocument();
   });
 
   it('Clear empties history when confirmed', async () => {
     const user = userEvent.setup();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     seed([entry({})]);
-    render(<HistoryView />);
+    render(<HistoryView />, { wrapper: ConfirmProvider });
 
     await user.click(screen.getByRole('button', { name: /Clear/ }));
+    await user.click(screen.getByRole('button', { name: 'Clear history' }));
 
     expect(useHistoryStore.getState().entries).toHaveLength(0);
   });
 
   it('shows the empty state when there is no history', () => {
     seed([]);
-    render(<HistoryView />);
+    render(<HistoryView />, { wrapper: ConfirmProvider });
 
     expect(screen.getByText('No history yet')).toBeInTheDocument();
   });
@@ -171,7 +172,7 @@ describe('HistoryView', () => {
       entry({ type: 'read', fnName: 'balanceOf' }),
       entry({ type: 'write', fnName: 'transfer' }),
     ]);
-    render(<HistoryView />);
+    render(<HistoryView />, { wrapper: ConfirmProvider });
 
     expect(screen.getByText('balanceOf()')).toBeInTheDocument();
     expect(screen.getByText('transfer()')).toBeInTheDocument();
@@ -192,7 +193,7 @@ describe('HistoryView', () => {
         args: { owner: '0xdead' },
       }),
     ]);
-    render(<HistoryView />);
+    render(<HistoryView />, { wrapper: ConfirmProvider });
 
     await user.click(screen.getByRole('button', { name: /Re-run/ }));
 
@@ -208,7 +209,7 @@ describe('HistoryView', () => {
 
   it('Re-run is disabled with a title when the contract was deleted', () => {
     seed([entry({ contractId: DELETED_ID })], []);
-    render(<HistoryView />);
+    render(<HistoryView />, { wrapper: ConfirmProvider });
 
     const btn = screen.getByRole('button', { name: /Re-run/ });
     expect(btn).toBeDisabled();
@@ -224,7 +225,7 @@ describe('HistoryView', () => {
       [contractA, contractB],
     );
     // The /history?c=b page passes the searchParam through as the prop.
-    render(<HistoryView initialContractId="b" />);
+    render(<HistoryView initialContractId="b" />, { wrapper: ConfirmProvider });
 
     // Rows filtered to contract B from the first render — no effects.
     expect(screen.queryByText('balanceOf()')).not.toBeInTheDocument();
@@ -237,7 +238,9 @@ describe('HistoryView', () => {
 
   it("initialContractId falls back to 'all' when the contract is unknown", () => {
     seed([entry({ contractId: 'a', fnName: 'balanceOf' })], [contractA]);
-    render(<HistoryView initialContractId="does-not-exist" />);
+    render(<HistoryView initialContractId="does-not-exist" />, {
+      wrapper: ConfirmProvider,
+    });
 
     expect(screen.getByText('balanceOf()')).toBeInTheDocument();
     expect(

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
-import { ToastProvider } from '@/shared/ui';
+import { ConfirmProvider, ToastProvider } from '@/shared/ui';
 import { erc20Abi } from '@/shared/lib/abi/fixtures';
 import type { TContract } from '@/entities/contract/model/types';
 import { ContractHeader } from './ContractHeader';
@@ -39,7 +39,9 @@ describe('ContractHeader', () => {
     const user = userEvent.setup();
     render(
       <ToastProvider>
-        <ContractHeader contract={contract} onRemoved={vi.fn()} />
+        <ConfirmProvider>
+          <ContractHeader contract={contract} onRemoved={vi.fn()} />
+        </ConfirmProvider>
       </ToastProvider>,
     );
 
@@ -52,7 +54,9 @@ describe('ContractHeader', () => {
     const user = userEvent.setup();
     render(
       <ToastProvider>
-        <ContractHeader contract={contract} onRemoved={vi.fn()} />
+        <ConfirmProvider>
+          <ContractHeader contract={contract} onRemoved={vi.fn()} />
+        </ConfirmProvider>
       </ToastProvider>,
     );
 

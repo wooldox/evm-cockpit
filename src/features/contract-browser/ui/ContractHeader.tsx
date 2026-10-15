@@ -8,7 +8,7 @@ import type { TContract } from '@/entities/contract/model/types';
 import { useContractsStore } from '@/entities/contract/model/store';
 import { Icon } from '@/shared/icons';
 import { trunc } from '@/shared/lib/format';
-import { Badge, Button, ChainBadge, useToast } from '@/shared/ui';
+import { Badge, Button, ChainBadge, useConfirm, useToast } from '@/shared/ui';
 import { Address, Copyable } from '@/shared/ui/copyable';
 import { ShareModal } from '@/features/share/ui/ShareModal';
 import { useAppShell } from '@/widgets/app-shell/AppShellProvider';
@@ -22,6 +22,7 @@ export function ContractHeader({
   onRemoved: () => void;
 }) {
   const toast = useToast();
+  const confirm = useConfirm();
   const router = useRouter();
   const { openEdit } = useAppShell();
   const [shareOpen, setShareOpen] = useState(false);
@@ -40,8 +41,15 @@ export function ContractHeader({
     openEdit(contract);
   };
 
-  const handleRemove = () => {
-    if (!window.confirm(`Remove ${contract.name}?`)) return;
+  const handleRemove = async () => {
+    const ok = await confirm({
+      title: `Delete ${contract.name}?`,
+      description:
+        'It will be removed from your saved contracts. Its history entries stay.',
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
+    if (!ok) return;
     useContractsStore.getState().remove(contract.id);
     toast({ kind: 'success', title: 'Contract removed', msg: contract.name });
     onRemoved();

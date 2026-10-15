@@ -1,10 +1,10 @@
 import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ToastProvider } from '@/shared/ui';
+import { ConfirmProvider, ToastProvider } from '@/shared/ui';
 import { AppShellProvider } from '@/widgets/app-shell/AppShellProvider';
 import { useContractsStore } from '@/entities/contract/model/store';
 import { useRerunStore } from '@/entities/rerun/model/store';
@@ -95,13 +95,15 @@ function renderBrowser(
   return render(
     <QueryClientProvider client={client}>
       <ToastProvider>
-        <AppShellProvider>
-          <ContractBrowser
-            contract={contract}
-            onRemoved={onRemoved}
-            deps={deps}
-          />
-        </AppShellProvider>
+        <ConfirmProvider>
+          <AppShellProvider>
+            <ContractBrowser
+              contract={contract}
+              onRemoved={onRemoved}
+              deps={deps}
+            />
+          </AppShellProvider>
+        </ConfirmProvider>
       </ToastProvider>
     </QueryClientProvider>,
   );
@@ -270,12 +272,14 @@ describe('ContractBrowser', () => {
     useContractsStore.setState({ contracts: [baseContract] });
     renderBrowser(baseContract, onRemoved);
 
-    // Mock window.confirm to return true
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-
-    // Click the trash/remove button (title="Remove")
-    const removeBtn = screen.getByTitle('Remove');
-    await user.click(removeBtn);
+    // Click the trash/remove button (title="Remove") — opens a confirm dialog
+    await user.click(screen.getByTitle('Remove'));
+    const dialog = screen.getByRole('alertdialog', {
+      name: 'Delete USD Coin?',
+    });
+    // Nothing is removed until the user confirms
+    expect(useContractsStore.getState().contracts).toHaveLength(1);
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
 
     // Store should be empty
     expect(useContractsStore.getState().contracts).toHaveLength(0);
