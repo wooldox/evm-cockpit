@@ -15,6 +15,7 @@ import { PropertiesSection } from './PropertiesSection';
 import { GettersSection } from './GettersSection';
 import { OperationsSection } from './OperationsSection';
 import { EventsSection } from './EventsSection';
+import { ValueContextProvider } from './valueContext';
 
 /**
  * Test seam (flat). Forwarded as-is to OperationsSection; EventsSection only
@@ -81,67 +82,69 @@ export function ContractBrowser({
     ].some((x) => x.name.toLowerCase().includes(ql));
 
   return (
-    <div className="flex min-h-0 flex-col">
-      <ContractHeader contract={contract} onRemoved={onRemoved} />
+    <ValueContextProvider contract={contract}>
+      <div className="flex min-h-0 flex-col">
+        <ContractHeader contract={contract} onRemoved={onRemoved} />
 
-      {/* Sticky toolbar */}
-      <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-[color-mix(in_oklab,var(--bg)_88%,transparent)] px-7 py-3.5 backdrop-blur-[8px]">
-        <div className="relative flex max-w-[420px] flex-1 items-center">
-          <Icon.search
-            size={14}
-            className="pointer-events-none absolute left-2.5 text-fg-3"
-          />
-          <Input
-            className="pl-[30px]"
-            placeholder="Filter functions across all sections…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
+        {/* Sticky toolbar */}
+        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-[color-mix(in_oklab,var(--bg)_88%,transparent)] px-7 py-3.5 backdrop-blur-[8px]">
+          <div className="relative flex max-w-[420px] flex-1 items-center">
+            <Icon.search
+              size={14}
+              className="pointer-events-none absolute left-2.5 text-fg-3"
+            />
+            <Input
+              className="pl-[30px]"
+              placeholder="Filter functions across all sections…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+          </div>
+          <Badge variant="read" size="sm" dot>
+            read = free
+          </Badge>
+          <Badge variant="write" size="sm" dot>
+            write = sends tx
+          </Badge>
+          {sections.properties.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto"
+              title="Re-read properties"
+              icon={refreshing ? <Spinner /> : <Icon.refresh size={14} />}
+              onClick={() => queryClient.refetchQueries({ queryKey: propsKey })}
+              disabled={refreshing}
+            >
+              Refresh
+            </Button>
+          )}
         </div>
-        <Badge variant="read" size="sm" dot>
-          read = free
-        </Badge>
-        <Badge variant="write" size="sm" dot>
-          write = sends tx
-        </Badge>
-        {sections.properties.length > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="ml-auto"
-            title="Re-read properties"
-            icon={refreshing ? <Spinner /> : <Icon.refresh size={14} />}
-            onClick={() => queryClient.refetchQueries({ queryKey: propsKey })}
-            disabled={refreshing}
-          >
-            Refresh
-          </Button>
-        )}
+
+        {/* Body */}
+        <div
+          data-cc="cb-body"
+          className="mx-auto flex w-full max-w-[1080px] flex-col gap-7 px-7 pb-16 pt-5"
+        >
+          <PropertiesSection contract={contract} q={ql} />
+          <GettersSection contract={contract} q={ql} rerun={rerun} />
+
+          <OperationsSection
+            contract={contract}
+            q={ql}
+            deps={deps}
+            rerun={rerun}
+          />
+
+          <EventsSection
+            contract={contract}
+            q={ql}
+            deps={deps ? { rpc: deps.rpc } : undefined}
+          />
+
+          {noMatch && <NoFunctionMatch q={q} />}
+        </div>
       </div>
-
-      {/* Body */}
-      <div
-        data-cc="cb-body"
-        className="mx-auto flex w-full max-w-[1080px] flex-col gap-7 px-7 pb-16 pt-5"
-      >
-        <PropertiesSection contract={contract} q={ql} />
-        <GettersSection contract={contract} q={ql} rerun={rerun} />
-
-        <OperationsSection
-          contract={contract}
-          q={ql}
-          deps={deps}
-          rerun={rerun}
-        />
-
-        <EventsSection
-          contract={contract}
-          q={ql}
-          deps={deps ? { rpc: deps.rpc } : undefined}
-        />
-
-        {noMatch && <NoFunctionMatch q={q} />}
-      </div>
-    </div>
+    </ValueContextProvider>
   );
 }

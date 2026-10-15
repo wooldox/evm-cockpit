@@ -1,12 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { TypedValue, ParamInput } from './values';
+import { keccak256, toHex } from 'viem';
+import { useValueViewStore } from '@/entities/value-view/model/store';
+import { TypedValue, ParamInput, ResultValue } from './values';
 
 // jsdom has no real clipboard — provide a mock before each test
 beforeEach(() => {
-  Object.assign(navigator, {
-    clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
+  // defineProperty: userEvent.setup() swaps in a getter-only clipboard.
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText: vi.fn().mockResolvedValue(undefined) },
   });
 });
 
@@ -22,8 +26,8 @@ describe('TypedValue', () => {
     // 13-digit number — length > 12 → shows Copyable
     render(<TypedValue type="uint256" value={1234567890123n} />);
     expect(screen.getByText('1,234,567,890,123')).toBeInTheDocument();
-    // trunc("1234567890123", 6) = "12345678…890123" (2+6=8 prefix chars)
-    expect(screen.getByText('12345678…890123')).toBeInTheDocument();
+    // raw ≤ 16 digits is shown in full next to the formatted value
+    expect(screen.getByText('1234567890123')).toBeInTheDocument();
   });
 
   it('address: renders truncated form via Address short', () => {
@@ -176,5 +180,90 @@ describe('ParamInput', () => {
       />,
     );
     expect(screen.getByPlaceholderText(/JSON, e\.g\./i)).toBeInTheDocument();
+  });
+});
+
+// ── interpretation & "view as" ───────────────────────────────────────────────
+
+describe('TypedValue interpretation', () => {
+  beforeEach(() => useValueViewStore.setState({ views: {} }));
+
+  it('auto-formats a timestamp-named value as a UTC date, raw kept', () => {
+    render(
+      <TypedValue
+        type="uint32"
+        value={1791828000n}
+        name="GTD_START_TIMESTAMP"
+      />,
+    );
+    expect(screen.getByText('2026-10-12 18:00:00 UTC')).toBeInTheDocument();
+    expect(screen.getByText('1791828000')).toBeInTheDocument();
+  });
+
+  it('leaves an ambiguous price raw until the user picks a view, then remembers it', async () => {
+    const user = userEvent.setup();
+    const props = {
+      type: 'uint256',
+      value: 100_000_000_000_000_000n,
+      name: 'GTD_PRICE',
+      viewKey: 'c1|GTD_PRICE()|0',
+    };
+    const { unmount } = render(<TypedValue {...props} />);
+    expect(screen.getByText('100,000,000,000,000,000')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'View as…' }));
+    await user.click(
+      screen.getByRole('menuitem', { name: 'ETH (18 decimals)' }),
+    );
+    expect(screen.getByText('0.1 ETH')).toBeInTheDocument();
+    expect(useValueViewStore.getState().views['c1|GTD_PRICE()|0']).toEqual({
+      kind: 'units',
+      decimals: 18,
+      symbol: 'ETH',
+    });
+
+    unmount();
+    render(<TypedValue {...props} />);
+    expect(screen.getByText('0.1 ETH')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'View as…' }));
+    await user.click(screen.getByRole('menuitem', { name: /^Auto/ }));
+    expect(screen.getByText('100,000,000,000,000,000')).toBeInTheDocument();
+  });
+
+  it('labels verified role hashes and max uint', () => {
+    render(
+      <>
+        <TypedValue
+          type="bytes32"
+          value={keccak256(toHex('MINTER_ROLE'))}
+          name="MINTER_ROLE"
+        />
+        <TypedValue type="uint256" value={(1n << 256n) - 1n} />
+      </>,
+    );
+    expect(screen.getByText('keccak256("MINTER_ROLE")')).toBeInTheDocument();
+    expect(screen.getByText('max uint256')).toBeInTheDocument();
+  });
+
+  it('ResultValue splits multiple outputs into labeled values', () => {
+    render(
+      <ResultValue
+        fn={{
+          type: 'function',
+          name: 'getReserves',
+          stateMutability: 'view',
+          inputs: [],
+          outputs: [
+            { name: 'reserve0', type: 'uint112' },
+            { name: 'reserve1', type: 'uint112' },
+            { name: 'blockTimestampLast', type: 'uint32' },
+          ],
+        }}
+        value={[5n, 7n, 1791828000n]}
+      />,
+    );
+    expect(screen.getByText('reserve0')).toBeInTheDocument();
+    expect(screen.getByText('2026-10-12 18:00:00 UTC')).toBeInTheDocument();
   });
 });

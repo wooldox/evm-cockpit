@@ -25,7 +25,14 @@ export type MenuItem = {
 /** Viewport point the menu opens from. `align: 'end'` puts the menu's right
  *  edge on `x` (dropdown under a right-aligned trigger); `'start'` puts its left
  *  edge there (context menu at the cursor). */
-export type MenuAnchor = { x: number; y: number; align?: 'start' | 'end' };
+export type MenuAnchor = {
+  x: number;
+  y: number;
+  align?: 'start' | 'end';
+  /** Where to put the menu's bottom edge when it must open upward (a
+   *  trigger's top), so it doesn't cover the trigger. Defaults to `y`. */
+  flipY?: number;
+};
 
 const EDGE = 8;
 
@@ -62,7 +69,8 @@ export function Menu({
     const vh = window.innerHeight;
     let left = anchor.align === 'end' ? anchor.x - width : anchor.x;
     let top = anchor.y;
-    if (top + height > vh - EDGE) top = Math.max(EDGE, anchor.y - height);
+    if (top + height > vh - EDGE)
+      top = Math.max(EDGE, (anchor.flipY ?? anchor.y) - height);
     left = Math.min(Math.max(EDGE, left), vw - width - EDGE);
     setPos({ left, top });
     el.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
@@ -134,7 +142,7 @@ export function Menu({
       onKeyDown={onKeyDown}
       onContextMenu={(e) => e.preventDefault()}
       style={pos ?? { left: anchor.x, top: anchor.y, visibility: 'hidden' }}
-      className="fixed z-[110] min-w-[168px] rounded-md border border-border-strong bg-elev-2 p-1 shadow-[var(--shadow-pop)] animate-pop-in"
+      className="fixed z-[110] w-max min-w-[168px] max-w-[calc(100vw-16px)] rounded-md border border-border-strong bg-elev-2 p-1 shadow-[var(--shadow-pop)] animate-pop-in"
     >
       {items.map((it) => (
         <Fragment key={it.key}>
