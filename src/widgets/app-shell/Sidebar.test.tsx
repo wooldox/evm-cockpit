@@ -107,6 +107,7 @@ describe('Sidebar', () => {
         'Duplicate',
         'Share',
         'History',
+        'Select',
         'Delete',
       ]);
     });
@@ -233,5 +234,111 @@ describe('Sidebar', () => {
     expect(screen.getAllByRole('menuitem').map((el) => el.textContent)).toEqual(
       ['Add contract', 'Import from file…'],
     );
+  });
+
+  describe('bulk select', () => {
+    beforeEach(() => {
+      useSidebarStore.setState({ collapsed: [] });
+      useContractsStore.setState({
+        contracts: [
+          mk('1', 'USD Coin', 1),
+          mk('2', 'Wood', 11155111),
+          mk('3', 'Water', 11155111),
+          mk('4', 'Stone', 11155111),
+        ],
+      });
+    });
+
+    const renderSidebar = () => {
+      render(
+        <ToastProvider>
+          <ConfirmProvider>
+            <AppShellProvider>
+              <Sidebar />
+            </AppShellProvider>
+          </ConfirmProvider>
+        </ToastProvider>,
+      );
+      return userEvent.setup();
+    };
+    const row = (name: string) =>
+      screen.getByRole('checkbox', { name: new RegExp(name) });
+    const bar = () => screen.queryByRole('toolbar', { name: 'Bulk actions' });
+
+    const enterVia = async (
+      user: ReturnType<typeof userEvent.setup>,
+      name: string,
+    ) => {
+      fireEvent.contextMenu(screen.getByText(name));
+      await user.click(screen.getByRole('menuitem', { name: 'Select' }));
+    };
+
+    it('"Select" in the menu enters select mode with that contract checked', async () => {
+      const user = renderSidebar();
+      await enterVia(user, 'Wood');
+      expect(row('Wood')).toHaveAttribute('aria-checked', 'true');
+      expect(row('Water')).toHaveAttribute('aria-checked', 'false');
+      expect(bar()).toHaveTextContent('1 selected');
+      // rows toggle instead of navigating; the ⋯ triggers are gone
+      await user.click(row('Water'));
+      expect(bar()).toHaveTextContent('2 selected');
+      expect(
+        screen.queryByRole('button', { name: /actions for/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('Shift-click selects a range; the chain checkbox selects the whole chain', async () => {
+      const user = renderSidebar();
+      await enterVia(user, 'USD Coin');
+      await user.click(row('Wood'));
+      fireEvent.click(row('Stone'), { shiftKey: true });
+      expect(bar()).toHaveTextContent('4 selected');
+
+      await user.click(
+        screen.getByRole('checkbox', { name: 'Select all on Sepolia' }),
+      );
+      expect(bar()).toHaveTextContent('1 selected');
+    });
+
+    it('Cmd/Ctrl-click enters select mode; Select all; ✕ and Escape exit', async () => {
+      const user = renderSidebar();
+      fireEvent.click(screen.getByText('Water'), { metaKey: true });
+      expect(bar()).toHaveTextContent('1 selected');
+
+      await user.click(screen.getByRole('button', { name: 'Select all' }));
+      expect(bar()).toHaveTextContent('4 selected');
+      expect(screen.getByRole('button', { name: 'Select all' })).toBeDisabled();
+
+      await user.click(screen.getByRole('button', { name: /exit selection/i }));
+      expect(bar()).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByText('Water'), { ctrlKey: true });
+      expect(bar()).toBeInTheDocument();
+      await user.keyboard('{Escape}');
+      expect(bar()).not.toBeInTheDocument();
+    });
+
+    it('Share opens one dialog for all selected; Delete confirms then removes them', async () => {
+      const user = renderSidebar();
+      await enterVia(user, 'Wood');
+      await user.click(row('Water'));
+
+      await user.click(screen.getByRole('button', { name: 'Share' }));
+      expect(
+        screen.getByRole('dialog', { name: 'Share 2 contracts' }),
+      ).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Close' }));
+
+      await user.click(screen.getByRole('button', { name: 'Delete' }));
+      const dialog = screen.getByRole('alertdialog', {
+        name: 'Delete 2 contracts?',
+      });
+      expect(dialog).toHaveTextContent('Wood, Water will be removed');
+      await user.click(screen.getByRole('button', { name: 'Delete 2' }));
+      expect(useContractsStore.getState().contracts.map((c) => c.name)).toEqual(
+        ['USD Coin', 'Stone'],
+      );
+      expect(bar()).not.toBeInTheDocument();
+    });
   });
 });

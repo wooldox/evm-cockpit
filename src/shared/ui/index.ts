@@ -32,7 +32,7 @@ export {
   type ConfirmOptions,
   type ConfirmResult,
 } from './alert-dialog';
-export { Checkbox, type CheckboxProps } from './checkbox';
+export { Checkbox, CheckMark, type CheckboxProps } from './checkbox';
 export {
   ToastProvider,
   useToast,
