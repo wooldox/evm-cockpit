@@ -1,4 +1,5 @@
 'use client';
+import { useSyncExternalStore } from 'react';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { idbStateStorage } from '@/entities/_shared/idbStateStorage';
@@ -6,8 +7,6 @@ import { idbStateStorage } from '@/entities/_shared/idbStateStorage';
 export type SidebarState = {
   /** Chain ids whose contract lists are collapsed. */
   collapsed: number[];
-  /** True once persisted state has loaded (IndexedDB is async). */
-  hydrated: boolean;
   toggleChain: (chainId: number) => void;
   setAll: (chainIds: number[], collapsed: boolean) => void;
   expandChain: (chainId: number) => void;
@@ -17,7 +16,6 @@ export const useSidebarStore = create<SidebarState>()(
   persist(
     (set) => ({
       collapsed: [],
-      hydrated: false,
       toggleChain: (id) =>
         set((s) => ({
           collapsed: s.collapsed.includes(id)
@@ -41,10 +39,17 @@ export const useSidebarStore = create<SidebarState>()(
       // Own key inside the existing "settings" object store (no IDB schema bump).
       name: 'cc-sidebar',
       storage: createJSONStorage(() => idbStateStorage('settings')),
-      partialize: (s) => ({ collapsed: s.collapsed }),
-      onRehydrateStorage: () => () => {
-        useSidebarStore.setState({ hydrated: true });
-      },
     },
   ),
 );
+
+/** True once the persisted sidebar state has loaded from IndexedDB (async).
+ *  Read from persist's own status — writing a flag into the store would
+ *  trigger a persist write, which fails during static prerender. */
+export function useSidebarHydrated(): boolean {
+  return useSyncExternalStore(
+    useSidebarStore.persist.onFinishHydration,
+    useSidebarStore.persist.hasHydrated,
+    () => false,
+  );
+}

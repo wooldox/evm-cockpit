@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 vi.mock('next/navigation', () => ({
@@ -145,7 +145,7 @@ describe('Sidebar', () => {
 
   describe('collapsible chains', () => {
     beforeEach(() => {
-      useSidebarStore.setState({ collapsed: [], hydrated: true });
+      useSidebarStore.setState({ collapsed: [] });
       useContractsStore.setState({
         contracts: [mk('1', 'USD Coin', 1), mk('2', 'Mock USDC', 11155111)],
       });
@@ -198,10 +198,13 @@ describe('Sidebar', () => {
       expect(header(/ethereum/i)).toBeDisabled();
     });
 
-    it('opening a contract expands its chain', () => {
+    it('opening a contract expands its chain', async () => {
       useSidebarStore.setState({ collapsed: [1, 11155111] });
       renderSidebar({ currentId: '2' });
-      expect(useSidebarStore.getState().collapsed).toEqual([1]);
+      // Waits for persisted state to finish loading before expanding.
+      await waitFor(() =>
+        expect(useSidebarStore.getState().collapsed).toEqual([1]),
+      );
     });
   });
 });

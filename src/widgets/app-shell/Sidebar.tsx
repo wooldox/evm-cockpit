@@ -25,7 +25,10 @@ import {
 } from '@/widgets/app-shell/lib/filterContracts';
 import { useAppShell } from '@/widgets/app-shell/AppShellProvider';
 import { Logo } from '@/widgets/app-shell/Logo';
-import { useSidebarStore } from '@/widgets/app-shell/model/sidebarStore';
+import {
+  useSidebarHydrated,
+  useSidebarStore,
+} from '@/widgets/app-shell/model/sidebarStore';
 import { useContractsStore } from '@/entities/contract/model/store';
 import type { TContract } from '@/entities/contract/model/types';
 import { ShareModal } from '@/features/share/ui/ShareModal';
@@ -237,7 +240,7 @@ export function Sidebar({
   const groups = filterAndGroup(contracts, { scope, query: q, currentChainId });
 
   const collapsed = useSidebarStore((s) => s.collapsed);
-  const hydrated = useSidebarStore((s) => s.hydrated);
+  const hydrated = useSidebarHydrated();
   // Searching shows every match, whatever is collapsed.
   const searching = q.trim() !== '';
   const activeChainId =
