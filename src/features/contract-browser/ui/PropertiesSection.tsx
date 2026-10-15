@@ -1,12 +1,13 @@
 'use client';
 
+import type { AbiFunction } from 'abitype';
 import type { TContract } from '@/entities/contract/model/types';
 import { getBrowserSections } from '@/features/contract-browser/model/effectiveAbi';
 import { useProperties } from '@/features/contract-browser/model/useProperties';
 import { Icon } from '@/shared/icons';
 import { cx } from '@/shared/lib/cx';
 import { Badge, ErrorBanner, Muted, Panel, Skeleton } from '@/shared/ui';
-import { TypedValue } from './values';
+import { fnViewKey, ResultValue } from './values';
 
 /* ── Rail + SectionHead (local to this file; also used in GettersSection/ContractBrowser) ── */
 function Rail({ tone }: { tone: 'read' | 'write' }) {
@@ -50,24 +51,31 @@ export function SectionHead({
   );
 }
 
+/** Offer line-break points at camelCase humps and after underscores, so long
+ *  identifiers wrap as autoApprove|Transfers|From|Validator, not mid-word. */
+function breakableIdent(name: string): React.ReactNode[] {
+  return name
+    .split(/(?<=[a-z0-9])(?=[A-Z])|(?<=_)(?=[^_])/)
+    .flatMap((part, i) => (i ? [<wbr key={i} />, part] : [part]));
+}
+
 /* ── PropRow ────────────────────────────────────────────── */
 function PropRow({
-  name,
-  outType,
+  fn,
   value,
   status,
   error,
   isLoading,
   last,
+  viewKeyBase,
 }: {
-  name: string;
-  outType: string;
+  fn: AbiFunction;
   value: unknown;
   status: 'ok' | 'error' | undefined;
   error: string | undefined;
   isLoading: boolean;
   last: boolean;
-  chainId: number;
+  viewKeyBase: string;
 }) {
   const border = last ? '' : 'border-b border-border';
   return (
@@ -75,12 +83,17 @@ function PropRow({
       <div
         data-cc="kv-cell"
         className={cx(
-          'flex min-w-0 items-center gap-2 px-3.5 py-[9px] font-mono text-[13px] text-fg-2 group-hover:bg-elev-3',
+          'flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 px-3.5 py-[9px] font-mono text-[13px] text-fg-2 group-hover:bg-elev-3',
           border,
         )}
       >
-        {name}
-        <Muted className="text-[11px]">{outType}</Muted>
+        {/* Long names wrap inside the label column instead of spilling into the value. */}
+        <span className="min-w-0 [overflow-wrap:anywhere]">
+          {breakableIdent(fn.name)}
+        </span>
+        <Muted className="text-[11px]">
+          {fn.outputs.map((o) => o.type).join(', ')}
+        </Muted>
       </div>
       <div
         data-cc="kv-cell"
@@ -90,9 +103,9 @@ function PropRow({
         )}
       >
         {isLoading ? (
-          <Skeleton width={120 + ((name.length * 6) % 140)} />
+          <Skeleton width={120 + ((fn.name.length * 6) % 140)} />
         ) : status === 'ok' ? (
-          <TypedValue type={outType} value={value} />
+          <ResultValue fn={fn} value={value} viewKeyBase={viewKeyBase} />
         ) : status === 'error' ? (
           <span className="font-mono text-[12px] text-danger-fg">{error}</span>
         ) : null}
@@ -152,38 +165,30 @@ export function PropertiesSection({
         <Panel>
           <div className="grid grid-cols-[minmax(160px,280px)_1fr]">
             {isLoading
-              ? skeletonFns.map((fn, i) => {
-                  const outType = fn.outputs[0]?.type ?? '';
-                  return (
-                    <PropRow
-                      key={`${fn.name}()`}
-                      name={fn.name}
-                      outType={outType}
-                      value={undefined}
-                      status={undefined}
-                      error={undefined}
-                      isLoading={true}
-                      last={i === skeletonFns.length - 1}
-                      chainId={contract.chainId}
-                    />
-                  );
-                })
-              : filtered.map((row, i) => {
-                  const outType = row.fn.outputs[0]?.type ?? '';
-                  return (
-                    <PropRow
-                      key={`${row.fn.name}()`}
-                      name={row.fn.name}
-                      outType={outType}
-                      value={row.status === 'ok' ? row.value : undefined}
-                      status={row.status}
-                      error={row.status === 'error' ? row.error : undefined}
-                      isLoading={false}
-                      last={i === filtered.length - 1}
-                      chainId={contract.chainId}
-                    />
-                  );
-                })}
+              ? skeletonFns.map((fn, i) => (
+                  <PropRow
+                    key={`${fn.name}()`}
+                    fn={fn}
+                    value={undefined}
+                    status={undefined}
+                    error={undefined}
+                    isLoading={true}
+                    last={i === skeletonFns.length - 1}
+                    viewKeyBase={fnViewKey(contract.id, fn)}
+                  />
+                ))
+              : filtered.map((row, i) => (
+                  <PropRow
+                    key={`${row.fn.name}()`}
+                    fn={row.fn}
+                    value={row.status === 'ok' ? row.value : undefined}
+                    status={row.status}
+                    error={row.status === 'error' ? row.error : undefined}
+                    isLoading={false}
+                    last={i === filtered.length - 1}
+                    viewKeyBase={fnViewKey(contract.id, row.fn)}
+                  />
+                ))}
           </div>
         </Panel>
       )}

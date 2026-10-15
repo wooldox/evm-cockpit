@@ -263,8 +263,13 @@ describe('EventsSection', () => {
     await user.type(screen.getByPlaceholderText('latest'), '200');
     await user.click(screen.getByRole('button', { name: /Fetch logs/i }));
 
-    await screen.findByText(/showing first 1000 — narrow the range/i);
-  });
+    await screen.findByText(
+      /showing first 1000 — narrow the range/i,
+      {},
+      { timeout: 10_000 },
+    );
+    // Renders 1000 rows; can exceed the 5s default under full-suite load.
+  }, 20_000);
 
   it('empty done result shows the no-logs message', async () => {
     const user = userEvent.setup();

@@ -11,7 +11,7 @@ import { cx } from '@/shared/lib/cx';
 import { stringifyWithBigint } from '@/shared/lib/json/stringify';
 import { Button, Muted, MutTag, Spinner } from '@/shared/ui';
 import { CopyBtn } from '@/shared/ui/copyable';
-import { ParamInput, TypedValue } from './values';
+import { fnViewKey, ParamInput, ResultValue } from './values';
 import { SectionHead } from './PropertiesSection';
 
 /* ── FnCard ─────────────────────────────────────────────── */
@@ -94,8 +94,6 @@ function GetterCard({
     fn,
   );
 
-  const outType = fn.outputs[0]?.type ?? '';
-
   const handleCall = () => {
     void call(args);
   };
@@ -145,10 +143,10 @@ function GetterCard({
             <CopyBtn value={stringifyWithBigint(result)} />
           </div>
           <div className="overflow-x-auto px-3.5 py-[11px] leading-[1.6]">
-            <TypedValue
-              type={outType}
+            <ResultValue
+              fn={fn}
               value={result}
-              chainId={contract.chainId}
+              viewKeyBase={fnViewKey(contract.id, fn)}
             />
           </div>
         </div>

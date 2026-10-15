@@ -16,7 +16,7 @@ import { trunc } from '@/shared/lib/format';
 import { Button, Muted, Panel, Spinner } from '@/shared/ui';
 import { ExtLink } from '@/shared/ui/copyable';
 import { Field, Input, Select } from '@/shared/ui/field';
-import { TypedValue } from './values';
+import { ColumnViewAs, TypedValue } from './values';
 import { SectionHead } from './PropertiesSection';
 
 /** Test seam mirroring useEventLogs deps (defaults to the rpc singleton). */
@@ -37,10 +37,12 @@ function EventsTable({
   event,
   logs,
   chainId,
+  contractId,
 }: {
   event: AbiEvent;
   logs: TDecodedLog[];
   chainId: number;
+  contractId: string;
 }) {
   const th =
     'sticky top-0 whitespace-nowrap border-b border-border bg-elev-1 px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-fg-3';
@@ -49,6 +51,16 @@ function EventsTable({
   // viem decides positional-vs-named for the WHOLE event: if ANY input is
   // unnamed, every arg comes back positional ("0","1",… via normalizeLog).
   const positional = event.inputs.some((inp) => !inp.name);
+  // A view choice applies to the whole column (persisted per event arg).
+  const viewKeyBase = `${contractId}|event:${eventSig(event)}`;
+  // ERC-20 Transfer/Approval(address,address,uint256): the standard defines the
+  // uint256 as an amount in the token's decimals (only used when the contract
+  // has decimals(), so ERC-721's identical signature is unaffected).
+  const amountCol =
+    (event.name === 'Transfer' || event.name === 'Approval') &&
+    eventSig(event).endsWith('(address,address,uint256)')
+      ? 2
+      : -1;
 
   return (
     <div className="mt-3 overflow-auto rounded-sm border border-border">
@@ -56,11 +68,26 @@ function EventsTable({
         <thead>
           <tr>
             <th className={th}>Block</th>
-            {event.inputs.map((input, i) => (
-              <th key={colLabel(input, i)} className={th}>
-                {colLabel(input, i)}
-              </th>
-            ))}
+            {event.inputs.map((input, i) => {
+              const key = positional ? String(i) : input.name;
+              const sample = key === undefined ? undefined : logs[0]?.args[key];
+              return (
+                <th key={colLabel(input, i)} className={th}>
+                  <span className="inline-flex items-center gap-1">
+                    {colLabel(input, i)}
+                    {/* One "view as" per integer column, applied to every row. */}
+                    {typeof sample === 'bigint' && (
+                      <ColumnViewAs
+                        sample={sample}
+                        viewKey={`${viewKeyBase}|${colLabel(input, i)}`}
+                        name={input.name || undefined}
+                        standardAmount={amountCol === i}
+                      />
+                    )}
+                  </span>
+                </th>
+              );
+            })}
             <th className={th}>Tx</th>
           </tr>
         </thead>
@@ -83,6 +110,10 @@ function EventsTable({
                         type={input.type}
                         value={key === undefined ? undefined : log.args[key]}
                         chainId={chainId}
+                        name={input.name || undefined}
+                        standardAmount={amountCol === i}
+                        viewKey={`${viewKeyBase}|${colLabel(input, i)}`}
+                        viewMenu={false}
                       />
                     </td>
                   );
@@ -210,6 +241,7 @@ export function EventsSection({
                 event={selected}
                 logs={state.result.logs}
                 chainId={contract.chainId}
+                contractId={contract.id}
               />
               <Muted className="mt-2.5 block text-xs">
                 {state.result.logs.length} logs · {state.result.chunks} RPC

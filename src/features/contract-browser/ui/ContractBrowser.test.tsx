@@ -168,8 +168,8 @@ describe('ContractBrowser', () => {
     renderBrowser(baseContract);
 
     // wait for totalSupply bigint to render (definitive proof multicall resolved)
-    // fmtBig(24891003472n) → "24,891,003,472"
-    await screen.findByText('24,891,003,472');
+    // ERC-20 totalSupply auto-formats with the contract's decimals (6)
+    await screen.findByText('24,891.003472');
 
     // The properties grid renders all three values from multicall
     // name = "USD Coin" (appears twice: header h1 + properties row, use getAllByText)
@@ -180,7 +180,7 @@ describe('ContractBrowser', () => {
   it('toolbar Refresh re-reads properties', async () => {
     const user = userEvent.setup();
     renderBrowser(baseContract);
-    await screen.findByText('24,891,003,472');
+    await screen.findByText('24,891.003472');
     expect(mockClient.multicall).toHaveBeenCalledTimes(1);
 
     await user.click(screen.getByRole('button', { name: /refresh/i }));
@@ -221,8 +221,8 @@ describe('ContractBrowser', () => {
 
     await user.click(callBtn);
 
-    // Wait for the result to appear: 1000n → "1,000"
-    await screen.findByText('1,000');
+    // balanceOf → token units (decimals 6)
+    await screen.findByText('0.001');
     expect(mockClient.readContract).toHaveBeenCalledOnce();
   });
 
@@ -348,7 +348,7 @@ describe('ContractBrowser', () => {
     useRerunStore.setState({ intent: otherIntent });
     renderBrowser(baseContract);
 
-    await screen.findByText('24,891,003,472'); // wait for render to settle
+    await screen.findByText('24,891.003472'); // wait for render to settle
 
     // No card was prefilled/opened.
     expect(screen.queryByDisplayValue(OWNER)).not.toBeInTheDocument();
