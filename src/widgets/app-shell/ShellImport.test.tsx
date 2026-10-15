@@ -127,4 +127,27 @@ describe('ShellImport', () => {
     );
     expect(screen.getByText(/not a valid contract export/)).toBeInTheDocument();
   });
+
+  it('several files → one merged review (duplicates dropped, bad files reported)', async () => {
+    const user = setup();
+    const f = (name: string, contracts: TContract[]) =>
+      new File([JSON.stringify(toShareBundle(contracts))], name, {
+        type: 'application/json',
+      });
+    const c = (id: string, hex: string) => ({
+      ...saved,
+      id,
+      name: `C${id}`,
+      address: `0x${hex.repeat(40)}` as `0x${string}`,
+    });
+    await user.upload(screen.getByLabelText('Import contract export file'), [
+      f('a.json', [c('1', 'b'), c('2', 'c')]),
+      f('b.json', [c('3', 'c'), c('4', 'd')]), // 'c' repeats → dropped
+      new File(['nope'], 'bad.json', { type: 'application/json' }),
+    ]);
+    expect(
+      await screen.findByRole('dialog', { name: 'Import 3 contracts' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/bad\.json/)).toBeInTheDocument();
+  });
 });

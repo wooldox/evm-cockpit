@@ -341,4 +341,77 @@ describe('Sidebar', () => {
       expect(bar()).not.toBeInTheDocument();
     });
   });
+
+  describe('drop to import', () => {
+    function ImportProbe() {
+      const { importing } = useAppShell();
+      return importing ? (
+        <div data-testid="importing">
+          {importing.map((i) => i.name).join(',')}
+        </div>
+      ) : null;
+    }
+    const exportFile = (name: string) =>
+      new File(
+        [
+          JSON.stringify({
+            v: 1,
+            name,
+            chainId: 1,
+            address: `0x${'b'.repeat(40)}`,
+            abi: [{ type: 'function', name: 'x', inputs: [], outputs: [] }],
+            source: 'manual',
+          }),
+        ],
+        `${name}.json`,
+        { type: 'application/json' },
+      );
+
+    it('shows a drop overlay for files and hands dropped exports to the review step', async () => {
+      useContractsStore.setState({ contracts: [] });
+      render(
+        <ToastProvider>
+          <ConfirmProvider>
+            <AppShellProvider>
+              <Sidebar />
+              <ImportProbe />
+            </AppShellProvider>
+          </ConfirmProvider>
+        </ToastProvider>,
+      );
+      const aside = screen.getByText(/no saved contracts/i).closest('aside')!;
+      const file = exportFile('Dropped');
+      const dataTransfer = { types: ['Files'], files: [file], dropEffect: '' };
+
+      fireEvent.dragEnter(aside, { dataTransfer });
+      expect(screen.getByText('Drop to import contracts')).toBeInTheDocument();
+
+      fireEvent.drop(aside, { dataTransfer });
+      expect(
+        screen.queryByText('Drop to import contracts'),
+      ).not.toBeInTheDocument();
+      expect(await screen.findByTestId('importing')).toHaveTextContent(
+        'Dropped',
+      );
+    });
+
+    it('ignores non-file drags (e.g. text)', () => {
+      render(
+        <ToastProvider>
+          <ConfirmProvider>
+            <AppShellProvider>
+              <Sidebar />
+            </AppShellProvider>
+          </ConfirmProvider>
+        </ToastProvider>,
+      );
+      const aside = screen
+        .getByPlaceholderText('Search contracts')
+        .closest('aside')!;
+      fireEvent.dragEnter(aside, { dataTransfer: { types: ['text/plain'] } });
+      expect(
+        screen.queryByText('Drop to import contracts'),
+      ).not.toBeInTheDocument();
+    });
+  });
 });

@@ -27,6 +27,7 @@ import {
 import { useAppShell } from '@/widgets/app-shell/AppShellProvider';
 import { Logo } from '@/widgets/app-shell/Logo';
 import { BulkBar } from '@/widgets/app-shell/BulkBar';
+import { useImportFiles } from '@/widgets/app-shell/ShellImport';
 import {
   useSidebarHydrated,
   useSidebarStore,
@@ -35,6 +36,45 @@ import { useContractsStore } from '@/entities/contract/model/store';
 import type { TContract } from '@/entities/contract/model/types';
 import { ShareModal } from '@/features/share/ui/ShareModal';
 import { useDeleteContracts } from '@/features/delete-contract/model/useDeleteContracts';
+
+/* ---------- useFileDrop ---------- */
+/** Drag-and-drop target for files (ignores text/links being dragged). A depth
+ *  counter keeps `dragging` steady while the pointer crosses child elements. */
+function useFileDrop(onFiles: (files: File[]) => void) {
+  const [dragging, setDragging] = useState(false);
+  const depth = useRef(0);
+  const hasFiles = (e: React.DragEvent) =>
+    e.dataTransfer.types.includes('Files');
+  return {
+    dragging,
+    handlers: {
+      onDragEnter: (e: React.DragEvent) => {
+        if (!hasFiles(e)) return;
+        e.preventDefault();
+        depth.current += 1;
+        setDragging(true);
+      },
+      onDragOver: (e: React.DragEvent) => {
+        if (!hasFiles(e)) return;
+        // Required for the element to accept a drop.
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+      },
+      onDragLeave: (e: React.DragEvent) => {
+        if (!hasFiles(e)) return;
+        depth.current = Math.max(0, depth.current - 1);
+        if (depth.current === 0) setDragging(false);
+      },
+      onDrop: (e: React.DragEvent) => {
+        if (!hasFiles(e)) return;
+        e.preventDefault();
+        depth.current = 0;
+        setDragging(false);
+        onFiles([...e.dataTransfer.files]);
+      },
+    },
+  };
+}
 
 /* ---------- ScopeBtn ---------- */
 function ScopeBtn({
@@ -435,6 +475,10 @@ export function Sidebar({
     return () => window.removeEventListener('keydown', onKey);
   }, [selecting, exitSelect]);
 
+  // Drop exported .json files anywhere on the sidebar to import them.
+  const importFiles = useImportFiles();
+  const drop = useFileDrop((files) => void importFiles(files));
+
   /* ---------- Bottom nav item ---------- */
   const navLinks: { href: string; icon: React.ReactNode; label: string }[] = [
     { href: '/deploy', icon: <Icon.rocket size={15} />, label: 'Deploy' },
@@ -443,7 +487,23 @@ export function Sidebar({
   ];
 
   return (
-    <aside className="flex min-h-0 flex-col border-r border-border bg-elev-1 max-[860px]:hidden">
+    <aside
+      {...drop.handlers}
+      className="relative flex min-h-0 flex-col border-r border-border bg-elev-1 max-[860px]:hidden"
+    >
+      {drop.dragging && (
+        <div className="pointer-events-none absolute inset-2 z-30 grid place-items-center rounded-md border-2 border-dashed border-read bg-[color-mix(in_oklab,var(--bg-elev-1)_88%,transparent)] backdrop-blur-[2px] animate-fade-in">
+          <div className="flex flex-col items-center gap-2 px-6 text-center">
+            <Icon.file size={22} className="text-read-fg" />
+            <span className="text-[13px] font-medium text-fg">
+              Drop to import contracts
+            </span>
+            <span className="text-xs text-fg-3">
+              EVM Cockpit export (.json)
+            </span>
+          </div>
+        </div>
+      )}
       {/* Logo */}
       <div className="px-4 pb-2.5 pt-3.5">
         <Logo />
@@ -506,6 +566,11 @@ export function Sidebar({
           ) : (
             <div className="px-3 py-6 text-center text-[13px] text-fg-4">
               {q ? 'No matches' : 'No saved contracts'}
+              {!q && (
+                <span className="mt-1.5 block text-xs">
+                  Tip: drop an exported .json here to import it.
+                </span>
+              )}
             </div>
           ))}
 
