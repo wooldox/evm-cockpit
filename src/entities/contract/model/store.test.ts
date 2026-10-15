@@ -66,4 +66,25 @@ describe('contracts store', () => {
     expect(useContractsStore.getState().contracts).toHaveLength(3);
     expect(useContractsStore.getState().getById('2')?.chainId).toBe(137);
   });
+
+  it('reorderChain reorders one chain in place, leaving other chains put', () => {
+    useContractsStore.setState({
+      contracts: [mk('a', 1), mk('x', 5), mk('b', 1), mk('c', 1)],
+    });
+    useContractsStore.getState().reorderChain(1, ['c', 'a', 'b']);
+    expect(useContractsStore.getState().contracts.map((c) => c.id)).toEqual([
+      'c',
+      'x',
+      'a',
+      'b',
+    ]);
+    // ids that don't match the chain's contracts are ignored
+    useContractsStore.getState().reorderChain(1, ['a', 'x']);
+    expect(useContractsStore.getState().contracts.map((c) => c.id)).toEqual([
+      'c',
+      'x',
+      'a',
+      'b',
+    ]);
+  });
 });
