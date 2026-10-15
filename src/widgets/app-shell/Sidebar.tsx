@@ -953,12 +953,14 @@ export function Sidebar({
                           isCollapsed ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]',
                         )}
                       >
-                        {/* overflow stays visible while a row is dragged so its
-                    shadow/lift isn't clipped. */}
+                        {/* Collapsed groups hide their rows only by clipping, so they
+                            always clip; an open group lets a dragged row's shadow spill
+                            out while a contract is dragged. */}
                         <div
                           className={cx(
                             'min-h-0',
-                            dragKind !== 'contract' && 'overflow-hidden',
+                            (isCollapsed || dragKind !== 'contract') &&
+                              'overflow-hidden',
                           )}
                         >
                           <SortableContext
