@@ -485,12 +485,11 @@ function ContractRow({
           </div>
           <div className="mt-px flex items-center gap-1.5 font-mono text-[11.5px] text-fg-3">
             {showChain && (
-              <span title={catalogDisplay(contract.chainId).name}>
-                <ChainGlyph
-                  chain={catalogDisplay(contract.chainId)}
-                  size={11}
-                />
-              </span>
+              <ChainGlyph
+                chain={catalogDisplay(contract.chainId)}
+                size={12}
+                title={catalogDisplay(contract.chainId).name}
+              />
             )}
             {trunc(contract.address, 5)}
           </div>
