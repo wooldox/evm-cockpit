@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { ConfirmProvider, useConfirm } from './alert-dialog';
 
-function Harness() {
+function Harness({ withCheckbox = false }: { withCheckbox?: boolean }) {
   const confirm = useConfirm();
   const [result, setResult] = useState('none');
   return (
@@ -13,12 +13,15 @@ function Harness() {
         type="button"
         onClick={async () =>
           setResult(
-            String(
+            JSON.stringify(
               await confirm({
                 title: 'Delete it?',
                 description: 'This cannot be undone.',
                 confirmLabel: 'Delete',
                 tone: 'danger',
+                checkbox: withCheckbox
+                  ? { label: 'Also delete history' }
+                  : undefined,
               }),
             ),
           )
@@ -31,10 +34,10 @@ function Harness() {
   );
 }
 
-const setup = () => {
+const setup = (withCheckbox = false) => {
   render(
     <ConfirmProvider>
-      <Harness />
+      <Harness withCheckbox={withCheckbox} />
     </ConfirmProvider>,
   );
   return userEvent.setup();
@@ -47,7 +50,7 @@ describe('useConfirm / AlertDialog', () => {
     const dialog = screen.getByRole('alertdialog', { name: 'Delete it?' });
     expect(dialog).toHaveAccessibleDescription('This cannot be undone.');
     await user.click(screen.getByRole('button', { name: 'Delete' }));
-    expect(screen.getByRole('status')).toHaveTextContent('true');
+    expect(screen.getByRole('status')).toHaveTextContent('{"checked":false}');
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
@@ -68,5 +71,15 @@ describe('useConfirm / AlertDialog', () => {
     expect(screen.getByRole('button', { name: 'Delete' })).toHaveFocus();
     await user.tab();
     expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus();
+  });
+
+  it('reports the optional checkbox (unchecked by default)', async () => {
+    const user = setup(true);
+    await user.click(screen.getByRole('button', { name: 'open' }));
+    const box = screen.getByRole('checkbox', { name: 'Also delete history' });
+    expect(box).not.toBeChecked();
+    await user.click(box);
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    expect(screen.getByRole('status')).toHaveTextContent('{"checked":true}');
   });
 });

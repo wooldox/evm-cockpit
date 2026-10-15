@@ -24,6 +24,7 @@ describe('shared/ui barrel', () => {
       'AlertDialog',
       'ConfirmProvider',
       'useConfirm',
+      'Checkbox',
       'ToastProvider',
       'useToast',
       'Empty',

@@ -5,12 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useChainDisplay } from '@/entities/chain/model/catalogStore';
 import { addressUrl } from '@/entities/chain/model/explorer';
 import type { TContract } from '@/entities/contract/model/types';
-import { useContractsStore } from '@/entities/contract/model/store';
 import { Icon } from '@/shared/icons';
 import { trunc } from '@/shared/lib/format';
-import { Badge, Button, ChainBadge, useConfirm, useToast } from '@/shared/ui';
+import { Badge, Button, ChainBadge } from '@/shared/ui';
 import { Address, Copyable } from '@/shared/ui/copyable';
 import { ShareModal } from '@/features/share/ui/ShareModal';
+import { useDeleteContract } from '@/features/delete-contract/model/useDeleteContract';
 import { useAppShell } from '@/widgets/app-shell/AppShellProvider';
 
 /* ── ContractHeader ─────────────────────────────────────── */
@@ -21,8 +21,7 @@ export function ContractHeader({
   contract: TContract;
   onRemoved: () => void;
 }) {
-  const toast = useToast();
-  const confirm = useConfirm();
+  const deleteContract = useDeleteContract();
   const router = useRouter();
   const { openEdit } = useAppShell();
   const [shareOpen, setShareOpen] = useState(false);
@@ -42,17 +41,7 @@ export function ContractHeader({
   };
 
   const handleRemove = async () => {
-    const ok = await confirm({
-      title: `Delete ${contract.name}?`,
-      description:
-        'It will be removed from your saved contracts. Its history entries stay.',
-      confirmLabel: 'Delete',
-      tone: 'danger',
-    });
-    if (!ok) return;
-    useContractsStore.getState().remove(contract.id);
-    toast({ kind: 'success', title: 'Contract removed', msg: contract.name });
-    onRemoved();
+    if (await deleteContract(contract)) onRemoved();
   };
 
   return (

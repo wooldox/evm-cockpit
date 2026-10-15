@@ -30,7 +30,9 @@ export {
   ConfirmProvider,
   useConfirm,
   type ConfirmOptions,
+  type ConfirmResult,
 } from './alert-dialog';
+export { Checkbox, type CheckboxProps } from './checkbox';
 export {
   ToastProvider,
   useToast,
