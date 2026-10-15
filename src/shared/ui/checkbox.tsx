@@ -64,3 +64,28 @@ export function Checkbox({
     </label>
   );
 }
+
+/** Visual-only checkbox for when the surrounding element is the control
+ *  (e.g. a row with role="checkbox") — a native input can't nest in a button. */
+export function CheckMark({
+  checked,
+  className,
+}: {
+  checked: boolean;
+  className?: string;
+}) {
+  return (
+    <span
+      aria-hidden
+      className={cx(
+        'grid size-4 flex-none place-items-center rounded-[4px] border transition-colors',
+        checked
+          ? 'border-read bg-read text-white'
+          : 'border-border-strong bg-elev-3',
+        className,
+      )}
+    >
+      {checked && <Icon.check size={11} />}
+    </span>
+  );
+}

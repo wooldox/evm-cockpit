@@ -7,7 +7,7 @@ import { useContractsStore } from '@/entities/contract/model/store';
 import { useHistoryStore } from '@/entities/history/model/store';
 import type { TContract } from '@/entities/contract/model/types';
 import type { THistoryEntry } from '@/entities/history/model/types';
-import { useDeleteContract } from './useDeleteContract';
+import { useDeleteContracts } from './useDeleteContracts';
 
 const c1: TContract = {
   id: 'c1',
@@ -32,9 +32,9 @@ const entry = (id: string, contractId: string) =>
   }) as THistoryEntry;
 
 function Harness() {
-  const del = useDeleteContract();
+  const del = useDeleteContracts();
   return (
-    <button type="button" onClick={() => void del(c1)}>
+    <button type="button" onClick={() => void del([c1])}>
       delete
     </button>
   );
@@ -51,7 +51,7 @@ const setup = () => {
   return userEvent.setup();
 };
 
-describe('useDeleteContract', () => {
+describe('useDeleteContracts', () => {
   beforeEach(() => {
     useContractsStore.setState({ contracts: [c1] });
     useHistoryStore.setState({
@@ -92,5 +92,41 @@ describe('useDeleteContract', () => {
     await user.click(screen.getByRole('button', { name: 'delete' }));
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(useContractsStore.getState().contracts).toHaveLength(1);
+  });
+
+  it('bulk: one confirmation names them all, then removes them and (opt-in) their history', async () => {
+    const c2 = { ...c1, id: 'c2', name: 'Tether' };
+    useContractsStore.setState({ contracts: [c1, c2] });
+    useHistoryStore.setState({
+      entries: [entry('h1', 'c1'), entry('h2', 'c2'), entry('h3', 'other')],
+    });
+    function Bulk() {
+      const del = useDeleteContracts();
+      return (
+        <button type="button" onClick={() => void del([c1, c2])}>
+          bulk
+        </button>
+      );
+    }
+    render(
+      <ToastProvider>
+        <ConfirmProvider>
+          <Bulk />
+        </ConfirmProvider>
+      </ToastProvider>,
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'bulk' }));
+    expect(
+      screen.getByRole('alertdialog', { name: 'Delete 2 contracts?' }),
+    ).toHaveTextContent('USD Coin, Tether will be removed');
+    await user.click(
+      screen.getByRole('checkbox', {
+        name: 'Also delete their 2 history entries',
+      }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Delete 2' }));
+    expect(useContractsStore.getState().contracts).toEqual([]);
+    expect(useHistoryStore.getState().entries.map((e) => e.id)).toEqual(['h3']);
   });
 });

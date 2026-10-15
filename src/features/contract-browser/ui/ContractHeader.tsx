@@ -10,7 +10,7 @@ import { trunc } from '@/shared/lib/format';
 import { Badge, Button, ChainBadge } from '@/shared/ui';
 import { Address, Copyable } from '@/shared/ui/copyable';
 import { ShareModal } from '@/features/share/ui/ShareModal';
-import { useDeleteContract } from '@/features/delete-contract/model/useDeleteContract';
+import { useDeleteContracts } from '@/features/delete-contract/model/useDeleteContracts';
 import { useAppShell } from '@/widgets/app-shell/AppShellProvider';
 
 /* ── ContractHeader ─────────────────────────────────────── */
@@ -21,7 +21,7 @@ export function ContractHeader({
   contract: TContract;
   onRemoved: () => void;
 }) {
-  const deleteContract = useDeleteContract();
+  const deleteContracts = useDeleteContracts();
   const router = useRouter();
   const { openEdit } = useAppShell();
   const [shareOpen, setShareOpen] = useState(false);
@@ -42,7 +42,7 @@ export function ContractHeader({
   };
 
   const handleRemove = async () => {
-    if (await deleteContract(contract)) onRemoved();
+    if (await deleteContracts([contract])) onRemoved();
   };
 
   return (

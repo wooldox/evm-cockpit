@@ -9,6 +9,8 @@ import { Icon } from '@/shared/icons';
 import {
   Button,
   ChainGlyph,
+  Checkbox,
+  CheckMark,
   Menu,
   type MenuAnchor,
   type MenuItem,
@@ -24,6 +26,7 @@ import {
 } from '@/widgets/app-shell/lib/filterContracts';
 import { useAppShell } from '@/widgets/app-shell/AppShellProvider';
 import { Logo } from '@/widgets/app-shell/Logo';
+import { BulkBar } from '@/widgets/app-shell/BulkBar';
 import {
   useSidebarHydrated,
   useSidebarStore,
@@ -31,7 +34,7 @@ import {
 import { useContractsStore } from '@/entities/contract/model/store';
 import type { TContract } from '@/entities/contract/model/types';
 import { ShareModal } from '@/features/share/ui/ShareModal';
-import { useDeleteContract } from '@/features/delete-contract/model/useDeleteContract';
+import { useDeleteContracts } from '@/features/delete-contract/model/useDeleteContracts';
 
 /* ---------- ScopeBtn ---------- */
 function ScopeBtn({
@@ -116,15 +119,22 @@ function AddMenu() {
 function ContractRow({
   contract,
   active,
-  onSelect,
+  selecting,
+  checked,
+  onRowClick,
+  onStartSelect,
 }: {
   contract: TContract;
   active: boolean;
-  onSelect: () => void;
+  /** Bulk-select mode: the row toggles a checkbox instead of opening. */
+  selecting: boolean;
+  checked: boolean;
+  onRowClick: (e: React.MouseEvent) => void;
+  onStartSelect: () => void;
 }) {
   const { openEdit, openDuplicate } = useAppShell();
   const router = useRouter();
-  const deleteContract = useDeleteContract();
+  const deleteContracts = useDeleteContracts();
   const [menu, setMenu] = useState<MenuAnchor | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const shareList = useMemo(() => [contract], [contract]);
@@ -133,7 +143,7 @@ function ContractRow({
   const proxy = !!contract.proxy;
 
   const handleDelete = async () => {
-    if ((await deleteContract(contract)) && active) router.push('/');
+    if ((await deleteContracts([contract])) && active) router.push('/');
   };
 
   const items: MenuItem[] = [
@@ -162,6 +172,12 @@ function ContractRow({
       onSelect: () => router.push(`/history?c=${contract.id}`),
     },
     {
+      key: 'select',
+      label: 'Select',
+      icon: <Icon.checkCircle size={14} />,
+      onSelect: onStartSelect,
+    },
+    {
       key: 'delete',
       label: 'Delete',
       icon: <Icon.trash size={14} />,
@@ -176,22 +192,30 @@ function ContractRow({
       className="group relative"
       onContextMenu={(e) => {
         e.preventDefault();
-        setMenu({ x: e.clientX, y: e.clientY });
+        if (!selecting) setMenu({ x: e.clientX, y: e.clientY });
       }}
     >
       <button
         type="button"
-        onClick={onSelect}
+        onClick={onRowClick}
+        {...(selecting && { role: 'checkbox', 'aria-checked': checked })}
         className={cx(
           'flex w-full items-center gap-2.5 rounded-sm border px-[9px] py-2 text-left transition-colors',
-          active
+          active && !selecting
             ? 'border-border-strong bg-elev-3'
-            : menu
+            : menu || (selecting && checked)
               ? 'border-transparent bg-elev-3'
               : 'border-transparent bg-transparent hover:bg-elev-3',
         )}
       >
-        <Ident seed={contract.address} size={26} />
+        {selecting ? (
+          // Same 26px slot as the identicon, so the row height doesn't change.
+          <span className="grid size-[26px] flex-none place-items-center">
+            <CheckMark checked={checked} />
+          </span>
+        ) : (
+          <Ident seed={contract.address} size={26} />
+        )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-[5px] overflow-hidden text-ellipsis whitespace-nowrap text-[13px] font-medium text-fg">
             {contract.name}
@@ -219,27 +243,29 @@ function ContractRow({
           </span>
         )}
       </button>
-      <button
-        ref={dotsRef}
-        type="button"
-        aria-label={`Actions for ${contract.name}`}
-        aria-haspopup="menu"
-        aria-expanded={!!menu}
-        title="Actions"
-        onClick={() => {
-          if (menu) return setMenu(null);
-          const r = dotsRef.current!.getBoundingClientRect();
-          setMenu({ x: r.right, y: r.bottom + 4, align: 'end' });
-        }}
-        className={cx(
-          'absolute right-1.5 top-1/2 grid size-7 -translate-y-1/2 cursor-pointer place-items-center rounded-sm border-0 bg-transparent text-fg-3 transition-[opacity,color,background-color] hover:bg-elev-4 hover:text-fg focus-visible:opacity-100',
-          menu
-            ? 'bg-elev-4 text-fg opacity-100'
-            : 'opacity-0 group-hover:opacity-100 group-has-[:focus-visible]:opacity-100',
-        )}
-      >
-        <Icon.dots size={16} />
-      </button>
+      {!selecting && (
+        <button
+          ref={dotsRef}
+          type="button"
+          aria-label={`Actions for ${contract.name}`}
+          aria-haspopup="menu"
+          aria-expanded={!!menu}
+          title="Actions"
+          onClick={() => {
+            if (menu) return setMenu(null);
+            const r = dotsRef.current!.getBoundingClientRect();
+            setMenu({ x: r.right, y: r.bottom + 4, align: 'end' });
+          }}
+          className={cx(
+            'absolute right-1.5 top-1/2 grid size-7 -translate-y-1/2 cursor-pointer place-items-center rounded-sm border-0 bg-transparent text-fg-3 transition-[opacity,color,background-color] hover:bg-elev-4 hover:text-fg focus-visible:opacity-100',
+            menu
+              ? 'bg-elev-4 text-fg opacity-100'
+              : 'opacity-0 group-hover:opacity-100 group-has-[:focus-visible]:opacity-100',
+          )}
+        >
+          <Icon.dots size={16} />
+        </button>
+      )}
       {menu && (
         <Menu
           anchor={menu}
@@ -311,6 +337,103 @@ export function Sidebar({
     else toggleChain(chainId);
   };
   const hasContracts = contracts.length > 0;
+
+  /* ---------- Bulk select ---------- */
+  const [selecting, setSelecting] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(() => new Set());
+  // Last row toggled without Shift — the anchor for Shift-click ranges.
+  const anchorRef = useRef<string | null>(null);
+  const [shareList, setShareList] = useState<TContract[] | null>(null);
+  const deleteContracts = useDeleteContracts();
+
+  // "Select all" = everything the current scope/search shows (collapsed
+  // chains included); Shift-click ranges only span rows actually on screen.
+  const filteredIds = groups.flatMap((g) => g.contracts.map((c) => c.id));
+  // In sidebar order (filtered first, then any the filter hides); ids deleted
+  // elsewhere while selecting drop out.
+  const selectedIds = [
+    ...filteredIds,
+    ...rawContracts.map((c) => c.id).filter((id) => !filteredIds.includes(id)),
+  ].filter((id) => picked.has(id));
+  const visibleIds = groups
+    .filter((g) => searching || !collapsed.includes(g.chainId))
+    .flatMap((g) => g.contracts.map((c) => c.id));
+  const filteredSet = new Set(filteredIds);
+  const hiddenSelected = selectedIds.filter((id) => !filteredSet.has(id));
+  const allSelected =
+    filteredIds.length > 0 && filteredIds.every((id) => picked.has(id));
+
+  const exitSelect = useCallback(() => {
+    setSelecting(false);
+    setPicked(new Set());
+    anchorRef.current = null;
+  }, []);
+
+  const startSelect = (id: string) => {
+    setSelecting(true);
+    setPicked(new Set([id]));
+    anchorRef.current = id;
+  };
+
+  const toggle = (id: string, range: boolean) => {
+    const anchor = anchorRef.current;
+    const from = anchor ? visibleIds.indexOf(anchor) : -1;
+    const to = visibleIds.indexOf(id);
+    if (range && from !== -1 && to !== -1) {
+      const [a, b] = from < to ? [from, to] : [to, from];
+      setPicked((p) => new Set([...p, ...visibleIds.slice(a, b + 1)]));
+      return;
+    }
+    anchorRef.current = id;
+    setPicked((p) => {
+      const next = new Set(p);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const setMany = (ids: string[], on: boolean) =>
+    setPicked((p) => {
+      const next = new Set(p);
+      for (const id of ids) {
+        if (on) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
+
+  const onRowClick = (id: string) => (e: React.MouseEvent) => {
+    if (selecting) return toggle(id, e.shiftKey);
+    // Cmd/Ctrl/Shift-click enters select mode with this row picked.
+    if (e.metaKey || e.ctrlKey || e.shiftKey) return startSelect(id);
+    router.push(`/?c=${id}`);
+    onSelect?.(id);
+  };
+
+  const handleBulkDelete = async () => {
+    const list = selectedIds.map((id) => byId.get(id)!);
+    if (!(await deleteContracts(list))) return;
+    if (selectedId && picked.has(selectedId) && pathname === '/')
+      router.push('/');
+    exitSelect();
+  };
+
+  // Escape leaves select mode — unless a dialog or menu is open (Escape is
+  // theirs then).
+  useEffect(() => {
+    if (!selecting) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (
+        document.querySelector('[role=dialog],[role=alertdialog],[role=menu]')
+      )
+        return;
+      exitSelect();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selecting, exitSelect]);
 
   /* ---------- Bottom nav item ---------- */
   const navLinks: { href: string; icon: React.ReactNode; label: string }[] = [
@@ -394,34 +517,52 @@ export function Sidebar({
           const listId = `sidebar-chain-${chainId}`;
           return (
             <div key={chainId} className="mb-3">
-              <button
-                type="button"
-                aria-expanded={!isCollapsed}
-                aria-controls={listId}
-                disabled={searching}
-                title={
-                  searching
-                    ? undefined
-                    : `${isCollapsed ? 'Expand' : 'Collapse'} · Alt-click for all chains`
-                }
-                onClick={(e) => onChainHeaderClick(e, chainId)}
-                className="group/chain flex w-full items-center gap-[7px] rounded-sm border-0 bg-transparent px-2 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-fg-3 transition-colors enabled:cursor-pointer enabled:hover:bg-elev-3 enabled:hover:text-fg-2"
-              >
-                <ChainGlyph chain={chain} size={14} />
-                <span className="min-w-0 truncate">{chain.name}</span>
-                <span className="ml-auto rounded-full bg-elev-3 px-[7px] py-px text-[11px] text-fg-4">
-                  {list.length}
-                </span>
-                {!searching && (
-                  <Icon.chevD
-                    size={13}
-                    className={cx(
-                      'flex-none text-fg-4 transition-transform duration-150 group-hover/chain:text-fg-3',
-                      isCollapsed && '-rotate-90',
-                    )}
-                  />
-                )}
-              </button>
+              <div className="flex items-center">
+                {selecting &&
+                  (() => {
+                    const ids = list.map((c) => c.id);
+                    const n = ids.filter((id) => picked.has(id)).length;
+                    return (
+                      // Lines up with the rows' checkboxes (26px slot after 10px).
+                      <span className="ml-[10px] grid w-[26px] flex-none place-items-center">
+                        <Checkbox
+                          aria-label={`Select all on ${chain.name}`}
+                          checked={n === ids.length}
+                          indeterminate={n > 0 && n < ids.length}
+                          onChange={() => setMany(ids, n < ids.length)}
+                        />
+                      </span>
+                    );
+                  })()}
+                <button
+                  type="button"
+                  aria-expanded={!isCollapsed}
+                  aria-controls={listId}
+                  disabled={searching}
+                  title={
+                    searching
+                      ? undefined
+                      : `${isCollapsed ? 'Expand' : 'Collapse'} · Alt-click for all chains`
+                  }
+                  onClick={(e) => onChainHeaderClick(e, chainId)}
+                  className="group/chain flex w-full items-center gap-[7px] rounded-sm border-0 bg-transparent px-2 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-fg-3 transition-colors enabled:cursor-pointer enabled:hover:bg-elev-3 enabled:hover:text-fg-2"
+                >
+                  <ChainGlyph chain={chain} size={14} />
+                  <span className="min-w-0 truncate">{chain.name}</span>
+                  <span className="ml-auto rounded-full bg-elev-3 px-[7px] py-px text-[11px] text-fg-4">
+                    {list.length}
+                  </span>
+                  {!searching && (
+                    <Icon.chevD
+                      size={13}
+                      className={cx(
+                        'flex-none text-fg-4 transition-transform duration-150 group-hover/chain:text-fg-3',
+                        isCollapsed && '-rotate-90',
+                      )}
+                    />
+                  )}
+                </button>
+              </div>
               {/* 0fr↔1fr grid rows animate the height; `inert` keeps the
                   hidden rows out of the tab order and accessibility tree. */}
               <div
@@ -441,10 +582,10 @@ export function Sidebar({
                         key={c.id}
                         contract={contract}
                         active={selectedId === c.id && pathname === '/'}
-                        onSelect={() => {
-                          router.push(`/?c=${c.id}`);
-                          onSelect?.(c.id);
-                        }}
+                        selecting={selecting}
+                        checked={picked.has(c.id)}
+                        onRowClick={onRowClick(c.id)}
+                        onStartSelect={() => startSelect(c.id)}
                       />
                     );
                   })}
@@ -454,6 +595,21 @@ export function Sidebar({
           );
         })}
       </div>
+
+      {selecting && (
+        <BulkBar
+          count={selectedIds.length}
+          hidden={hiddenSelected.length}
+          allSelected={allSelected}
+          onSelectAll={() => setMany(filteredIds, true)}
+          onShare={() => setShareList(selectedIds.map((id) => byId.get(id)!))}
+          onDelete={handleBulkDelete}
+          onClose={exitSelect}
+        />
+      )}
+      {shareList && (
+        <ShareModal contracts={shareList} onClose={() => setShareList(null)} />
+      )}
 
       {/* Bottom nav */}
       <div className="flex flex-col gap-0.5 border-t border-border p-2">
