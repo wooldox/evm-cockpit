@@ -1,58 +1,157 @@
 import { z } from 'zod';
 import type { TContract } from '@/entities/contract/model/types';
 
-export const SHARE_VERSION = 1;
+/** Format written by this version: a bundle of 1..N contracts. v1 (a single
+ *  contract) is still accepted when decoding old links and files. */
+export const SHARE_VERSION = 2;
 
 /** Conservative cap for a shareable URL payload. */
 export const MAX_SHARE_PAYLOAD_CHARS = 6000;
 
-const evmAddress = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
+/** Upper bound on contracts in one bundle (link or file). */
+export const MAX_SHARE_CONTRACTS = 500;
 
-export const sharePayloadSchema = z.object({
-  v: z.literal(1),
+const evmAddress = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
+const abiArray = z.array(z.unknown()).min(1); // structural ABI validation is viem's job at use time
+const contractBase = {
   name: z.string().min(1).max(120),
   chainId: z.number().int().positive(),
   address: evmAddress,
-  abi: z.array(z.unknown()).min(1), // structural ABI validation is viem's job at use time
   source: z.enum(['manual', 'sourcify', 'etherscan']),
+};
+const proxyKind = z.enum(['eip1967', 'beacon']);
+
+/** v1 — one contract, ABIs inline. */
+export const sharePayloadSchema = z.object({
+  v: z.literal(1),
+  ...contractBase,
+  abi: abiArray,
   proxy: z
     .object({
-      kind: z.enum(['eip1967', 'beacon']),
+      kind: proxyKind,
       implAddress: evmAddress,
-      implAbi: z.array(z.unknown()).optional(),
+      implAbi: abiArray.optional(),
     })
     .optional(),
 });
 
+/** v2 — a bundle. Each distinct ABI is stored once in `abis`; contracts refer
+ *  to it by index, so N contracts sharing an ABI cost about one ABI. */
+export const shareBundleSchema = z
+  .object({
+    v: z.literal(2),
+    abis: z.array(abiArray).min(1),
+    contracts: z
+      .array(
+        z.object({
+          ...contractBase,
+          abi: z.number().int().nonnegative(),
+          proxy: z
+            .object({
+              kind: proxyKind,
+              implAddress: evmAddress,
+              implAbi: z.number().int().nonnegative().optional(),
+            })
+            .optional(),
+        }),
+      )
+      .min(1)
+      .max(MAX_SHARE_CONTRACTS),
+  })
+  .superRefine((b, ctx) => {
+    const ok = (i: number | undefined) => i === undefined || i < b.abis.length;
+    if (!b.contracts.every((c) => ok(c.abi) && ok(c.proxy?.implAbi)))
+      ctx.addIssue({ code: 'custom', message: 'ABI index out of range' });
+  });
+
 export type TSharePayload = z.infer<typeof sharePayloadSchema>;
+export type TShareBundle = z.infer<typeof shareBundleSchema>;
+
+/** One contract as carried by a link/file (format-independent). */
+export type TShareContract = {
+  name: string;
+  chainId: number;
+  address: string;
+  abi: readonly unknown[];
+  source: 'manual' | 'sourcify' | 'etherscan';
+  proxy?: {
+    kind: 'eip1967' | 'beacon';
+    implAddress: string;
+    implAbi?: readonly unknown[];
+  };
+};
 
 /**
- * Build a shareable payload from a contract: strips `id`/`addedAt`, stamps the
- * version, and omits `proxy` entirely when the contract has none.
+ * Build a v2 bundle from contracts: strips `id`/`addedAt` and stores each
+ * distinct ABI once.
  *
  * Note: `TContract.abi` is a viem `Abi`, which is plain JSON (no bigints), so it
  * round-trips through `JSON.stringify`/`JSON.parse` as-is — no bigint handling
  * is needed in this codec.
  */
-export function toSharePayload(c: TContract): TSharePayload {
-  const payload: TSharePayload = {
+export function toShareBundle(contracts: TContract[]): TShareBundle {
+  const abis: unknown[][] = [];
+  const index = new Map<string, number>();
+  const ref = (abi: readonly unknown[]): number => {
+    const key = JSON.stringify(abi);
+    let i = index.get(key);
+    if (i === undefined) {
+      i = abis.push(abi as unknown[]) - 1;
+      index.set(key, i);
+    }
+    return i;
+  };
+  return {
     v: SHARE_VERSION,
+    abis,
+    contracts: contracts.map((c) => ({
+      name: c.name,
+      chainId: c.chainId,
+      address: c.address,
+      abi: ref(c.abi),
+      source: c.source,
+      ...(c.proxy
+        ? {
+            proxy: {
+              kind: c.proxy.kind,
+              implAddress: c.proxy.implAddress,
+              ...(c.proxy.implAbi !== undefined
+                ? { implAbi: ref(c.proxy.implAbi) }
+                : {}),
+            },
+          }
+        : {}),
+    })),
+  };
+}
+
+/** Validate a parsed link/file payload (v1 or v2) into a flat contract list. */
+export function parseSharePayload(value: unknown): TShareContract[] {
+  const v1 = sharePayloadSchema.safeParse(value);
+  if (v1.success) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { v: _v, ...c } = v1.data;
+    return [c];
+  }
+  const b = shareBundleSchema.parse(value);
+  return b.contracts.map((c) => ({
     name: c.name,
     chainId: c.chainId,
     address: c.address,
-    abi: c.abi as unknown[],
+    abi: b.abis[c.abi]!,
     source: c.source,
-  };
-  if (c.proxy) {
-    payload.proxy = {
-      kind: c.proxy.kind,
-      implAddress: c.proxy.implAddress,
-      ...(c.proxy.implAbi !== undefined
-        ? { implAbi: c.proxy.implAbi as unknown[] }
-        : {}),
-    };
-  }
-  return payload;
+    ...(c.proxy
+      ? {
+          proxy: {
+            kind: c.proxy.kind,
+            implAddress: c.proxy.implAddress,
+            ...(c.proxy.implAbi !== undefined
+              ? { implAbi: b.abis[c.proxy.implAbi]! }
+              : {}),
+          },
+        }
+      : {}),
+  }));
 }
 
 /** Encode raw bytes as a URL-safe base64 string (no padding). */
@@ -153,25 +252,25 @@ export async function encodePayload(payload: unknown): Promise<string> {
   return bytesToBase64Url(compressed);
 }
 
-/** Encode a contract into a compact, URL-safe share token. */
-export async function encodeContractShare(c: TContract): Promise<string> {
-  return encodePayload(toSharePayload(c));
+/** Encode contracts into a compact, URL-safe share token (v2 bundle). */
+export async function encodeShare(contracts: TContract[]): Promise<string> {
+  return encodePayload(toShareBundle(contracts));
 }
 
 /**
- * Decode a share token back into a validated payload. Every failure mode (bad
- * base64, bad deflate stream, bad JSON, schema mismatch, oversized input, or
- * decompression bomb) collapses into a single opaque error so internals never leak.
+ * Decode a share token (v1 or v2) back into a validated contract list. Every
+ * failure mode (bad base64, bad deflate stream, bad JSON, schema mismatch,
+ * oversized input, or decompression bomb) collapses into a single opaque error
+ * so internals never leak.
  */
-export async function decodeContractShare(s: string): Promise<TSharePayload> {
+export async function decodeShare(s: string): Promise<TShareContract[]> {
   try {
     if (s.length > MAX_SHARE_PAYLOAD_CHARS) {
       throw new Error('token exceeds maximum length');
     }
     const bytes = base64UrlToBytes(s);
     const json = await inflate(bytes);
-    const parsed: unknown = JSON.parse(json);
-    return sharePayloadSchema.parse(parsed);
+    return parseSharePayload(JSON.parse(json));
   } catch (cause) {
     throw new Error('invalid or corrupted share link', { cause });
   }

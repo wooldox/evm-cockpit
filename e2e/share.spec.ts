@@ -41,10 +41,16 @@ test.describe('share + import journeys', () => {
     await page.goto(shareUrl);
     await expect(page.getByText('Already saved — opening')).toBeVisible();
 
-    // (b) Fresh context (empty IDB) → clean import path.
+    // (b) Fresh context (empty IDB) → review step, nothing added until confirmed.
     const ctx = await browser.newContext();
     const fresh = await ctx.newPage();
     await fresh.goto(shareUrl);
+    const review = fresh.getByRole('dialog', { name: 'Import contract' });
+    await expect(review).toBeVisible();
+    await expect(review.getByPlaceholder('My Contract')).toHaveValue(
+      'Share Token',
+    );
+    await review.getByRole('button', { name: 'Import contract' }).click();
     await expect(fresh.getByText('Contract imported')).toBeVisible();
     await expect(
       fresh.getByRole('button', { name: /Share Token/ }).first(),
@@ -71,26 +77,24 @@ test.describe('share + import journeys', () => {
     const file = path.join(os.tmpdir(), `cc-share-${Date.now()}.json`);
     await download.saveAs(file);
 
-    const json = JSON.parse(readFileSync(file, 'utf8')) as Record<
-      string,
-      unknown
-    >;
-    expect(json.v).toBe(1);
-    expect(json.name).toBe('Share Token');
-    expect(json.chainId).toBe(31337);
-    expect(String(json.address).toLowerCase()).toBe(
+    const json = JSON.parse(readFileSync(file, 'utf8')) as {
+      v: number;
+      contracts: { name: string; chainId: number; address: string }[];
+    };
+    expect(json.v).toBe(2);
+    expect(json.contracts).toHaveLength(1);
+    expect(json.contracts[0]!.name).toBe('Share Token');
+    expect(json.contracts[0]!.chainId).toBe(31337);
+    expect(json.contracts[0]!.address.toLowerCase()).toBe(
       token.address.toLowerCase(),
     );
 
-    // Fresh app, then import the downloaded file via the Add modal.
+    // Fresh app, then import the downloaded file (shell-level file input,
+    // opened by "+" → Import from file… or the empty state's button).
     await freshApp(page);
-    await page.getByRole('button', { name: 'Add your first contract' }).click();
-    const addDialog = page.getByRole('dialog');
+    await page.getByLabel('Import contract export file').setInputFiles(file);
+    const addDialog = page.getByRole('dialog', { name: 'Import contract' });
     await expect(addDialog).toBeVisible();
-
-    await addDialog
-      .getByLabel('Import contract export file')
-      .setInputFiles(file);
 
     // Fields are prefilled for review.
     await expect(addDialog.getByPlaceholder('My Contract')).toHaveValue(
@@ -100,7 +104,7 @@ test.describe('share + import journeys', () => {
       addDialog.getByPlaceholder('0x0000000000000000000000000000000000000000'),
     ).toHaveValue(new RegExp(token.address, 'i'));
 
-    await addDialog.getByRole('button', { name: 'Add contract' }).click();
+    await addDialog.getByRole('button', { name: 'Import contract' }).click();
     await expect(addDialog).toBeHidden();
     await expect(
       page.getByRole('button', { name: /Share Token/ }).first(),

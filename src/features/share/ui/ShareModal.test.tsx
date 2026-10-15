@@ -4,11 +4,11 @@ import userEvent from '@testing-library/user-event';
 import { ToastProvider } from '@/shared/ui';
 import { erc20Abi } from '@/shared/lib/abi/fixtures';
 import * as codec from '@/shared/lib/share/codec';
-import { decodeContractShare, toSharePayload } from '@/shared/lib/share/codec';
+import { decodeShare, toShareBundle } from '@/shared/lib/share/codec';
 import type { TContract } from '@/entities/contract/model/types';
 import { ShareModal } from './ShareModal';
 
-// Mock the codec module so we can override `encodeContractShare` per-test while
+// Mock the codec module so we can override `encodeShare` per-test while
 // keeping the real implementations for everything else.
 vi.mock('@/shared/lib/share/codec', async (importOriginal) => {
   const actual =
@@ -62,15 +62,22 @@ describe('ShareModal', () => {
     expect(input).toBeInTheDocument();
 
     const token = input.value.split('#import=')[1]!;
-    const decoded = await decodeContractShare(token);
-    expect(decoded).toEqual(toSharePayload(smallContract));
+    const decoded = await decodeShare(token);
+    expect(decoded).toEqual([
+      expect.objectContaining({
+        name: smallContract.name,
+        chainId: smallContract.chainId,
+        address: smallContract.address,
+        abi: smallContract.abi,
+      }),
+    ]);
 
     // CopyBtn present
     expect(screen.getByRole('button', { name: /copy/i })).toBeInTheDocument();
   });
 
   it('encode failure: shows a fallback hint, no link input', async () => {
-    vi.spyOn(codec, 'encodeContractShare').mockRejectedValue(new Error('boom'));
+    vi.spyOn(codec, 'encodeShare').mockRejectedValue(new Error('boom'));
 
     renderModal(smallContract);
 
@@ -113,6 +120,6 @@ describe('ShareModal', () => {
 
     await waitFor(() => expect(captured).not.toBeNull());
     const text = await (captured as unknown as Blob).text();
-    expect(JSON.parse(text)).toEqual(toSharePayload(smallContract));
+    expect(JSON.parse(text)).toEqual(toShareBundle([smallContract]));
   });
 });

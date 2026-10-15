@@ -6,11 +6,11 @@ import { Web3Providers } from '@/app/web3/Web3Providers';
 import { AddContractModal } from '@/features/add-contract/ui/AddContractModal';
 import { getEffectiveAbi } from '@/features/contract-browser/model/effectiveAbi';
 import { SettingsModal } from '@/features/settings/ui/SettingsModal';
-import { HashImport } from '@/features/share/ui/HashImport';
 import { CatalogLoader } from '@/entities/chain/ui/CatalogLoader';
 import { AppShellProvider, useAppShell } from './AppShellProvider';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
+import { ShellImport } from './ShellImport';
 
 /** Rendered inside AppShellProvider — safe to call useAppShell(). */
 function ShellModals() {
@@ -67,7 +67,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </div>
             </div>
             <ShellModals />
-            <HashImport />
+            <ShellImport />
             <CatalogLoader />
           </ConfirmProvider>
         </ToastProvider>

@@ -215,4 +215,23 @@ describe('Sidebar', () => {
       );
     });
   });
+
+  it('"+" opens a menu with Add contract and Import from file', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ConfirmProvider>
+          <AppShellProvider>
+            <Sidebar />
+          </AppShellProvider>
+        </ConfirmProvider>
+      </ToastProvider>,
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'Add or import contracts' }),
+    );
+    expect(screen.getAllByRole('menuitem').map((el) => el.textContent)).toEqual(
+      ['Add contract', 'Import from file…'],
+    );
+  });
 });

@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { TContract } from '@/entities/contract/model/types';
+import type { TShareContract } from '@/shared/lib/share/codec';
 
 type AppShellState = {
   currentChainId: number;
@@ -25,7 +26,15 @@ type AppShellState = {
   settingsOpen: boolean;
   openSettings: () => void;
   closeSettings: () => void;
+  /** Contracts from a share link / file awaiting the user's review. */
+  importing: TShareContract[] | null;
+  startImport: (items: TShareContract[]) => void;
+  closeImport: () => void;
+  /** Opens the OS file picker for a contract export (.json). */
+  openImportFile: () => void;
 };
+
+export const IMPORT_FILE_INPUT_ID = 'cc-import-file';
 
 const Ctx = createContext<AppShellState | null>(null);
 
@@ -35,6 +44,7 @@ export function AppShellProvider({ children }: { children: ReactNode }) {
   const [editing, setEditing] = useState<TContract | null>(null);
   const [duplicating, setDuplicating] = useState<TContract | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [importing, setImporting] = useState<TShareContract[] | null>(null);
 
   // Hydration-safe: init as 1, then read localStorage on the client (matches useTheme pattern).
   useEffect(() => {
@@ -91,6 +101,16 @@ export function AppShellProvider({ children }: { children: ReactNode }) {
     setSettingsOpen(false);
   }, []);
 
+  const startImport = useCallback((items: TShareContract[]) => {
+    setImporting(items);
+  }, []);
+  const closeImport = useCallback(() => setImporting(null), []);
+  // The <input type="file"> lives in the shell (see ShellImport); anything can
+  // trigger it — the sidebar's "+" menu, the empty state.
+  const openImportFile = useCallback(() => {
+    document.getElementById(IMPORT_FILE_INPUT_ID)?.click();
+  }, []);
+
   const value = useMemo<AppShellState>(
     () => ({
       currentChainId,
@@ -105,6 +125,10 @@ export function AppShellProvider({ children }: { children: ReactNode }) {
       settingsOpen,
       openSettings,
       closeSettings,
+      importing,
+      startImport,
+      closeImport,
+      openImportFile,
     }),
     [
       currentChainId,
@@ -119,6 +143,10 @@ export function AppShellProvider({ children }: { children: ReactNode }) {
       settingsOpen,
       openSettings,
       closeSettings,
+      importing,
+      startImport,
+      closeImport,
+      openImportFile,
     ],
   );
 
