@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { cx } from '@/shared/lib/cx';
@@ -25,6 +25,10 @@ import {
 } from '@/widgets/app-shell/lib/filterContracts';
 import { useAppShell } from '@/widgets/app-shell/AppShellProvider';
 import { Logo } from '@/widgets/app-shell/Logo';
+import {
+  useSidebarHydrated,
+  useSidebarStore,
+} from '@/widgets/app-shell/model/sidebarStore';
 import { useContractsStore } from '@/entities/contract/model/store';
 import type { TContract } from '@/entities/contract/model/types';
 import { ShareModal } from '@/features/share/ui/ShareModal';
@@ -234,6 +238,32 @@ export function Sidebar({
 
   const currentChain = useChainDisplay(currentChainId);
   const groups = filterAndGroup(contracts, { scope, query: q, currentChainId });
+
+  const collapsed = useSidebarStore((s) => s.collapsed);
+  const hydrated = useSidebarHydrated();
+  // Searching shows every match, whatever is collapsed.
+  const searching = q.trim() !== '';
+  const activeChainId =
+    pathname === '/' ? byId.get(selectedId ?? '')?.chainId : undefined;
+
+  // Opening a contract (sidebar, History, shared link, Duplicate…) expands its
+  // chain so you can see where you are. Keyed on the selection, so collapsing
+  // the active contract's chain afterwards sticks.
+  useEffect(() => {
+    if (hydrated && activeChainId !== undefined)
+      useSidebarStore.getState().expandChain(activeChainId);
+  }, [hydrated, selectedId, activeChainId]);
+
+  const onChainHeaderClick = (e: React.MouseEvent, chainId: number) => {
+    const { toggleChain, setAll } = useSidebarStore.getState();
+    // Alt-click: collapse/expand every chain, like VS Code's tree views.
+    if (e.altKey)
+      setAll(
+        groups.map((g) => g.chainId),
+        !collapsed.includes(chainId),
+      );
+    else toggleChain(chainId);
+  };
   const hasContracts = contracts.length > 0;
 
   /* ---------- Bottom nav item ---------- */
@@ -319,30 +349,66 @@ export function Sidebar({
           // Non-reactive: can't call hooks inside a map. The static catalog is
           // populated synchronously at store init, so names resolve correctly.
           const chain = catalogDisplay(chainId);
+          const isCollapsed = !searching && collapsed.includes(chainId);
+          const listId = `sidebar-chain-${chainId}`;
           return (
             <div key={chainId} className="mb-3">
-              <div className="flex items-center gap-[7px] px-2 py-1.5 text-[11px] font-semibold uppercase tracking-[0.04em] text-fg-3">
+              <button
+                type="button"
+                aria-expanded={!isCollapsed}
+                aria-controls={listId}
+                disabled={searching}
+                title={
+                  searching
+                    ? undefined
+                    : `${isCollapsed ? 'Expand' : 'Collapse'} · Alt-click for all chains`
+                }
+                onClick={(e) => onChainHeaderClick(e, chainId)}
+                className="group/chain flex w-full items-center gap-[7px] rounded-sm border-0 bg-transparent px-2 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-fg-3 transition-colors enabled:cursor-pointer enabled:hover:bg-elev-3 enabled:hover:text-fg-2"
+              >
                 <ChainGlyph chain={chain} size={14} />
-                {chain.name}
+                <span className="min-w-0 truncate">{chain.name}</span>
                 <span className="ml-auto rounded-full bg-elev-3 px-[7px] py-px text-[11px] text-fg-4">
                   {list.length}
                 </span>
-              </div>
-              {list.map((c) => {
-                const contract = byId.get(c.id);
-                if (!contract) return null;
-                return (
-                  <ContractRow
-                    key={c.id}
-                    contract={contract}
-                    active={selectedId === c.id && pathname === '/'}
-                    onSelect={() => {
-                      router.push(`/?c=${c.id}`);
-                      onSelect?.(c.id);
-                    }}
+                {!searching && (
+                  <Icon.chevD
+                    size={13}
+                    className={cx(
+                      'flex-none text-fg-4 transition-transform duration-150 group-hover/chain:text-fg-3',
+                      isCollapsed && '-rotate-90',
+                    )}
                   />
-                );
-              })}
+                )}
+              </button>
+              {/* 0fr↔1fr grid rows animate the height; `inert` keeps the
+                  hidden rows out of the tab order and accessibility tree. */}
+              <div
+                id={listId}
+                inert={isCollapsed}
+                className={cx(
+                  'grid transition-[grid-template-rows] duration-150 ease-out',
+                  isCollapsed ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]',
+                )}
+              >
+                <div className="min-h-0 overflow-hidden">
+                  {list.map((c) => {
+                    const contract = byId.get(c.id);
+                    if (!contract) return null;
+                    return (
+                      <ContractRow
+                        key={c.id}
+                        contract={contract}
+                        active={selectedId === c.id && pathname === '/'}
+                        onSelect={() => {
+                          router.push(`/?c=${c.id}`);
+                          onSelect?.(c.id);
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           );
         })}

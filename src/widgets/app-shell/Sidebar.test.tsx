@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 vi.mock('next/navigation', () => ({
@@ -27,6 +27,7 @@ vi.mock('next/link', () => ({
 import { Sidebar } from './Sidebar';
 import { AppShellProvider, useAppShell } from './AppShellProvider';
 import { ToastProvider } from '@/shared/ui';
+import { useSidebarStore } from './model/sidebarStore';
 import { useContractsStore } from '@/entities/contract/model/store';
 import type { TContract } from '@/entities/contract/model/types';
 
@@ -139,6 +140,71 @@ describe('Sidebar', () => {
       expect(useContractsStore.getState().contracts.map((c) => c.id)).toEqual([
         '2',
       ]);
+    });
+  });
+
+  describe('collapsible chains', () => {
+    beforeEach(() => {
+      useSidebarStore.setState({ collapsed: [] });
+      useContractsStore.setState({
+        contracts: [mk('1', 'USD Coin', 1), mk('2', 'Mock USDC', 11155111)],
+      });
+    });
+
+    const renderSidebar = (props: { currentId?: string } = {}) =>
+      render(
+        <ToastProvider>
+          <AppShellProvider>
+            <Sidebar {...props} />
+          </AppShellProvider>
+        </ToastProvider>,
+      );
+    const header = (name: RegExp) =>
+      screen
+        .getAllByRole('button', { name })
+        .find((b) => b.hasAttribute('aria-expanded'))!;
+    const list = (h: HTMLElement) =>
+      document.getElementById(h.getAttribute('aria-controls')!)!;
+
+    it('clicking a chain header collapses and expands its contracts', async () => {
+      const user = userEvent.setup();
+      renderSidebar();
+      const eth = header(/ethereum/i);
+      expect(eth).toHaveAttribute('aria-expanded', 'true');
+
+      await user.click(eth);
+      expect(eth).toHaveAttribute('aria-expanded', 'false');
+      expect(list(eth)).toHaveAttribute('inert');
+      expect(useSidebarStore.getState().collapsed).toEqual([1]);
+
+      await user.click(eth);
+      expect(eth).toHaveAttribute('aria-expanded', 'true');
+      expect(list(eth)).not.toHaveAttribute('inert');
+    });
+
+    it('Alt-click collapses every chain', () => {
+      renderSidebar();
+      fireEvent.click(header(/ethereum/i), { altKey: true });
+      expect(header(/ethereum/i)).toHaveAttribute('aria-expanded', 'false');
+      expect(header(/sepolia/i)).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('searching shows matches inside collapsed chains', async () => {
+      const user = userEvent.setup();
+      useSidebarStore.setState({ collapsed: [1, 11155111] });
+      renderSidebar();
+      await user.type(screen.getByPlaceholderText('Search contracts'), 'usd');
+      expect(header(/ethereum/i)).toHaveAttribute('aria-expanded', 'true');
+      expect(header(/ethereum/i)).toBeDisabled();
+    });
+
+    it('opening a contract expands its chain', async () => {
+      useSidebarStore.setState({ collapsed: [1, 11155111] });
+      renderSidebar({ currentId: '2' });
+      // Waits for persisted state to finish loading before expanding.
+      await waitFor(() =>
+        expect(useSidebarStore.getState().collapsed).toEqual([1]),
+      );
     });
   });
 });
