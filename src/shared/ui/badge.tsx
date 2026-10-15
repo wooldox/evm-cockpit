@@ -12,15 +12,30 @@ export interface Chain {
    ChainGlyph — the little colored network token, reused in the
    sidebar, topbar, chain menu and chain badge.
    ============================================================ */
+/** The glyph's letter: the chain *name's* first letter or digit. (`short` is
+ *  often the native-currency symbol — "ETH" for Abstract, Base, Robinhood… —
+ *  so its first letter doesn't identify the chain.) */
+export function chainInitial(chain: Chain): string {
+  return (
+    /[a-z0-9]/i.exec(chain.name)?.[0] ??
+    chain.short[0] ??
+    '?'
+  ).toUpperCase();
+}
+
 export function ChainGlyph({
   chain,
   size = 16,
+  title,
 }: {
   chain: Chain;
   size?: number;
+  /** Tooltip — set it where the chain name isn't shown next to the glyph. */
+  title?: string;
 }) {
   return (
     <span
+      title={title}
       className="inline-grid flex-none place-items-center rounded-full font-bold text-white"
       style={{
         background: chain.color,
@@ -29,7 +44,7 @@ export function ChainGlyph({
         fontSize: Math.round(size * 0.56),
       }}
     >
-      {chain.short[0]}
+      {chainInitial(chain)}
     </span>
   );
 }

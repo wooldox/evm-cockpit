@@ -13,26 +13,32 @@ export type FilterOpts = {
   /** Preferred chain order; unlisted chains follow in first-seen order. */
   chainOrder?: number[];
 };
-export function filterAndGroup(
+/** Contracts matching the scope (current chain only?) and search query. */
+export function filterContracts(
   contracts: SidebarContract[],
-  opts: FilterOpts,
-): ChainGroup[] {
-  const { scope, query, currentChainId } = opts;
+  { scope, query, currentChainId }: Omit<FilterOpts, 'chainOrder'>,
+): SidebarContract[] {
   const scoped =
     scope === 'current'
       ? contracts.filter((c) => c.chainId === currentChainId)
       : contracts;
   const q = query.trim().toLowerCase();
-  const filtered = q
+  return q
     ? scoped.filter(
         (c) =>
           c.name.toLowerCase().includes(q) ||
           c.address.toLowerCase().includes(q),
       )
     : scoped;
+}
+
+export function filterAndGroup(
+  contracts: SidebarContract[],
+  opts: FilterOpts,
+): ChainGroup[] {
   const groups: ChainGroup[] = [];
   const index = new Map<number, ChainGroup>();
-  for (const c of filtered) {
+  for (const c of filterContracts(contracts, opts)) {
     let g = index.get(c.chainId);
     if (!g) {
       g = { chainId: c.chainId, contracts: [] };
