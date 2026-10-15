@@ -20,6 +20,7 @@ import {
   Panel,
   Segment,
   Select,
+  useConfirm,
 } from '@/shared/ui';
 import { ExtLink } from '@/shared/ui/copyable';
 import { Icon } from '@/shared/icons';
@@ -127,6 +128,7 @@ export function HistoryView({
   const entries = useHistoryStore((s) => s.entries);
   const clear = useHistoryStore((s) => s.clear);
   const contracts = useContractsStore((s) => s.contracts);
+  const confirm = useConfirm();
 
   // Preselect the deep-linked contract when it still exists in the store;
   // otherwise fall back to "all". Initializer-only — no effects.
@@ -150,8 +152,14 @@ export function HistoryView({
   const contractName = (id: string) => nameById.get(id) ?? trunc(id, 6);
   const contractIds = new Set(contracts.map((c) => c.id));
 
-  function handleClear(): void {
-    if (window.confirm('Clear all history?')) clear();
+  async function handleClear(): Promise<void> {
+    const ok = await confirm({
+      title: 'Clear all history?',
+      description: `All ${entries.length} entries will be permanently removed.`,
+      confirmLabel: 'Clear history',
+      tone: 'danger',
+    });
+    if (ok) clear();
   }
 
   /**

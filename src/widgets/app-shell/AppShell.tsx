@@ -1,6 +1,6 @@
 'use client';
 import { Suspense, type ReactNode } from 'react';
-import { ToastProvider } from '@/shared/ui';
+import { ConfirmProvider, ToastProvider } from '@/shared/ui';
 import { useSettingsStore } from '@/entities/settings/model/store';
 import { Web3Providers } from '@/app/web3/Web3Providers';
 import { AddContractModal } from '@/features/add-contract/ui/AddContractModal';
@@ -51,21 +51,25 @@ export function AppShell({ children }: { children: ReactNode }) {
     <Web3Providers>
       <AppShellProvider>
         <ToastProvider>
-          <div
-            data-density={density === 'compact' ? 'compact' : undefined}
-            className="grid h-screen grid-cols-[264px_1fr] overflow-hidden bg-surface max-[860px]:grid-cols-1"
-          >
-            <Suspense fallback={null}>
-              <Sidebar />
-            </Suspense>
-            <div className="flex h-screen min-w-0 flex-col">
-              <TopBar />
-              <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
+          <ConfirmProvider>
+            <div
+              data-density={density === 'compact' ? 'compact' : undefined}
+              className="grid h-screen grid-cols-[264px_1fr] overflow-hidden bg-surface max-[860px]:grid-cols-1"
+            >
+              <Suspense fallback={null}>
+                <Sidebar />
+              </Suspense>
+              <div className="flex h-screen min-w-0 flex-col">
+                <TopBar />
+                <main className="min-h-0 flex-1 overflow-y-auto">
+                  {children}
+                </main>
+              </div>
             </div>
-          </div>
-          <ShellModals />
-          <HashImport />
-          <CatalogLoader />
+            <ShellModals />
+            <HashImport />
+            <CatalogLoader />
+          </ConfirmProvider>
         </ToastProvider>
       </AppShellProvider>
     </Web3Providers>

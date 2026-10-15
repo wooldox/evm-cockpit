@@ -10,6 +10,7 @@ import {
   Button,
   ChainGlyph,
   Menu,
+  useConfirm,
   useToast,
   type MenuAnchor,
   type MenuItem,
@@ -77,14 +78,22 @@ function ContractRow({
   const { openEdit, openDuplicate } = useAppShell();
   const router = useRouter();
   const toast = useToast();
+  const confirm = useConfirm();
   const [menu, setMenu] = useState<MenuAnchor | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const dotsRef = useRef<HTMLButtonElement>(null);
   const closeMenu = useCallback(() => setMenu(null), []);
   const proxy = !!contract.proxy;
 
-  const handleDelete = () => {
-    if (!window.confirm(`Remove ${contract.name}?`)) return;
+  const handleDelete = async () => {
+    const ok = await confirm({
+      title: `Delete ${contract.name}?`,
+      description:
+        'It will be removed from your saved contracts. Its history entries stay.',
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
+    if (!ok) return;
     useContractsStore.getState().remove(contract.id);
     toast({ kind: 'success', title: 'Contract removed', msg: contract.name });
     if (active) router.push('/');

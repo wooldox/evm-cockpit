@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
 import { tv, type VariantProps } from 'tailwind-variants';
 
 /**
@@ -106,6 +106,7 @@ export interface ButtonProps
   icon?: ReactNode;
   iconRight?: ReactNode;
   children?: ReactNode;
+  ref?: Ref<HTMLButtonElement>;
 }
 
 export function Button({

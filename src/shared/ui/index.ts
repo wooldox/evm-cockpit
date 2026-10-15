@@ -26,6 +26,12 @@ export { Card, CardHead, CardTitle, CardBody, CardFoot, Panel } from './card';
 export { Modal, XBtn, type ModalProps } from './modal';
 export { Menu, type MenuItem, type MenuAnchor } from './menu';
 export {
+  AlertDialog,
+  ConfirmProvider,
+  useConfirm,
+  type ConfirmOptions,
+} from './alert-dialog';
+export {
   ToastProvider,
   useToast,
   type ToastInput,
