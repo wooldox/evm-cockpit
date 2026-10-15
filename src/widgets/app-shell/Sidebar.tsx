@@ -216,10 +216,9 @@ function ChainHeaderRow({
             setMenu({ x: r.right, y: r.bottom + 4, align: 'end' });
           }}
           className={cx(
-            'ml-0.5 grid size-6 flex-none cursor-pointer place-items-center rounded-sm border-0 bg-transparent text-fg-3 transition-[opacity,color,background-color] hover:bg-elev-4 hover:text-fg focus-visible:opacity-100',
-            menu
-              ? 'bg-elev-4 text-fg opacity-100'
-              : 'opacity-0 group-hover/hdr:opacity-100',
+            // Always visible (unlike rows' ⋯), muted until the header is hovered.
+            'ml-0.5 grid size-6 flex-none cursor-pointer place-items-center rounded-sm border-0 bg-transparent transition-colors hover:bg-elev-4 hover:text-fg',
+            menu ? 'bg-elev-4 text-fg' : 'text-fg-4 group-hover/hdr:text-fg-3',
           )}
         >
           <Icon.dots size={14} />
