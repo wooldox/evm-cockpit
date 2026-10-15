@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useChainDisplay } from '@/entities/chain/model/catalogStore';
 import { addressUrl } from '@/entities/chain/model/explorer';
@@ -25,6 +25,7 @@ export function ContractHeader({
   const router = useRouter();
   const { openEdit } = useAppShell();
   const [shareOpen, setShareOpen] = useState(false);
+  const shareList = useMemo(() => [contract], [contract]);
   const chain = useChainDisplay(contract.chainId);
   const addrLink = addressUrl(contract.chainId, contract.address);
 
@@ -128,7 +129,7 @@ export function ContractHeader({
         />
       </div>
       {shareOpen && (
-        <ShareModal contract={contract} onClose={() => setShareOpen(false)} />
+        <ShareModal contracts={shareList} onClose={() => setShareOpen(false)} />
       )}
     </div>
   );
