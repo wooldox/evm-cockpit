@@ -1,13 +1,11 @@
 import 'fake-indexeddb/auto';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ToastProvider } from '@/shared/ui';
 import { useContractsStore } from '@/entities/contract/model/store';
 import { useSettingsStore } from '@/entities/settings/model/store';
 import { erc20Abi } from '@/shared/lib/abi/fixtures';
-import { toSharePayload } from '@/shared/lib/share/codec';
-import type { TContract } from '@/entities/contract/model/types';
 import { AddContractModal } from './AddContractModal';
 
 // next/navigation is used transitively by some imports
@@ -199,145 +197,54 @@ describe('AddContractModal', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  // ── 3. Import file: valid export prefills the form + activates manual tab ──
+  // ── 3. Import mode (share link / file review) ────────────────────────────
 
-  it('import file: valid export prefills fields and switches to manual tab', async () => {
-    renderModal();
-    await screen.findByRole('dialog');
+  it('importing: prefilled "Import contract" keeps the proxy and opens it', async () => {
+    const user = userEvent.setup();
+    const onSaved = vi.fn();
+    const proxy = {
+      kind: 'eip1967' as const,
+      implAddress: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as const,
+      implAbi: erc20Abi,
+    };
+    render(
+      <ToastProvider>
+        <AddContractModal
+          importing
+          prefill={{
+            name: 'Imported Token',
+            chainId: 137,
+            address: VALID_ADDRESS,
+            abi: erc20Abi,
+            source: 'sourcify',
+            proxy,
+          }}
+          onClose={vi.fn()}
+          onSaved={onSaved}
+        />
+      </ToastProvider>,
+    );
+    await screen.findByRole('dialog', { name: 'Import contract' });
+    expect(screen.getByDisplayValue('Imported Token')).toBeInTheDocument();
+    expect(screen.getByDisplayValue(VALID_ADDRESS)).toBeInTheDocument();
 
-    const exportContract: TContract = {
-      id: 'x',
+    await user.click(screen.getByRole('button', { name: 'Import contract' }));
+
+    const saved = useContractsStore.getState().contracts[0]!;
+    expect(saved).toMatchObject({
       name: 'Imported Token',
       chainId: 137,
-      address: VALID_ADDRESS as `0x${string}`,
-      abi: erc20Abi,
-      source: 'manual',
-      addedAt: 0,
-    };
-    const json = JSON.stringify(toSharePayload(exportContract), null, 2);
-    const file = new File([json], 'export.contract.json', {
-      type: 'application/json',
+      source: 'sourcify',
+      proxy,
     });
-
-    const input = screen.getByLabelText(/import contract export file/i);
-    await userEvent.upload(input, file);
-
-    // Name prefilled
-    await waitFor(() =>
-      expect(screen.getByDisplayValue('Imported Token')).toBeInTheDocument(),
-    );
-    // Address prefilled
-    expect(screen.getByDisplayValue(VALID_ADDRESS)).toBeInTheDocument();
-    // Manual tab is active → ABI textarea is shown with the ABI JSON
-    const textarea = screen.getByPlaceholderText(/\[ \{ "type"/i);
-    expect((textarea as HTMLTextAreaElement).value).toContain('"type"');
+    expect(onSaved).toHaveBeenCalledWith(saved);
   });
 
-  it('import file: a proxy contract export is preserved on save', async () => {
+  it('no longer has an "Import file" button (import lives in the + menu)', async () => {
     renderModal();
     await screen.findByRole('dialog');
-
-    const implAddress =
-      '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as `0x${string}`;
-    const exportContract: TContract = {
-      id: 'x',
-      name: 'Proxy Token',
-      chainId: 1,
-      address: VALID_ADDRESS as `0x${string}`,
-      abi: erc20Abi,
-      source: 'manual',
-      proxy: {
-        kind: 'eip1967',
-        implAddress,
-        implAbi: erc20Abi,
-      },
-      addedAt: 0,
-    };
-    const json = JSON.stringify(toSharePayload(exportContract), null, 2);
-    const file = new File([json], 'export.contract.json', {
-      type: 'application/json',
-    });
-
-    const input = screen.getByLabelText(/import contract export file/i);
-    await userEvent.upload(input, file);
-
-    // Wait for prefill to land, then save.
-    await waitFor(() =>
-      expect(screen.getByDisplayValue('Proxy Token')).toBeInTheDocument(),
-    );
-    const submitBtn = screen.getByRole('button', { name: /add contract/i });
-    await userEvent.click(submitBtn);
-
-    const added = useContractsStore.getState().contracts[0]!;
-    expect(added.proxy).toEqual({
-      kind: 'eip1967',
-      implAddress,
-      implAbi: erc20Abi,
-    });
-  });
-
-  it('import file: editing the address after import drops the proxy', async () => {
-    renderModal();
-    await screen.findByRole('dialog');
-
-    const exportContract: TContract = {
-      id: 'x',
-      name: 'Proxy Token',
-      chainId: 1,
-      address: VALID_ADDRESS as `0x${string}`,
-      abi: erc20Abi,
-      source: 'manual',
-      proxy: {
-        kind: 'eip1967',
-        implAddress:
-          '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as `0x${string}`,
-        implAbi: erc20Abi,
-      },
-      addedAt: 0,
-    };
-    const json = JSON.stringify(toSharePayload(exportContract), null, 2);
-    const file = new File([json], 'export.contract.json', {
-      type: 'application/json',
-    });
-
-    const input = screen.getByLabelText(/import contract export file/i);
-    await userEvent.upload(input, file);
-    await waitFor(() =>
-      expect(screen.getByDisplayValue('Proxy Token')).toBeInTheDocument(),
-    );
-
-    // Edit the address → the imported proxy becomes stale and is dropped.
-    const otherAddress = '0x9999999999999999999999999999999999999999';
-    const addrInput = screen.getByDisplayValue(VALID_ADDRESS);
-    await userEvent.clear(addrInput);
-    await userEvent.paste(otherAddress);
-
-    const submitBtn = screen.getByRole('button', { name: /add contract/i });
-    await userEvent.click(submitBtn);
-
-    const added = useContractsStore.getState().contracts[0]!;
-    expect(added.address).toBe(otherAddress);
-    expect(added.proxy).toBeUndefined();
-  });
-
-  it('import file: invalid file shows error and leaves fields untouched', async () => {
-    renderModal();
-    await screen.findByRole('dialog');
-
-    const file = new File(['{ not a valid export }'], 'bad.json', {
-      type: 'application/json',
-    });
-    const input = screen.getByLabelText(/import contract export file/i);
-    await userEvent.upload(input, file);
-
     expect(
-      await screen.findByText(/not a valid contract export/i),
-    ).toBeInTheDocument();
-
-    // Name field still empty (untouched)
-    const nameInput = screen.getByPlaceholderText(
-      /my contract/i,
-    ) as HTMLInputElement;
-    expect(nameInput.value).toBe('');
+      screen.queryByRole('button', { name: /import file/i }),
+    ).not.toBeInTheDocument();
   });
 });

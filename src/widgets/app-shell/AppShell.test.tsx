@@ -186,7 +186,10 @@ describe('AppShell', () => {
 
     // Open the add-contract modal — its chain combobox must show Base, not Ethereum
     await userEvent.click(
-      screen.getByRole('button', { name: /add contract/i }),
+      screen.getByRole('button', { name: 'Add or import contracts' }),
+    );
+    await userEvent.click(
+      screen.getByRole('menuitem', { name: 'Add contract' }),
     );
     const combobox = await screen.findByRole('combobox');
     expect(combobox).toHaveTextContent(/base/i);

@@ -68,7 +68,9 @@ export async function addContractViaUi(
   if (await firstBtn.isVisible().catch(() => false)) {
     await firstBtn.click();
   } else {
-    await page.getByRole('button', { name: 'Add contract' }).first().click();
+    // Sidebar "+" is a menu: Add contract / Import from file…
+    await page.getByRole('button', { name: 'Add or import contracts' }).click();
+    await page.getByRole('menuitem', { name: 'Add contract' }).click();
   }
 
   const dialog = page.getByRole('dialog');

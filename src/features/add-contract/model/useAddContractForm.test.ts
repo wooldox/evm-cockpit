@@ -63,7 +63,7 @@ describe('useAddContractForm', () => {
         result.current.setAddress(IMPL_ADDRESS);
       });
       act(() => {
-        expect(result.current.submit()).toBe(true);
+        expect(result.current.submit()).not.toBeNull();
       });
       expect(deps.updateContract).not.toHaveBeenCalled();
       expect(deps.addContract).toHaveBeenCalledWith(
@@ -74,6 +74,54 @@ describe('useAddContractForm', () => {
           abi: erc20Abi,
           source: 'manual',
         }),
+      );
+    });
+  });
+
+  describe('prefill (import)', () => {
+    const proxy = {
+      kind: 'eip1967' as const,
+      implAddress: IMPL_ADDRESS,
+      implAbi: erc20Abi,
+    };
+    const prefill = {
+      name: 'USDC',
+      chainId: 1,
+      address: VALID_ADDRESS,
+      abi: erc20Abi,
+      source: 'sourcify' as const,
+      proxy,
+    };
+
+    it('keeps the imported source and proxy when saved unchanged', () => {
+      const deps = makeDeps();
+      const { result } = renderHook(() =>
+        useAddContractForm({ prefill, deps }),
+      );
+      let saved: TContract | null = null;
+      act(() => {
+        saved = result.current.submit();
+      });
+      expect(saved).toMatchObject({ source: 'sourcify', proxy });
+      expect(deps.addContract).toHaveBeenCalledWith(
+        expect.objectContaining({ source: 'sourcify', proxy }),
+      );
+    });
+
+    it('editing the ABI makes it manual; changing the address drops the proxy', () => {
+      const deps = makeDeps();
+      const { result } = renderHook(() =>
+        useAddContractForm({ prefill, deps }),
+      );
+      act(() => {
+        result.current.setAbiText(JSON.stringify(erc20Abi));
+        result.current.setAddress(IMPL_ADDRESS);
+      });
+      act(() => {
+        result.current.submit();
+      });
+      expect(deps.addContract).toHaveBeenCalledWith(
+        expect.objectContaining({ source: 'manual', proxy: undefined }),
       );
     });
   });
@@ -104,7 +152,7 @@ describe('useAddContractForm', () => {
   // ── 1. Manual mode ────────────────────────────────────────────────────────
 
   describe('manual mode', () => {
-    it('invalid JSON in abiText → errors.abi set, submit() returns false, addContract NOT called', async () => {
+    it('invalid JSON in abiText → errors.abi set, submit() returns null, addContract NOT called', async () => {
       const deps = makeDeps();
       const { result } = renderHook(() => useAddContractForm({ deps }));
 
@@ -118,16 +166,16 @@ describe('useAddContractForm', () => {
       // errors.abi should be set because abiText is non-empty and invalid
       expect(result.current.errors.abi).toBeDefined();
 
-      let submitResult: boolean = true;
+      let submitResult: TContract | null = null;
       act(() => {
         submitResult = result.current.submit();
       });
 
-      expect(submitResult).toBe(false);
+      expect(submitResult).toBeNull();
       expect(deps.addContract).not.toHaveBeenCalled();
     });
 
-    it('non-array JSON in abiText → errors.abi set, submit() returns false', async () => {
+    it('non-array JSON in abiText → errors.abi set, submit() returns null', async () => {
       const deps = makeDeps();
       const { result } = renderHook(() => useAddContractForm({ deps }));
 
@@ -140,16 +188,16 @@ describe('useAddContractForm', () => {
 
       expect(result.current.errors.abi).toBeDefined();
 
-      let submitResult: boolean = true;
+      let submitResult: TContract | null = null;
       act(() => {
         submitResult = result.current.submit();
       });
 
-      expect(submitResult).toBe(false);
+      expect(submitResult).toBeNull();
       expect(deps.addContract).not.toHaveBeenCalled();
     });
 
-    it("valid JSON array + name + valid address → submit() true, addContract called with source:'manual'", async () => {
+    it("valid JSON array + name + valid address → submit() returns the contract, addContract called with source:'manual'", async () => {
       const deps = makeDeps();
       const { result } = renderHook(() => useAddContractForm({ deps }));
 
@@ -163,12 +211,12 @@ describe('useAddContractForm', () => {
       expect(result.current.errors.abi).toBeUndefined();
       expect(result.current.canSubmit).toBe(true);
 
-      let submitResult: boolean = false;
+      let submitResult: TContract | null = null;
       act(() => {
         submitResult = result.current.submit();
       });
 
-      expect(submitResult).toBe(true);
+      expect(submitResult).not.toBeNull();
       expect(deps.addContract).toHaveBeenCalledOnce();
 
       const called = (
@@ -241,12 +289,12 @@ describe('useAddContractForm', () => {
         await result.current.fetchAbi();
       });
 
-      let submitResult: boolean = false;
+      let submitResult: TContract | null = null;
       act(() => {
         submitResult = result.current.submit();
       });
 
-      expect(submitResult).toBe(true);
+      expect(submitResult).not.toBeNull();
       expect(deps.addContract).toHaveBeenCalledOnce();
 
       const called = (
@@ -326,12 +374,12 @@ describe('useAddContractForm', () => {
         await result.current.fetchAbi();
       });
 
-      let submitResult: boolean = false;
+      let submitResult: TContract | null = null;
       act(() => {
         submitResult = result.current.submit();
       });
 
-      expect(submitResult).toBe(true);
+      expect(submitResult).not.toBeNull();
       const called = (
         (deps.addContract as ReturnType<typeof vi.fn>).mock.calls[0] as [
           TContract,
@@ -423,12 +471,12 @@ describe('useAddContractForm', () => {
       expect(result.current.fetch.proxy?.implAddress).toBe(IMPL_ADDRESS);
       expect(result.current.fetch.proxy?.implAbi).toBeUndefined();
 
-      let submitResult: boolean = false;
+      let submitResult: TContract | null = null;
       act(() => {
         submitResult = result.current.submit();
       });
 
-      expect(submitResult).toBe(true);
+      expect(submitResult).not.toBeNull();
       const called = (
         (deps.addContract as ReturnType<typeof vi.fn>).mock.calls[0] as [
           TContract,
@@ -634,12 +682,12 @@ describe('useAddContractForm', () => {
         result.current.setAbiText(JSON.stringify(erc20Abi));
       });
 
-      let submitResult: boolean = false;
+      let submitResult: TContract | null = null;
       act(() => {
         submitResult = result.current.submit();
       });
 
-      expect(submitResult).toBe(true);
+      expect(submitResult).not.toBeNull();
       expect(deps.updateContract).toHaveBeenCalledOnce();
       expect(deps.addContract).not.toHaveBeenCalled();
 

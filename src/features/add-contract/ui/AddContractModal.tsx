@@ -1,13 +1,10 @@
 'use client';
 
-import { useRef, useState } from 'react';
 import { Icon } from '@/shared/icons';
 import { useChainCatalog } from '@/entities/chain/model/catalogStore';
 import { useSettingsStore } from '@/entities/settings/model/store';
-import type { TAddress, TContract } from '@/entities/contract/model/types';
-import type { Abi } from 'abitype';
+import type { TContract } from '@/entities/contract/model/types';
 import { trunc } from '@/shared/lib/format';
-import { sharePayloadSchema } from '@/shared/lib/share/codec';
 import {
   Badge,
   Button,
@@ -31,8 +28,12 @@ import {
 export interface AddContractModalProps {
   onClose: () => void;
   editing?: TContract | null;
-  /** Seed a NEW contract from an existing one ("Duplicate"). */
+  /** Seed a NEW contract from an existing one ("Duplicate") or an import. */
   prefill?: ContractPrefill;
+  /** Reviewing a contract from a share link / file: import wording. */
+  importing?: boolean;
+  /** Called with the saved contract (e.g. to open it). */
+  onSaved?: (c: TContract) => void;
   /** Initial chain for NEW contracts — the caller passes the app's currently
    *  selected chain so the dropdown doesn't always reset to Ethereum. */
   defaultChainId?: number;
@@ -42,6 +43,8 @@ export function AddContractModal({
   onClose,
   editing,
   prefill,
+  importing,
+  onSaved,
   defaultChainId,
 }: AddContractModalProps) {
   // Auto-fetch is the default tab only when an Etherscan key is set; otherwise
@@ -56,45 +59,17 @@ export function AddContractModal({
   });
   const toast = useToast();
   const chainEntries = useChainCatalog((s) => s.entries);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [importError, setImportError] = useState<string | null>(null);
-
-  async function handleImportFile(file: File): Promise<void> {
-    setImportError(null);
-    try {
-      const text = await file.text();
-      const payload = sharePayloadSchema.parse(JSON.parse(text));
-      // Prefill the form; the user reviews and saves through the normal flow.
-      // Set address/chain BEFORE the proxy: those setters clear importedProxy
-      // (staleness guard), so the proxy must be applied last.
-      f.setName(payload.name);
-      f.setChainId(payload.chainId);
-      f.setAddress(payload.address);
-      f.setAbiText(JSON.stringify(payload.abi, null, 2));
-      f.setMode('manual');
-      f.setImportedProxy(
-        payload.proxy
-          ? {
-              kind: payload.proxy.kind,
-              implAddress: payload.proxy.implAddress as TAddress,
-              implAbi: payload.proxy.implAbi as Abi | undefined,
-            }
-          : undefined,
-      );
-    } catch {
-      setImportError('not a valid contract export');
-    }
-  }
-
   return (
     <Modal
       lg
       title={
         editing
           ? 'Edit contract'
-          : prefill
-            ? 'Duplicate contract'
-            : 'Add contract'
+          : importing
+            ? 'Import contract'
+            : prefill
+              ? 'Duplicate contract'
+              : 'Add contract'
       }
       onClose={onClose}
       footer={
@@ -106,17 +81,27 @@ export function AddContractModal({
             variant="primary"
             disabled={!f.canSubmit}
             onClick={() => {
-              if (f.submit()) {
+              const saved = f.submit();
+              if (saved) {
                 toast({
                   kind: 'success',
-                  title: editing ? 'Contract updated' : 'Contract added',
+                  title: editing
+                    ? 'Contract updated'
+                    : importing
+                      ? 'Contract imported'
+                      : 'Contract added',
                   msg: f.name,
                 });
                 onClose();
+                onSaved?.(saved);
               }
             }}
           >
-            {editing ? 'Save changes' : 'Add contract'}
+            {editing
+              ? 'Save changes'
+              : importing
+                ? 'Import contract'
+                : 'Add contract'}
           </Button>
         </>
       }
@@ -172,27 +157,6 @@ export function AddContractModal({
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="text-[13px] font-medium text-fg-2">ABI</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={<Icon.file size={13} />}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            Import file
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json,application/json"
-            className="hidden"
-            aria-label="Import contract export file"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) void handleImportFile(file);
-              // Reset so re-selecting the same file re-fires onChange.
-              e.target.value = '';
-            }}
-          />
         </div>
         <Segment
           value={f.mode}
@@ -211,13 +175,6 @@ export function AddContractModal({
           ]}
         />
       </div>
-
-      {importError && (
-        <div className="mb-3 flex items-center gap-1.5 text-xs text-danger-fg">
-          <Icon.alertCircle size={13} />
-          {importError}
-        </div>
-      )}
 
       {/* ── Fetch tab ─────────────────────────────────────────────── */}
       {f.mode === 'fetch' ? (

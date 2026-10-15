@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import { Icon } from '@/shared/icons';
 import type { TContract } from '@/entities/contract/model/types';
 import {
-  encodeContractShare,
-  toSharePayload,
+  encodeShare,
+  toShareBundle,
   MAX_SHARE_PAYLOAD_CHARS,
 } from '@/shared/lib/share/codec';
 import { downloadJson } from '@/shared/lib/tx/downloadUnsignedTx';
@@ -36,7 +36,7 @@ export function ShareModal({ contract, onClose }: ShareModalProps) {
   // after unmount.
   useEffect(() => {
     let cancelled = false;
-    encodeContractShare(contract)
+    encodeShare([contract])
       .then((token) => {
         if (cancelled) return;
         setFailed(false);
@@ -59,10 +59,10 @@ export function ShareModal({ contract, onClose }: ShareModalProps) {
       : null;
 
   const handleDownload = () => {
-    // toSharePayload returns plain JSON (no bigints), so JSON.stringify is safe.
+    // toShareBundle returns plain JSON (no bigints), so JSON.stringify is safe.
     downloadJson(
       `${contract.name}.contract.json`,
-      JSON.stringify(toSharePayload(contract), null, 2),
+      JSON.stringify(toShareBundle([contract]), null, 2),
     );
     toast({ kind: 'success', title: 'Contract exported', msg: contract.name });
   };

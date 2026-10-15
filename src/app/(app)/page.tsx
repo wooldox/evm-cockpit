@@ -15,7 +15,7 @@ function BrowserRoute() {
   const contract = useContractsStore((s) =>
     s.contracts.find((c) => c.id === id),
   );
-  const { openAdd } = useAppShell();
+  const { openAdd, openImportFile } = useAppShell();
 
   if (id && contract) {
     return (
@@ -55,13 +55,22 @@ function BrowserRoute() {
           title="No contracts yet"
           actions={
             <div className="flex flex-col items-center gap-2">
-              <Button
-                variant="primary"
-                icon={<Icon.plus size={15} />}
-                onClick={openAdd}
-              >
-                Add your first contract
-              </Button>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Button
+                  variant="primary"
+                  icon={<Icon.plus size={15} />}
+                  onClick={openAdd}
+                >
+                  Add your first contract
+                </Button>
+                <Button
+                  variant="ghost"
+                  icon={<Icon.file size={15} />}
+                  onClick={openImportFile}
+                >
+                  Import from file
+                </Button>
+              </div>
               <span className="mt-2 text-xs text-fg-4">
                 Works with any EVM chain · ERC-20, ERC-721, proxies &amp; custom
                 ABIs

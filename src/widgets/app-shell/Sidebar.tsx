@@ -64,6 +64,54 @@ function ScopeBtn({
   );
 }
 
+/* ---------- AddMenu: "+" → add or import ---------- */
+function AddMenu() {
+  const { openAdd, openImportFile } = useAppShell();
+  const [menu, setMenu] = useState<MenuAnchor | null>(null);
+  const ref = useRef<HTMLButtonElement>(null);
+  const close = useCallback(() => setMenu(null), []);
+  return (
+    <>
+      <Button
+        ref={ref}
+        variant="subtle"
+        icon={<Icon.plus size={15} />}
+        title="Add or import contracts"
+        aria-label="Add or import contracts"
+        aria-haspopup="menu"
+        aria-expanded={!!menu}
+        onClick={() => {
+          if (menu) return setMenu(null);
+          const r = ref.current!.getBoundingClientRect();
+          setMenu({ x: r.right, y: r.bottom + 4, align: 'end' });
+        }}
+      />
+      {menu && (
+        <Menu
+          anchor={menu}
+          label="Add or import contracts"
+          onClose={close}
+          triggerRef={ref}
+          items={[
+            {
+              key: 'add',
+              label: 'Add contract',
+              icon: <Icon.plus size={14} />,
+              onSelect: openAdd,
+            },
+            {
+              key: 'import',
+              label: 'Import from file…',
+              icon: <Icon.file size={14} />,
+              onSelect: openImportFile,
+            },
+          ]}
+        />
+      )}
+    </>
+  );
+}
+
 /* ---------- ContractRow ---------- */
 function ContractRow({
   contract,
@@ -215,7 +263,7 @@ export function Sidebar({
   currentId?: string;
   onSelect?: (id: string) => void;
 }) {
-  const { currentChainId, openAdd } = useAppShell();
+  const { currentChainId } = useAppShell();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -291,12 +339,7 @@ export function Sidebar({
             onChange={(e) => setQ(e.target.value)}
           />
         </div>
-        <Button
-          variant="subtle"
-          icon={<Icon.plus size={15} />}
-          title="Add contract"
-          onClick={openAdd}
-        />
+        <AddMenu />
       </div>
 
       {/* Scope segmented control */}

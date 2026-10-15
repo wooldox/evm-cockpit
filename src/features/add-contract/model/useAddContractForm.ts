@@ -90,7 +90,8 @@ export type AddContractFormResult = {
   canSubmit: boolean;
   // Actions
   fetchAbi: () => Promise<void>;
-  submit: () => boolean;
+  /** Saves and returns the contract, or null when validation fails. */
+  submit: () => TContract | null;
 };
 
 /** Seed for a NEW contract copied from an existing one ("Duplicate"). Opens in
@@ -98,7 +99,10 @@ export type AddContractFormResult = {
 export type ContractPrefill = Pick<
   TContract,
   'name' | 'chainId' | 'address' | 'abi'
->;
+> &
+  // Imports carry these too; the proxy is dropped if address/chain change and
+  // the source becomes "manual" if the ABI text is edited.
+  Partial<Pick<TContract, 'source' | 'proxy'>>;
 
 // ─── Internal fetch state (includes key for staleness detection) ─────────────
 
@@ -145,13 +149,15 @@ export function useAddContractForm(opts?: {
   const [abiText, setAbiText] = useState<string>(
     seed?.abi ? JSON.stringify(seed.abi, null, 2) : '',
   );
+  // The prefilled ABI text, to tell whether an imported ABI was edited.
+  const [seedAbiText] = useState(abiText);
   const [mode, setMode] = useState<'fetch' | 'manual'>(
     !editing && opts?.prefill ? 'manual' : (opts?.defaultMode ?? 'fetch'),
   );
   // Proxy info carried in from a file import (manual mode). Belongs to one exact
   // address+chainId, so it is cleared whenever either of those is edited below.
   const [importedProxy, setImportedProxy] = useState<TProxyInfo | undefined>(
-    undefined,
+    editing ? undefined : opts?.prefill?.proxy,
   );
 
   // Editing the address or chain invalidates a file-imported proxy (it was
@@ -281,7 +287,7 @@ export function useAddContractForm(opts?: {
     setFetchState({ status: 'done', categories, proxy, _fetchKey: fetchKey });
   }
 
-  function submit(): boolean {
+  function submit(): TContract | null {
     // Clear any previous abi error
     setAbiError(undefined);
 
@@ -295,14 +301,16 @@ export function useAddContractForm(opts?: {
         parsed = JSON.parse(abiText);
       } catch {
         setAbiError('ABI must be valid JSON');
-        return false;
+        return null;
       }
       if (!Array.isArray(parsed)) {
         setAbiError('ABI must be a JSON array');
-        return false;
+        return null;
       }
       abi = parsed as Abi;
-      source = 'manual';
+      const prefillSource = editing ? undefined : opts?.prefill?.source;
+      source =
+        prefillSource && abiText === seedAbiText ? prefillSource : 'manual';
       // Preserve proxy info carried in from a file import. setImportedProxy is
       // cleared when the user edits the address/chain, so a stale proxy can't
       // attach to a different target.
@@ -311,7 +319,7 @@ export function useAddContractForm(opts?: {
       // fetch mode — effectiveFetchState is already "idle" when stale,
       // so this guard also rejects stale results.
       if (effectiveFetchState.status !== 'done' || !resolvedRef.current) {
-        return false;
+        return null;
       }
       abi = resolvedRef.current.abi;
       source = resolvedRef.current.source;
@@ -335,7 +343,7 @@ export function useAddContractForm(opts?: {
       deps.addContract(contract);
     }
 
-    return true;
+    return contract;
   }
 
   return {
