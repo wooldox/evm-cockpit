@@ -7,6 +7,10 @@ import { idbStateStorage } from '@/entities/_shared/idbStateStorage';
 export type SidebarState = {
   /** Chain ids whose contract lists are collapsed. */
   collapsed: number[];
+  /** User's chain order (drag / Move up·down). Chains not listed — e.g. one
+   *  that just got its first contract — follow, in first-added order. */
+  chainOrder: number[];
+  setChainOrder: (chainIds: number[]) => void;
   toggleChain: (chainId: number) => void;
   setAll: (chainIds: number[], collapsed: boolean) => void;
   expandChain: (chainId: number) => void;
@@ -16,6 +20,8 @@ export const useSidebarStore = create<SidebarState>()(
   persist(
     (set) => ({
       collapsed: [],
+      chainOrder: [],
+      setChainOrder: (chainOrder) => set({ chainOrder }),
       toggleChain: (id) =>
         set((s) => ({
           collapsed: s.collapsed.includes(id)

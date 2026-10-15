@@ -28,4 +28,17 @@ describe('filterAndGroup', () => {
     });
     expect(g.flatMap((x) => x.contracts).map((c) => c.id)).toEqual(['3']);
   });
+  it('orders chains by chainOrder; unlisted chains follow in first-seen order', () => {
+    const more: SidebarContract[] = [
+      ...C,
+      { id: '4', name: 'Other', address: '0x4', chainId: 10 },
+    ];
+    const g = filterAndGroup(more, {
+      scope: 'all',
+      query: '',
+      currentChainId: 1,
+      chainOrder: [8453],
+    });
+    expect(g.map((x) => x.chainId)).toEqual([8453, 1, 10]);
+  });
 });

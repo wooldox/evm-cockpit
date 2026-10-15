@@ -2,6 +2,25 @@
 
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import Link from 'next/link';
+import {
+  DndContext,
+  MeasuringStrategy,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type CollisionDetection,
+  type DragEndEvent,
+  type DragStartEvent,
+  type Modifier,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { cx } from '@/shared/lib/cx';
 import { trunc } from '@/shared/lib/format';
@@ -74,6 +93,145 @@ function useFileDrop(onFiles: (files: File[]) => void) {
       },
     },
   };
+}
+
+/* ---------- Drag-to-reorder helpers ---------- */
+type TDragData =
+  | { kind: 'chain'; chainId: number }
+  | { kind: 'contract'; chainId: number };
+
+/** Sidebar drags only move up/down. */
+const verticalOnly: Modifier = ({ transform }) => ({ ...transform, x: 0 });
+
+/** A chain only lands among chains; a contract only among its own chain's
+ *  contracts (moving it to another chain is what Edit is for). */
+const sameKindCollision: CollisionDetection = (args) => {
+  const a = args.active.data.current as TDragData | undefined;
+  return closestCenter({
+    ...args,
+    droppableContainers: args.droppableContainers.filter((c) => {
+      const d = c.data.current as TDragData | undefined;
+      return (
+        d?.kind === a?.kind &&
+        (a?.kind === 'chain' || d?.chainId === a?.chainId)
+      );
+    }),
+  });
+};
+
+/** Sortable wrapper for a chain group; the header gets the drag listeners. */
+function SortableGroup({
+  chainId,
+  disabled,
+  children,
+}: {
+  chainId: number;
+  disabled: boolean;
+  children: (
+    dragHandle: ReturnType<typeof useSortable>['listeners'],
+    dragging: boolean,
+  ) => React.ReactNode;
+}) {
+  const { setNodeRef, listeners, transform, transition, isDragging } =
+    useSortable({
+      id: `chain:${chainId}`,
+      data: { kind: 'chain', chainId } satisfies TDragData,
+      disabled,
+    });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+      className={cx('mb-3', isDragging && 'relative z-20')}
+    >
+      {children(listeners, isDragging)}
+    </div>
+  );
+}
+
+/* ---------- ChainHeaderRow: header + its ⋯ / right-click menu ---------- */
+function ChainHeaderRow({
+  chainName,
+  onMove,
+  dragHandle,
+  children,
+}: {
+  chainName: string;
+  /** Move the whole chain up/down; empty when reordering is unavailable. */
+  onMove: { up?: () => void; down?: () => void };
+  dragHandle: ReturnType<typeof useSortable>['listeners'];
+  children: React.ReactNode;
+}) {
+  const [menu, setMenu] = useState<MenuAnchor | null>(null);
+  const ref = useRef<HTMLButtonElement>(null);
+  const close = useCallback(() => setMenu(null), []);
+  const items: MenuItem[] = [
+    ...(onMove.up
+      ? [
+          {
+            key: 'up',
+            label: 'Move chain up',
+            icon: <Icon.chevD size={14} className="rotate-180" />,
+            onSelect: onMove.up,
+          },
+        ]
+      : []),
+    ...(onMove.down
+      ? [
+          {
+            key: 'down',
+            label: 'Move chain down',
+            icon: <Icon.chevD size={14} />,
+            onSelect: onMove.down,
+          },
+        ]
+      : []),
+  ];
+  return (
+    <div
+      {...dragHandle}
+      className="group/hdr relative flex items-center"
+      onContextMenu={(e) => {
+        if (!items.length) return;
+        e.preventDefault();
+        setMenu({ x: e.clientX, y: e.clientY });
+      }}
+    >
+      {children}
+      {items.length > 0 && (
+        <button
+          ref={ref}
+          type="button"
+          aria-label={`Actions for ${chainName}`}
+          aria-haspopup="menu"
+          aria-expanded={!!menu}
+          title="Actions"
+          onClick={() => {
+            if (menu) return setMenu(null);
+            const r = ref.current!.getBoundingClientRect();
+            setMenu({ x: r.right, y: r.bottom + 4, align: 'end' });
+          }}
+          className={cx(
+            'ml-0.5 grid size-6 flex-none cursor-pointer place-items-center rounded-sm border-0 bg-transparent text-fg-3 transition-[opacity,color,background-color] hover:bg-elev-4 hover:text-fg focus-visible:opacity-100',
+            menu
+              ? 'bg-elev-4 text-fg opacity-100'
+              : 'opacity-0 group-hover/hdr:opacity-100',
+          )}
+        >
+          <Icon.dots size={14} />
+        </button>
+      )}
+      {menu && (
+        <Menu
+          anchor={menu}
+          items={items}
+          onClose={close}
+          label={`${chainName} actions`}
+          triggerRef={ref}
+        />
+      )}
+    </div>
+  );
 }
 
 /* ---------- ScopeBtn ---------- */
@@ -163,9 +321,14 @@ function ContractRow({
   checked,
   onRowClick,
   onStartSelect,
+  dragDisabled,
+  onMove,
 }: {
   contract: TContract;
   active: boolean;
+  dragDisabled: boolean;
+  /** Move up/down within its chain; absent when already at that end. */
+  onMove: { up?: () => void; down?: () => void };
   /** Bulk-select mode: the row toggles a checkbox instead of opening. */
   selecting: boolean;
   checked: boolean;
@@ -181,6 +344,12 @@ function ContractRow({
   const dotsRef = useRef<HTMLButtonElement>(null);
   const closeMenu = useCallback(() => setMenu(null), []);
   const proxy = !!contract.proxy;
+  const { setNodeRef, listeners, transform, transition, isDragging } =
+    useSortable({
+      id: `c:${contract.id}`,
+      data: { kind: 'contract', chainId: contract.chainId } satisfies TDragData,
+      disabled: dragDisabled,
+    });
 
   const handleDelete = async () => {
     if ((await deleteContracts([contract])) && active) router.push('/');
@@ -211,6 +380,28 @@ function ContractRow({
       icon: <Icon.history size={14} />,
       onSelect: () => router.push(`/history?c=${contract.id}`),
     },
+    ...(onMove.up
+      ? [
+          {
+            key: 'up',
+            label: 'Move up',
+            icon: <Icon.chevD size={14} className="rotate-180" />,
+            separated: true,
+            onSelect: onMove.up,
+          },
+        ]
+      : []),
+    ...(onMove.down
+      ? [
+          {
+            key: 'down',
+            label: 'Move down',
+            icon: <Icon.chevD size={14} />,
+            separated: !onMove.up,
+            onSelect: onMove.down,
+          },
+        ]
+      : []),
     {
       key: 'select',
       label: 'Select',
@@ -229,7 +420,14 @@ function ContractRow({
 
   return (
     <div
-      className="group relative"
+      ref={setNodeRef}
+      {...listeners}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+      className={cx(
+        'group relative',
+        isDragging &&
+          'z-20 rounded-sm bg-elev-3 shadow-[var(--shadow-pop)] [&_button]:cursor-grabbing',
+      )}
       onContextMenu={(e) => {
         e.preventDefault();
         if (!selecting) setMenu({ x: e.clientX, y: e.clientY });
@@ -349,7 +547,20 @@ export function Sidebar({
   }));
 
   const currentChain = useChainDisplay(currentChainId);
-  const groups = filterAndGroup(contracts, { scope, query: q, currentChainId });
+  const chainOrder = useSidebarStore((s) => s.chainOrder);
+  const groups = filterAndGroup(contracts, {
+    scope,
+    query: q,
+    currentChainId,
+    chainOrder,
+  });
+  // Every chain in display order, whatever the filter — what reordering acts on.
+  const allChainIds = filterAndGroup(contracts, {
+    scope: 'all',
+    query: '',
+    currentChainId,
+    chainOrder,
+  }).map((g) => g.chainId);
 
   const collapsed = useSidebarStore((s) => s.collapsed);
   const hydrated = useSidebarHydrated();
@@ -367,6 +578,7 @@ export function Sidebar({
   }, [hydrated, selectedId, activeChainId]);
 
   const onChainHeaderClick = (e: React.MouseEvent, chainId: number) => {
+    if (justDragged.current) return;
     const { toggleChain, setAll } = useSidebarStore.getState();
     // Alt-click: collapse/expand every chain, like VS Code's tree views.
     if (e.altKey)
@@ -444,6 +656,7 @@ export function Sidebar({
     });
 
   const onRowClick = (id: string) => (e: React.MouseEvent) => {
+    if (justDragged.current) return;
     if (selecting) return toggle(id, e.shiftKey);
     // Cmd/Ctrl/Shift-click enters select mode with this row picked.
     if (e.metaKey || e.ctrlKey || e.shiftKey) return startSelect(id);
@@ -474,6 +687,65 @@ export function Sidebar({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [selecting, exitSelect]);
+
+  /* ---------- Reordering (drag + Move up/down) ---------- */
+  const sensors = useSensors(
+    // A few px of movement before a drag starts, so clicks still click.
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+  const [dragKind, setDragKind] = useState<TDragData['kind'] | null>(null);
+  // A drag ends with a pointerup on the row/header, and the browser follows
+  // it with a click in the same task — swallow that one click.
+  const justDragged = useRef(false);
+  // Dragging needs every row on screen in its real order: off while searching
+  // or bulk-selecting; chains also stay put when only one chain is shown.
+  const contractDragOff = searching || selecting;
+  const chainDragOff = contractDragOff || scope === 'current';
+
+  const moveChain = (chainId: number, delta: -1 | 1) => {
+    const i = allChainIds.indexOf(chainId);
+    useSidebarStore
+      .getState()
+      .setChainOrder(arrayMove(allChainIds, i, i + delta));
+  };
+  const chainContractIds = (chainId: number) =>
+    rawContracts.filter((c) => c.chainId === chainId).map((c) => c.id);
+  const moveContract = (c: TContract, delta: -1 | 1) => {
+    const ids = chainContractIds(c.chainId);
+    const i = ids.indexOf(c.id);
+    useContractsStore
+      .getState()
+      .reorderChain(c.chainId, arrayMove(ids, i, i + delta));
+  };
+
+  const onDragStart = ({ active }: DragStartEvent) =>
+    setDragKind((active.data.current as TDragData).kind);
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    justDragged.current = true;
+    setTimeout(() => (justDragged.current = false), 0);
+    setDragKind(null);
+    if (!over || active.id === over.id) return;
+    const a = active.data.current as TDragData;
+    const o = over.data.current as TDragData;
+    if (a.kind === 'chain' && o.kind === 'chain') {
+      useSidebarStore
+        .getState()
+        .setChainOrder(
+          arrayMove(
+            allChainIds,
+            allChainIds.indexOf(a.chainId),
+            allChainIds.indexOf(o.chainId),
+          ),
+        );
+    } else if (a.kind === 'contract' && a.chainId === o.chainId) {
+      const ids = chainContractIds(a.chainId);
+      const from = ids.indexOf(String(active.id).slice(2));
+      const to = ids.indexOf(String(over.id).slice(2));
+      useContractsStore
+        .getState()
+        .reorderChain(a.chainId, arrayMove(ids, from, to));
+    }
+  };
 
   // Drop exported .json files anywhere on the sidebar to import them.
   const importFiles = useImportFiles();
@@ -574,91 +846,167 @@ export function Sidebar({
             </div>
           ))}
 
-        {groups.map(({ chainId, contracts: list }) => {
-          // Non-reactive: can't call hooks inside a map. The static catalog is
-          // populated synchronously at store init, so names resolve correctly.
-          const chain = catalogDisplay(chainId);
-          const isCollapsed = !searching && collapsed.includes(chainId);
-          const listId = `sidebar-chain-${chainId}`;
-          return (
-            <div key={chainId} className="mb-3">
-              <div className="flex items-center">
-                {selecting &&
-                  (() => {
-                    const ids = list.map((c) => c.id);
-                    const n = ids.filter((id) => picked.has(id)).length;
-                    return (
-                      // Lines up with the rows' checkboxes (26px slot after 10px).
-                      <span className="ml-[10px] grid w-[26px] flex-none place-items-center">
-                        <Checkbox
-                          aria-label={`Select all on ${chain.name}`}
-                          checked={n === ids.length}
-                          indeterminate={n > 0 && n < ids.length}
-                          onChange={() => setMany(ids, n < ids.length)}
-                        />
-                      </span>
-                    );
-                  })()}
-                <button
-                  type="button"
-                  aria-expanded={!isCollapsed}
-                  aria-controls={listId}
-                  disabled={searching}
-                  title={
-                    searching
-                      ? undefined
-                      : `${isCollapsed ? 'Expand' : 'Collapse'} · Alt-click for all chains`
-                  }
-                  onClick={(e) => onChainHeaderClick(e, chainId)}
-                  className="group/chain flex w-full items-center gap-[7px] rounded-sm border-0 bg-transparent px-2 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-fg-3 transition-colors enabled:cursor-pointer enabled:hover:bg-elev-3 enabled:hover:text-fg-2"
+        <DndContext
+          sensors={sensors}
+          collisionDetection={sameKindCollision}
+          modifiers={[verticalOnly]}
+          // Chain drags collapse every group to its header (below), so
+          // positions must be re-measured while dragging.
+          measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          onDragCancel={() => setDragKind(null)}
+        >
+          <SortableContext
+            items={groups.map((g) => `chain:${g.chainId}`)}
+            strategy={verticalListSortingStrategy}
+          >
+            {groups.map(({ chainId, contracts: list }) => {
+              // Non-reactive: can't call hooks inside a map. The static catalog is
+              // populated synchronously at store init, so names resolve correctly.
+              const chain = catalogDisplay(chainId);
+              // While a chain is dragged, every group shows just its header, so
+              // you move a short header — not a dozen rows.
+              const isCollapsed =
+                dragKind === 'chain' ||
+                (!searching && collapsed.includes(chainId));
+              const listId = `sidebar-chain-${chainId}`;
+              const ci = allChainIds.indexOf(chainId);
+              const chainMove = chainDragOff
+                ? {}
+                : {
+                    up: ci > 0 ? () => moveChain(chainId, -1) : undefined,
+                    down:
+                      ci < allChainIds.length - 1
+                        ? () => moveChain(chainId, 1)
+                        : undefined,
+                  };
+              return (
+                <SortableGroup
+                  key={chainId}
+                  chainId={chainId}
+                  disabled={chainDragOff}
                 >
-                  <ChainGlyph chain={chain} size={14} />
-                  <span className="min-w-0 truncate">{chain.name}</span>
-                  <span className="ml-auto rounded-full bg-elev-3 px-[7px] py-px text-[11px] text-fg-4">
-                    {list.length}
-                  </span>
-                  {!searching && (
-                    <Icon.chevD
-                      size={13}
-                      className={cx(
-                        'flex-none text-fg-4 transition-transform duration-150 group-hover/chain:text-fg-3',
-                        isCollapsed && '-rotate-90',
-                      )}
-                    />
-                  )}
-                </button>
-              </div>
-              {/* 0fr↔1fr grid rows animate the height; `inert` keeps the
+                  {(dragHandle) => (
+                    <>
+                      <ChainHeaderRow
+                        chainName={chain.name}
+                        onMove={chainMove}
+                        dragHandle={dragHandle}
+                      >
+                        {selecting &&
+                          (() => {
+                            const ids = list.map((c) => c.id);
+                            const n = ids.filter((id) => picked.has(id)).length;
+                            return (
+                              // Lines up with the rows' checkboxes (26px slot after 10px).
+                              <span className="ml-[10px] grid w-[26px] flex-none place-items-center">
+                                <Checkbox
+                                  aria-label={`Select all on ${chain.name}`}
+                                  checked={n === ids.length}
+                                  indeterminate={n > 0 && n < ids.length}
+                                  onChange={() => setMany(ids, n < ids.length)}
+                                />
+                              </span>
+                            );
+                          })()}
+                        <button
+                          type="button"
+                          aria-expanded={!isCollapsed}
+                          aria-controls={listId}
+                          disabled={searching}
+                          title={
+                            searching
+                              ? undefined
+                              : `${isCollapsed ? 'Expand' : 'Collapse'} · Alt-click for all chains`
+                          }
+                          onClick={(e) => onChainHeaderClick(e, chainId)}
+                          className="group/chain flex min-w-0 flex-1 items-center gap-[7px] rounded-sm border-0 bg-transparent px-2 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em] text-fg-3 transition-colors enabled:cursor-pointer enabled:hover:bg-elev-3 enabled:hover:text-fg-2"
+                        >
+                          <ChainGlyph chain={chain} size={14} />
+                          <span className="min-w-0 truncate">{chain.name}</span>
+                          <span className="ml-auto rounded-full bg-elev-3 px-[7px] py-px text-[11px] text-fg-4">
+                            {list.length}
+                          </span>
+                          {!searching && (
+                            <Icon.chevD
+                              size={13}
+                              className={cx(
+                                'flex-none text-fg-4 transition-transform duration-150 group-hover/chain:text-fg-3',
+                                isCollapsed && '-rotate-90',
+                              )}
+                            />
+                          )}
+                        </button>
+                      </ChainHeaderRow>
+                      {/* 0fr↔1fr grid rows animate the height; `inert` keeps the
                   hidden rows out of the tab order and accessibility tree. */}
-              <div
-                id={listId}
-                inert={isCollapsed}
-                className={cx(
-                  'grid transition-[grid-template-rows] duration-150 ease-out',
-                  isCollapsed ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]',
-                )}
-              >
-                <div className="min-h-0 overflow-hidden">
-                  {list.map((c) => {
-                    const contract = byId.get(c.id);
-                    if (!contract) return null;
-                    return (
-                      <ContractRow
-                        key={c.id}
-                        contract={contract}
-                        active={selectedId === c.id && pathname === '/'}
-                        selecting={selecting}
-                        checked={picked.has(c.id)}
-                        onRowClick={onRowClick(c.id)}
-                        onStartSelect={() => startSelect(c.id)}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          );
-        })}
+                      <div
+                        id={listId}
+                        inert={isCollapsed}
+                        className={cx(
+                          'grid ease-out',
+                          // No animation while a chain drag collapses everything —
+                          // the drop targets must settle immediately.
+                          !dragKind &&
+                            'transition-[grid-template-rows] duration-150',
+                          isCollapsed ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]',
+                        )}
+                      >
+                        {/* Collapsed groups hide their rows only by clipping, so they
+                            always clip; an open group lets a dragged row's shadow spill
+                            out while a contract is dragged. */}
+                        <div
+                          className={cx(
+                            'min-h-0',
+                            (isCollapsed || dragKind !== 'contract') &&
+                              'overflow-hidden',
+                          )}
+                        >
+                          <SortableContext
+                            items={list.map((c) => `c:${c.id}`)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            {list.map((c) => {
+                              const contract = byId.get(c.id);
+                              if (!contract) return null;
+                              const ids = chainContractIds(chainId);
+                              const i = ids.indexOf(c.id);
+                              return (
+                                <ContractRow
+                                  key={c.id}
+                                  contract={contract}
+                                  active={
+                                    selectedId === c.id && pathname === '/'
+                                  }
+                                  selecting={selecting}
+                                  checked={picked.has(c.id)}
+                                  onRowClick={onRowClick(c.id)}
+                                  onStartSelect={() => startSelect(c.id)}
+                                  dragDisabled={contractDragOff}
+                                  onMove={{
+                                    up:
+                                      i > 0
+                                        ? () => moveContract(contract, -1)
+                                        : undefined,
+                                    down:
+                                      i < ids.length - 1
+                                        ? () => moveContract(contract, 1)
+                                        : undefined,
+                                  }}
+                                />
+                              );
+                            })}
+                          </SortableContext>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </SortableGroup>
+              );
+            })}
+          </SortableContext>
+        </DndContext>
       </div>
 
       {selecting && (

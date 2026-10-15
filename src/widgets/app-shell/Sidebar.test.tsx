@@ -414,4 +414,65 @@ describe('Sidebar', () => {
       ).not.toBeInTheDocument();
     });
   });
+
+  describe('reordering via menus', () => {
+    beforeEach(() => {
+      useSidebarStore.setState({ collapsed: [], chainOrder: [] });
+      useContractsStore.setState({
+        contracts: [
+          mk('1', 'USD Coin', 1),
+          mk('2', 'Wood', 11155111),
+          mk('3', 'Water', 11155111),
+        ],
+      });
+    });
+    const renderSidebar = () => {
+      render(
+        <ToastProvider>
+          <ConfirmProvider>
+            <AppShellProvider>
+              <Sidebar />
+            </AppShellProvider>
+          </ConfirmProvider>
+        </ToastProvider>,
+      );
+      return userEvent.setup();
+    };
+    const menuItems = () =>
+      screen.getAllByRole('menuitem').map((el) => el.textContent);
+
+    it('contract menu offers only the moves that make sense, and moves within the chain', async () => {
+      const user = renderSidebar();
+      fireEvent.contextMenu(screen.getByText('Wood'));
+      expect(menuItems()).toContain('Move down');
+      expect(menuItems()).not.toContain('Move up');
+      await user.click(screen.getByRole('menuitem', { name: 'Move down' }));
+      expect(useContractsStore.getState().contracts.map((c) => c.name)).toEqual(
+        ['USD Coin', 'Water', 'Wood'],
+      );
+    });
+
+    it('chain header menu moves the chain and persists the order', async () => {
+      const user = renderSidebar();
+      await user.click(
+        screen.getByRole('button', { name: 'Actions for Sepolia' }),
+      );
+      expect(menuItems()).toEqual(['Move chain up']);
+      await user.click(screen.getByRole('menuitem', { name: 'Move chain up' }));
+      expect(useSidebarStore.getState().chainOrder).toEqual([11155111, 1]);
+      const headers = screen
+        .getAllByRole('button')
+        .filter((b) => b.hasAttribute('aria-controls'))
+        .map((b) => b.textContent);
+      expect(headers[0]).toMatch(/sepolia/i);
+    });
+
+    it('no chain reordering while searching', async () => {
+      const user = renderSidebar();
+      await user.type(screen.getByPlaceholderText('Search contracts'), 'o');
+      expect(
+        screen.queryByRole('button', { name: 'Actions for Sepolia' }),
+      ).not.toBeInTheDocument();
+    });
+  });
 });
